@@ -2,3 +2,7 @@ name = "FourierTools"
 uuid = "b18b359b-aebc-45ac-a139-9c0ccbb2871e"
 authors = ["rheintzmann <heintzmann@gmail.com>"]
 version = "0.1.0"
+
+[deps]
+PaddedViews = "5432bcbf-9aad-5242-b902-cca2824c8663"
+ShiftedArrays = "1277b4bf-5013-50f5-be3d-901d8477a67a"

@@ -1,4 +1,5 @@
 import Napari
+using Colors, ImageShow 
 
 
 nap = (x) -> Napari.napari.view_image(x)
