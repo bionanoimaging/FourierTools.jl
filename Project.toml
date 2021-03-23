@@ -1,0 +1,4 @@
+name = "FourierTools"
+uuid = "b18b359b-aebc-45ac-a139-9c0ccbb2871e"
+authors = ["rheintzmann <heintzmann@gmail.com>"]
+version = "0.1.0"

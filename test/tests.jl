@@ -14,6 +14,6 @@ vv(res)
 @time res = rft_resize(mat, newsize);
 vv(res)
 
-w=ft(mat)
-q=ft_pad(w,newsize)
-r=ift(q)
+# w=ft(mat)
+# q=ft_pad(w,newsize)
+# r=ift(q)

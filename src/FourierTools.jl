@@ -1,7 +1,11 @@
-module FieldPropagation
+module FourierTools
 
 # import Napari
 using PaddedViews, ShiftedArrays
+using FFTW
+using Colors, ImageShow # for vv 
+
+export vv, ft,ift, rft, irft, ft_resize, rft_resize
 
 #= # This is the setindex function that used to be in PaddedViews
 # copied from commit https://github.com/JuliaArrays/PaddedViews.jl/commit/ff689b1f5d41545f3decf1f00b94c5ad7b1d5ac8
@@ -225,22 +229,3 @@ function rft_resize(mat, newsize)
 end
 
 end # module
-
-## for testing
-using FFTW, TestImages, Colors # , PaddedViews
-img = testimage("resolution_test_512.tif"); # fullname
-# imgg = Gray.(img);
-mat0 = convert(Array{Float64}, img);
-mat=mat0[1:511,1:512];
-
-vv(mat)
-newsize=(1024,500)
-@time res = ft_resize(mat, newsize; keep_complex=true);
-maximum(imag(res))
-vv(res)
-@time res = rft_resize(mat, newsize);
-vv(res)
-
-w=ft(mat)
-q=ft_pad(w,newsize)
-r=ift(q)
