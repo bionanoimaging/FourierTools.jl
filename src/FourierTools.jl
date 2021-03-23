@@ -1,11 +1,11 @@
 module FourierTools
 
-# import Napari
+include("utils.jl")
+
 using PaddedViews, ShiftedArrays
 using FFTW
-using Colors, ImageShow # for vv 
 
-export vv, ft,ift, rft, irft, ft_resize, rft_resize
+export ft,ift, rft, irft, resample, resample_rfft
 
 #= # This is the setindex function that used to be in PaddedViews
 # copied from commit https://github.com/JuliaArrays/PaddedViews.jl/commit/ff689b1f5d41545f3decf1f00b94c5ad7b1d5ac8
@@ -26,164 +26,96 @@ Base.@propagate_inbounds function Base.setindex!(A::PaddedView{T, N}, v, i::Vara
 end
  =#
 
-
-nap = (x) -> Napari.napari.view_image(x)
-function vv(mat; gamma=nothing, viewer=nothing)
-    #if isa(mat,FFTView)
-    #    start = CartesianIndex(size(mat).÷2)
-    #    stop = CartesianIndex(size(mat).÷2 .+size(mat))
-    #    mat = mat[start:stop]
-    #end
-    if isnothing(gamma)
-        if  eltype(mat) <: Complex
-            gamma=0.2
-        else
-            gamma=1.0
-        end
-    end
-    mat = (abs.(collect(mat))).^gamma
-    mat = (mat./maximum(mat))
-    if isnothing(viewer)
-        return Gray.(mat)
-    else
-        viewer(mat)
-    end
-end
-
-function size_d(x::AbstractArray{T},dims::NTuple{N,Int}; keep_dims=true) where{T,N}
-    if ~keep_dims
-        return map(n->size(x,n),dims)
-    end
-    sz=ones(Int, ndims(x))
-    for n in dims
-        sz[n]=size(x,n) 
-    end
-    return Tuple(sz)
-end 
-
-@inline function replace_dim(iterable::NTuple{T,N}, dim, val) where{T,N}
-    Tuple(d == dim ? val : iterable[d] for d in 1:length(iterable))
-end
-# attention: all the center functions are zero-based as they are applied in shifts!
-
-function ft_center_0(sz::NTuple) 
-    (sz.÷2)
-end 
-
-function ft_center_0(mat :: AbstractArray) 
-    ft_center_0(size(mat))
-end
-
-function rft_center_0(sz::NTuple)
-    Tuple(d == 1 ? 0 : sz[d].÷2 for d in 1:length(sz))
-end
-
-function rft_center_0(mat :: AbstractArray) 
-    rft_center_0(size(mat))
-end
-
 ##  This View checks for the index to be L1 or the mirrored version (L2)
 # and then replaces the value by half of the data at L1
-struct FourierDuplicate{T,N,A} <: AbstractArray{T,N}
-    data::A
-    D::Int64 # dimension along which to apply to copy
-    L1::Int64 # low index position to copy from (and half)
-    L2::Int64 # high index positon to copy to (and half)
+struct FourierDuplicate{T,N, AA<:AbstractArray{T, N}} <: AbstractArray{T,N}
+    data::AA
+    D::Int # dimension along which to apply to copy
+    L1::Int # low index position to copy from (and half)
+    L2::Int # high index positon to copy to (and half)
 
-    function FourierDuplicate{T,N,A}(data,
-                                     D::Int64,L1::Int64) where {T,N,A}
-        ndims(data) == N || throw(DimensionMismatch("data and indices should have the same dimension, instead they're $(ndims(data)) and $N."))
-        mid=size(data)[D]÷2+1
-        L2=mid+(mid-L1)
-        new{T,N,A}(data, D, L1,L2)
+    function FourierDuplicate(data::AA, D::Int,L1::Int) where {T,N, AA<:AbstractArray{T, N}}
+        if ndims(data) != N
+            throw(DimensionMismatch("data and indices should have the same dimension, instead they're $(ndims(data)) and $N."))
+        end
+        mid = fft_center(size(data)[D])
+        L2 = mid + (mid-L1)
+        return new{T,N, AA}(data, D, L1, L2)
     end
 end
-function FourierDuplicate(data::AbstractArray{T,N},D,L1) where {T,N}
-    FourierDuplicate{T,N,AbstractArray{T,N}}(data,D,L1)
-end
+
 Base.size(A::FourierDuplicate) = size(A.data)
 
-Base.@propagate_inbounds function Base.getindex(A::FourierDuplicate{T,N}, i::Vararg{Int,N}) where {T,N}
+@inline function Base.getindex(A::FourierDuplicate{T,N, <:AbstractArray{T, N}}, i::Vararg{Int,N}) where {T,N}
     @boundscheck checkbounds(A, i...)
     if i[A.D]==A.L1
-        return A.data[i...] / 2
+        @inbounds return A.data[i...] / 2
     elseif i[A.D]==A.L2
-        return A.data[replace_dim(i,A.D,A.L1)...] / 2
+        @inbounds return A.data[replace_dim(i,A.D,A.L1)...] / 2
     else 
-        return A.data[i...]
+        @inbounds return A.data[i...]
     end
 end
 
 ## This View checks for the index to be L1 
 # and then replaces the value by add the value at the mirrored position L2
-struct FourierSum{T,N,A} <: AbstractArray{T,N}
-    data::A
-    D::Int64 # dimension along which to apply to copy
-    L1::Int64 # low index position to copy from (and half)
-    L2::Int64 # high index positon to copy to (and half)
+struct FourierSum{T,N, AA<:AbstractArray{T, N}} <: AbstractArray{T, N}
+    data::AA
+    D::Int # dimension along which to apply to copy
+    L1::Int # low index position to copy from (and half)
+    L2::Int # high index positon to copy to (and half)
 
-    function FourierSum{T,N,A}(data,
-                                     D::Int64,L1::Int64) where {T,N,A}
-        ndims(data) == N || throw(DimensionMismatch("data and indices should have the same dimension, instead they're $(ndims(data)) and $N."))
-        mid=size(data)[D]÷2+1
-        L2=mid+(mid-L1)
-        new{T,N,A}(data, D, L1,L2)
+    function FourierSum(data::AA, D::Int,L1::Int) where {T, N, AA<:AbstractArray{T, N}}
+        if ndims(data) != N
+            throw(DimensionMismatch("data and indices should have the same dimension, instead they're $(ndims(data)) and $N."))
+        end
+        mid = fft_center(size(data)[D])
+        L2 = mid + (mid-L1)
+        return new{T, N, AA}(data, D, L1, L2)
     end
 end
-function FourierSum(data::AbstractArray{T,N},D,L1) where {T,N}
-    FourierSum{T,N,AbstractArray{T,N}}(data,D,L1)
-end
+
 Base.size(A::FourierSum) = size(A.data)
 
-Base.@propagate_inbounds function Base.getindex(A::FourierSum{T,N}, i::Vararg{Int,N}) where {T,N}
+@inline function Base.getindex(A::FourierSum{T,N, <:AbstractArray{T, N}}, i::Vararg{Int,N}) where {T,N}
     @boundscheck checkbounds(A, i...)
     if i[A.D]==A.L1
-        return A.data[i...] + A.data[replace_dim(i,A.D,A.L2)...]
+        @inbounds return A.data[i...] + A.data[replace_dim(i,A.D,A.L2)...]
     else 
-        return A.data[i...]
+        @inbounds return A.data[i...]
     end
 end
 
-ft_shift = (mat) -> ShiftedArrays.circshift(mat,ft_center_0(mat))
-ift_shift = (mat) -> ShiftedArrays.circshift(mat,.-(ft_center_0(mat)))
-rft_shift = (mat) -> ShiftedArrays.circshift(mat,rft_center_0(mat))
-irft_shift = (mat) -> ShiftedArrays.circshift(mat,.-(rft_center_0(mat)))
 
-ft = (mat) -> ft_shift(fft(mat));
-ift = (mat) -> ifft(collect(ift_shift(mat)));
-rft = (mat) -> rft_shift(rfft(mat));
-irft = (mat,d) -> irfft(collect(irft_shift(mat)),d);
-
-function extract(mat; newsize=size(mat), center=ft_center_0(mat).+1)
-    oldcenter = ft_center_0(newsize).+1
-    PaddedView(0,mat,newsize, oldcenter .- center.+1);
+function extract(mat; new_size=size(mat), center=ft_center_0(mat).+1)
+    oldcenter = ft_center_0(new_size).+1
+    PaddedView(0,mat,new_size, oldcenter .- center.+1);
 end
 
-function ft_pad(mat, newsize)
-    return extract(mat;newsize=newsize)
+function ft_pad(mat, new_size)
+    return extract(mat;new_size=new_size)
 end
 
-function rft_pad(mat, newsize)
+function rft_pad(mat, new_size)
     c2 = rft_center_0(mat)
-    c2 = replace_dim(c2,1,newsize[1].÷2);
-    return extract(mat;newsize=newsize, center=c2.+1)
+    c2 = replace_dim(c2,1,new_size[1].÷2);
+    return extract(mat;new_size=new_size, center=c2.+1)
 end
 
-function ft_fix_before(mat,size_old,size_new; startDim=1)
-    for d=startDim:ndims(mat)
+function ft_fix_before(mat, size_old, size_new; start_dim=1)
+    for d = start_dim:ndims(mat)
         sn = size_new[d]
         so = size_old[d]
         if sn < so && iseven(sn)
-            L1 = (size_old[d]-size_new[d])÷2+1
-            mat = FourierSum(mat,d,L1)
+            L1 = (size_old[d] -size_new[d] )÷2 +1
+            mat = FourierSum(mat, d, L1)
         end
-        # if equal do nothing
     end
-    mat
+    return mat
 end
 
-function ft_fix_after(mat,size_old,size_new; startDim=1)
-    for d=startDim:ndims(mat)
+function ft_fix_after(mat,size_old,size_new; start_dim=1)
+    for d=start_dim:ndims(mat)
         sn = size_new[d]
         so = size_old[d]
         if sn > so && iseven(so)
@@ -192,40 +124,51 @@ function ft_fix_after(mat,size_old,size_new; startDim=1)
         end
         # if equal do nothing
     end
-    mat
+    return mat
 end
+
 
 function rft_fix_before(mat,size_old,size_new)
-    ft_fix_before(mat,size_old,size_new;startDim=2) # ignore the first dimension
+    ft_fix_before(mat,size_old,size_new;start_dim=2) # ignore the first dimension
 end
+
+
+
 function rft_fix_after(mat,size_old,size_new)
-    ft_fix_after(mat,size_old,size_new;startDim=2) # ignore the first dimension
+    ft_fix_after(mat,size_old,size_new;start_dim=2) # ignore the first dimension
 end
 
-# Note that for complex no fft_fix needs to be applied
-function ft_resize(mat, newsize; keep_complex=false)
-    oldsize = size(mat)
+
+
+function resample(mat, new_size; take_real=true)
+    old_size = size(mat)
+    # for complex arrays we don't need to restore hermitian property
     if eltype(mat) <: Complex
-        res=ift(ft_pad(ft(mat),newsize))
+        res = ft_pad(ft(mat),new_size)
     else
-        res=(ift(ft_fix_after(ft_pad(
-            ft_fix_before(ft(mat),oldsize,newsize),
-            newsize),oldsize,newsize)))
+        # for real arrays we apply an operation so that mat_fixed_before is hermitian
+        mat_fixed_before = ft_fix_before(ft(mat),old_size,new_size)
+        mat_pad = ft_pad(mat_fixed_before,new_size)
+        # afterwards we add the highest pos. frequency to the highest lowest one 
+        res = ft_fix_after(mat_pad ,old_size,new_size)
     end
-    if keep_complex
-        res
-    else
+    # go back to real space
+    @show typeof(res)
+    res = ift(res)
+    if eltype(mat) <: Real && take_real
         real(res)
+    else
+        res
     end
 end
 
-function rft_resize(mat, newsize)
-    @time rf = rft(mat)
-    rft_oldsize = size(rf)
-    rft_newsize = replace_dim(newsize,1,newsize[1]÷2 +1)
-    @time irft(rft_fix_after(rft_pad(
-        rft_fix_before(rf,rft_oldsize,rft_newsize),
-        rft_newsize),rft_oldsize,rft_newsize),newsize[1])
+function resample_rfft(mat, new_size)
+    rf = rft(mat)
+    rft_old_size = size(rf)
+    rft_new_size = replace_dim(new_size,1,new_size[1]÷2 +1)
+    irft(rft_fix_after(rft_pad(
+        rft_fix_before(rf,rft_old_size,rft_new_size),
+        rft_new_size),rft_old_size,rft_new_size),new_size[1])
 end
 
 end # module
