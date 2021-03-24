@@ -24,7 +24,7 @@ Base.size(A::FourierDuplicate) = size(parent(A))
 
 @inline function Base.getindex(A::FourierDuplicate{T,N, <:AbstractArray{T, N}}, i::Vararg{Int,N}) where {T,N}
     if i[A.D]==A.L2
-        @inbounds return parent(A)[replace_dim(i,A.D,A.L1)...] / 2
+        @inbounds return parent(A)[Base.setindex(i,A.L1, A.D)...] / 2
     else 
         @inbounds return parent(A)[i...] / (1 + Int(i[A.D]==A.L1))
         # @inbounds return parent(A)[i...]
@@ -56,7 +56,7 @@ Base.size(A::FourierSum) = size(parent(A))
 
 @inline function Base.getindex(A::FourierSum{T,N, <:AbstractArray{T, N}}, i::Vararg{Int,N}) where {T,N}
     if i[A.D]==A.L1
-        @inbounds return parent(A)[i...] + parent(A)[replace_dim(i, A.D, A.L2)...]
+        @inbounds return parent(A)[i...] + parent(A)[Base.setindex(i, A.L2, A.D)...]
     else 
         @inbounds return parent(A)[i...]
     end

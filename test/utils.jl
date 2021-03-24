@@ -34,12 +34,31 @@
     end
 
 
-    @testset "Test fft center and rfft_center0" begin
+    @testset "Test fft center and rfft_center_diff" begin
         Random.seed!(42)
         @test 2 == FourierTools.fft_center(3)
         @test 3 == FourierTools.fft_center(4)
         @test 3 == FourierTools.fft_center(5)
         @test (2,3,4) == FourierTools.fft_center.((3,4,6))
+
+
+        @test (0, 1, 2, 3) == FourierTools.ft_center_diff((12, 3, 5,6), (2,3,4))
+        @test (6, 1, 2, 3) == FourierTools.ft_center_diff((12, 3, 5,6))
+
+
+        @test (0, 0, 2, 3) == FourierTools.rft_center_diff((12, 3, 5,6), (2,3,4))
+        @test (0, 0, 0, 3) == FourierTools.rft_center_diff((12, 3, 5,6), (3,4))
+        @test (0, 0, 2, 3) == FourierTools.rft_center_diff((13, 3, 5,6), (1,3,4))
+        @test (0, 1, 2, 3) == FourierTools.rft_center_diff((13, 3, 5,6))
+
+    end
+
+
+    @testset "selectsizes" begin
+        @test (1, 3, 2) == FourierTools.selectsizes(randn((4,3,2)), (2,3))
+        @test (3, 2) == FourierTools.selectsizes(randn((4,3,2)), (2,3), keep_dims=false)
+        @test (1, ) == FourierTools.selectsizes(randn((1,)), (1,), keep_dims=false)
+
     end
 
 end

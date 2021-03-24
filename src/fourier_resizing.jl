@@ -23,15 +23,15 @@ in the space of rft (meaning the already circshifted version of rfft).
 """
 function resize_rft(mat,new_size)
     rft_old_size = size(mat)
-    rft_new_size = replace_dim(new_size,1,new_size[1]÷2 +1)
+    rft_new_size = Base.setindex(new_size,new_size[1]÷2 +1, 1)
     return rft_fix_after(rft_pad(
         rft_fix_before(mat,rft_old_size,rft_new_size),
         rft_new_size),rft_old_size,rft_new_size)
 end
 
 
-function resize(mat; new_size=size(mat), center=ft_center_0(size(mat)).+1)
-    oldcenter = ft_center_0(new_size).+1
+function resize(mat; new_size=size(mat), center=ft_center_diff(size(mat)).+1)
+    oldcenter = ft_center_diff(new_size).+1
     PaddedView(0,mat,new_size, oldcenter .- center.+1);
 end
 
@@ -40,8 +40,8 @@ function ft_pad(mat, new_size)
 end
 
 function rft_pad(mat, new_size)
-    c2 = rft_center_0(size(mat))
-    c2 = replace_dim(c2,1,new_size[1].÷2);
+    c2 = rft_center_diff(size(mat))
+    c2 = Base.setindex(c2, new_size[1].÷2, 1);
     return resize(mat;new_size=new_size, center=c2.+1)
 end
 
@@ -80,5 +80,3 @@ end
 function rft_fix_after(mat,size_old,size_new)
     ft_fix_after(mat,size_old,size_new;start_dim=2) # ignore the first dimension
 end
-
-

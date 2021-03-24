@@ -12,12 +12,27 @@ function fft_center(x)
 end
 
 
-function ft_center_0(s::NTuple{N, T}, dims=ntuple(identity, Val(N))) where {N, T}
+
+"""
+    ft_center_diff(s [, dims])
+
+Calculates how much each dimension must be shifted that the
+center frequency is at the Fourier center.
+This if for a normal `fft`
+"""
+function ft_center_diff(s::NTuple{N, T}, dims=ntuple(identity, Val(N))) where {N, T}
     ntuple(i -> i ∈ dims ?  s[i] ÷ 2 : 0 , N)
 end
 
 
-function rft_center_0(sz::NTuple{N, T}, dims=ntuple(identity, Val(N))::NTuple) where {N,T}
+"""
+    rft_center_diff(s [, dims])
+
+Calculates how much each dimension must be shifted that the
+center frequency is at the Fourier center.
+This is for `rfft`. The `dims[1]` must be therefore not shifted!
+"""
+function rft_center_diff(sz::NTuple{N, T}, dims=ntuple(identity, Val(N))::NTuple) where {N,T}
     ntuple(i -> i == first(dims) ? 0 : i ∈ dims ? sz[i] ÷ 2 : 0, N)
     # Tuple(d == 1 ? 0 : sz[d].÷2 for d in 1:length(sz))
 end
@@ -51,7 +66,7 @@ Result is semantically equivalent to `fftshift(A, dims)` but returns
 a view view instead. 
 """
 function fftshift_view(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
-    ShiftedArrays.circshift(mat, ft_center_0(size(mat), dims))
+    ShiftedArrays.circshift(mat, ft_center_diff(size(mat), dims))
 end
 
 """
@@ -61,52 +76,83 @@ Result is semantically equivalent to `fftshift(A, dims)` but returns
 a view view instead. 
 """
 function ifftshift_view(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
-    ShiftedArrays.circshift(mat, .-(ft_center_0(size(mat), dims)))
+    ShiftedArrays.circshift(mat, .-(ft_center_diff(size(mat), dims)))
 end
 
 
 
+"""
+    rft(A [, dims])
+
+Calculates a `rfft(A, dims)` and then shift the frequencies to the center.
+`dims[1]` is not shifted, because there is no negative and positive frequency.
+The shift is done with `ShiftedArrays` and therefore doesn't allocate memory.
+"""
 function rft(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
     rfftshift_view(rfft(mat, dims), dims);
 end
 
+"""
+    irft(A, d, [, dims])
+
+Calculates a `irfft(A, d, dims)` and then shift the frequencies back to the corner.
+`dims[1]` is not shifted, because there is no negative and positive frequency.
+The shift is done with `ShiftedArrays` and therefore doesn't allocate memory.
+"""
 function irft(mat::AbstractArray{T, N}, d::Int, dims=ntuple(identity, Val(N))) where {T, N}
     irfft(collect(irfftshift_view(mat, dims)), d, dims);
 end
 
+"""
+    rfftshift_view(A, dims)
 
+Shifts the frequencies to the center expect for `dims[1]` because there os no negative
+and positive frequency.
+"""
 function rfftshift_view(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
-    ShiftedArrays.circshift(mat, rft_center_0(size(mat), dims))
+    ShiftedArrays.circshift(mat, rft_center_diff(size(mat), dims))
 end
 
+"""
+    irfftshift_view(A, dims)
+
+Shifts the frequencies back to the corner except for `dims[1]` because there os no negative
+and positive frequency.
+"""
 function irfftshift_view(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
-    ShiftedArrays.circshift(mat ,.-(rft_center_0(size(mat), dims)))
-end
-
-
-
-@inline function replace_dim(iterable::NTuple{N,T}, dim::Int, val::Int)::NTuple{N, T} where{N,T}
-    return ntuple(d -> d==dim ? val : iterable[d], Val(N))
+    ShiftedArrays.circshift(mat ,.-(rft_center_diff(size(mat), dims)))
 end
 
 
 # attention: all the center functions are zero-based as they are applied in shifts!
-# function ft_center_0(sz::NTuple) 
+# function ft_center_diff(sz::NTuple) 
 #     (sz.÷2)
 # end 
 
+"""
+    selectsizes(x, dism; keep_dims=true)
 
+Select the sizes of `x` for all `dims`
+If `keep_dims=true` the non-selected dimensions are
+returned as 1.
 
+# Examples
+```jldoctest
+julia> FourierTools.selectsizes(randn((4,3,2)), (2,3))
+(1, 3, 2)
 
+julia> FourierTools.selectsizes(randn((4,3,2)), (2,3), keep_dims=false)
+(3, 2)
+```
 
-
-function selectsizes(x::AbstractArray{T},dim::NTuple{N,Int};
+"""
+function selectsizes(x::AbstractArray{T},dims::NTuple{N,Int};
                     keep_dims=true) where{T,N}
     if ~keep_dims
-        return map(n->size(x,n),dim)
+        return map(n->size(x,n),dims)
     end
     sz = ones(Int, ndims(x))
-    for n in dim
+    for n in dims
         sz[n] = size(x,n) 
     end
     return Tuple(sz)
