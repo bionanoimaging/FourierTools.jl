@@ -15,8 +15,9 @@ irft_shift(mat) = ShiftedArrays.circshift(mat ,.-(rft_center_0(mat)))
 @inline function replace_dim(iterable::NTuple{N,T}, dim::Int, val::Int)::NTuple{N, T} where{N,T}
     return ntuple(d -> d==dim ? val : iterable[d], Val(N))
 end
-# attention: all the center functions are zero-based as they are applied in shifts!
 
+
+# attention: all the center functions are zero-based as they are applied in shifts!
 function ft_center_0(sz::NTuple) 
     (sz.÷2)
 end 
@@ -44,3 +45,25 @@ function size_d(x::AbstractArray{T},dims::NTuple{N,Int}; keep_dims=true) where{T
     end
     return Tuple(sz)
 end 
+
+
+
+#= # This is the setindex function that used to be in PaddedViews
+# copied from commit https://github.com/JuliaArrays/PaddedViews.jl/commit/ff689b1f5d41545f3decf1f00b94c5ad7b1d5ac8
+Base.@propagate_inbounds function Base.setindex!(A::PaddedView{T, N}, v, i::Vararg{Int, N}) where {T, N}
+    @boundscheck begin
+        # This gives some performance boost https://github.com/JuliaLang/julia/issues/33273
+        _throw_argument_error() = throw(ArgumentError("PaddedViews do not support (re)setting the padding value. Consider making a copy of the array first."))
+        _throw_bounds_error(A, i) = throw(BoundsError(A, i))
+        if checkbounds(Bool, A, i...)
+            # checkbounds(Bool, parent(A), i...) || _throw_argument_error()
+            # just ignore assignments in this region
+        else
+            _throw_bounds_error(A, i)
+        end
+    end
+    setindex!(parent(A), v, i...)
+    return A
+end
+ =#
+
