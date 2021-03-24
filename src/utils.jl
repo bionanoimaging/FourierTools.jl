@@ -18,7 +18,7 @@ end
 
 
 function rft_center_0(sz::NTuple{N, T}, dims=ntuple(identity, Val(N))::NTuple) where {N,T}
-    ntuple(i -> i == first(dims) ? 0 : i ∈ dims ? dims[i] ÷ 2 : 0, N)
+    ntuple(i -> i == first(dims) ? 0 : i ∈ dims ? sz[i] ÷ 2 : 0, N)
     # Tuple(d == 1 ? 0 : sz[d].÷2 for d in 1:length(sz))
 end
 

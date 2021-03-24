@@ -13,7 +13,7 @@ Random.seed!(42)
                 s_large = ntuple(i -> max.(s_small[i], rand(10:16)), dim)
                 
                 x = randn(Float32, (s_small))
-                # @test x ≈ resample(resample(x, s_large), s_small)
+                @test x ≈ resample(resample(x, s_large), s_small)
                 @test x ≈ resample_by_FFT(resample_by_FFT(x, s_large), s_small)
                 @test x ≈ resample_by_RFFT(resample_by_RFFT(x, s_large), s_small)
                 x = randn(ComplexF32, (s_small))

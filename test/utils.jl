@@ -34,13 +34,12 @@
     end
 
 
-    @testset "Test fft center" begin
+    @testset "Test fft center and rfft_center0" begin
         Random.seed!(42)
         @test 2 == FourierTools.fft_center(3)
         @test 3 == FourierTools.fft_center(4)
         @test 3 == FourierTools.fft_center(5)
         @test (2,3,4) == FourierTools.fft_center.((3,4,6))
-
     end
 
 end
