@@ -95,8 +95,7 @@ Base.size(A::FourierSum) = size(parent(A))
     end
 end
 
-
-function extract(mat; new_size=size(mat), center=ft_center_0(mat).+1)
+function extract(mat, new_size=size(mat), center=ft_center_0(mat).+1)
     oldcenter = ft_center_0(new_size).+1
     PaddedView(0,mat,new_size, oldcenter .- center.+1);
 end
