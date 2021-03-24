@@ -8,10 +8,10 @@ mat=mat0[1:511,1:512];
 
 vv(mat)
 newsize=(1024,500)
-@time res = ft_resize(mat, newsize; keep_complex=true);
+@time res = resample_by_FFT(mat, newsize; take_real=false);
 maximum(imag(res))
 vv(res)
-@time res = rft_resize(mat, newsize);
+@time res = resample_by_RFFT(mat, newsize);
 vv(res)
 
 # w=ft(mat)

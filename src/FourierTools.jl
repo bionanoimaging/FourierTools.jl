@@ -5,7 +5,7 @@ include("utils.jl")
 using PaddedViews, ShiftedArrays
 using FFTW
 
-export ft,ift, rft, irft, resample, resample_rfft
+export ft,ift, rft, irft, resample, resample_by_FFT, resample_by_RFFT
 
 #= # This is the setindex function that used to be in PaddedViews
 # copied from commit https://github.com/JuliaArrays/PaddedViews.jl/commit/ff689b1f5d41545f3decf1f00b94c5ad7b1d5ac8
@@ -147,19 +147,26 @@ function rft_fix_after(mat,size_old,size_new)
     ft_fix_after(mat,size_old,size_new;start_dim=2) # ignore the first dimension
 end
 
-
-
-function resample(mat, new_size; take_real=true)
+"""
+performs the necessary Fourier-space operations of resampling
+in the space of ft (meaning the already circshifted version of fft).
+"""
+function extract_ft(mat,new_size)
     old_size = size(mat)
+    mat_fixed_before = ft_fix_before(mat,old_size,new_size)
+    mat_pad = ft_pad(mat_fixed_before,new_size)
+    # afterwards we add the highest pos. frequency to the highest lowest one 
+    return ft_fix_after(mat_pad ,old_size,new_size)
+end
+
+function resample_by_FFT(mat, new_size; take_real=false) 
     # for complex arrays we don't need to restore hermitian property
     if eltype(mat) <: Complex
         res = ft_pad(ft(mat),new_size)
     else
         # for real arrays we apply an operation so that mat_fixed_before is hermitian
-        mat_fixed_before = ft_fix_before(ft(mat),old_size,new_size)
-        mat_pad = ft_pad(mat_fixed_before,new_size)
-        # afterwards we add the highest pos. frequency to the highest lowest one 
-        res = ft_fix_after(mat_pad ,old_size,new_size)
+        res = ft(mat)
+        res = extract_ft(res, new_size)
     end
     # go back to real space
     # @show typeof(res)
@@ -171,14 +178,27 @@ function resample(mat, new_size; take_real=true)
         res
     end
 end
-
-function resample_rfft(mat, new_size)
-    rf = rft(mat)
-    rft_old_size = size(rf)
+"""
+performs the necessary Fourier-space operations of resampling
+in the space of rft (meaning the already circshifted version of rfft).
+"""
+function extract_rft(mat,new_size)
+    rft_old_size = size(mat)
     rft_new_size = replace_dim(new_size,1,new_size[1]÷2 +1)
-    irft(rft_fix_after(rft_pad(
-        rft_fix_before(rf,rft_old_size,rft_new_size),
-        rft_new_size),rft_old_size,rft_new_size),new_size[1])
+    return rft_fix_after(rft_pad(
+        rft_fix_before(mat,rft_old_size,rft_new_size),
+        rft_new_size),rft_old_size,rft_new_size)
 end
 
+function resample_by_RFFT(mat, new_size) where {T}
+    rf = rft(mat)
+    irft(extract_rft(rf,new_size),new_size[1])
+end
+function resample(mat, new_size)
+    if eltype(mat) <: Complex
+        resample_by_FFT(mat,new_size,TypeFT)
+    else
+        resample_by_RFFT(mat,new_size,TypeRFT)
+    end
+end
 end # module
