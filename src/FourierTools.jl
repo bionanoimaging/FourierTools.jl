@@ -5,7 +5,9 @@ include("utils.jl")
 using PaddedViews, ShiftedArrays
 using FFTW
 
-export ft,ift, rft, irft, resample, resample_by_FFT, resample_by_RFFT
+export ft,ift, rft, irft
+export resample, resample_by_FFT, resample_by_RFFT
+export extract, extract_ft, extract_rft
 
 #= # This is the setindex function that used to be in PaddedViews
 # copied from commit https://github.com/JuliaArrays/PaddedViews.jl/commit/ff689b1f5d41545f3decf1f00b94c5ad7b1d5ac8
