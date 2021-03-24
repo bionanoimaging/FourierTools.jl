@@ -29,7 +29,7 @@ end
 ##  This View checks for the index to be L1 or the mirrored version (L2)
 # and then replaces the value by half of the parent at L1
 struct FourierDuplicate{T,N, AA<:AbstractArray{T, N}} <: AbstractArray{T,N}
-    parent::AA
+    parent::AA # holds the data (or is another view)
     D::Int # dimension along which to apply to copy
     L1::Int # low index position to copy from (and half)
     L2::Int # high index positon to copy to (and half)
