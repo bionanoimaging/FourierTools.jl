@@ -26,6 +26,6 @@ It also contains generally useful tools such as
 [CI-img]: https://github.com/bionanoimaging/FourierTools.jl/actions/workflows/ci.yml/badge.svg
 [CI-url]: https://github.com/bionanoimaging/FourierTools.jl/actions/workflows/ci.yml
 
-[codecov-img]: https://codecov.io/gh/bionanoimaging/FourierTools.jl/branch/master/graph/badge.svg?token=P0YYCPKXI1
+[codecov-img]: https://codecov.io/gh/bionanoimaging/FourierTools.jl/branch/main/graph/badge.svg?token=6XWI1M1MPB
 [codecov-url]: https://codecov.io/gh/bionanoimaging/FourierTools.jl
 
