@@ -160,14 +160,18 @@ function extract_ft(mat,new_size)
     return ft_fix_after(mat_pad ,old_size,new_size)
 end
 
-function resample_by_FFT(mat, new_size; take_real=false) 
+
+function resample_by_FFT(mat, new_size; take_real=true)
+    old_size = size(mat)
     # for complex arrays we don't need to restore hermitian property
     if eltype(mat) <: Complex
         res = ft_pad(ft(mat),new_size)
     else
         # for real arrays we apply an operation so that mat_fixed_before is hermitian
-        res = ft(mat)
-        res = extract_ft(res, new_size)
+        mat_fixed_before = ft_fix_before(ft(mat),old_size,new_size)
+        mat_pad = ft_pad(mat_fixed_before,new_size)
+        # afterwards we add the highest pos. frequency to the highest lowest one 
+        res = ft_fix_after(mat_pad ,old_size,new_size)
     end
     # go back to real space
     # @show typeof(res)
@@ -179,6 +183,8 @@ function resample_by_FFT(mat, new_size; take_real=false)
         res
     end
 end
+
+
 """
 performs the necessary Fourier-space operations of resampling
 in the space of rft (meaning the already circshifted version of rfft).

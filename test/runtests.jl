@@ -11,7 +11,7 @@ using FourierTools
                 
                 x = randn(Float32, (s_small))
                 @test x ≈ resample_by_FFT(resample_by_FFT(x, s_large), s_small)
-                # @test x ≈ resample_by_FFT_rfft(resample_by_FFT(x, s_large), s_small)
+                @test x ≈ resample_by_RFFT(resample_by_RFFT(x, s_large), s_small)
                 x = randn(ComplexF32, (s_small))
                 @test x ≈ resample_by_FFT(resample_by_FFT(x, s_large), s_small)
                 @test x ≈ resample_by_FFT(resample_by_FFT(real(x), s_large), s_small) + 1im .* resample_by_FFT(resample_by_FFT(imag(x), s_large), s_small) 
