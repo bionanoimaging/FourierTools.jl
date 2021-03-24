@@ -2,11 +2,11 @@ using Random, Test, FFTW
 using FourierTools
 
 include("utils.jl")
+Random.seed!(42)
 
 
 @testset "Test resampling  methods" begin
     @testset "Test that upsample and downsample is reversible" begin
-        Random.seed!(42)
         for dim = 1:3
             for _ in 1:4
                 s_small = ntuple(_ -> rand(1:13), dim)
@@ -27,7 +27,6 @@ include("utils.jl")
 
 
     @testset "Tests that resample_by_FFT is purely real" begin
-        Random.seed!(42)
         function test_real(s_1, s_2)
             x = randn(Float32, (s_1))
             y = resample_by_FFT(x, s_2)

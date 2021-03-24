@@ -40,7 +40,7 @@ function ft_pad(mat, new_size)
 end
 
 function rft_pad(mat, new_size)
-    c2 = rft_center_0(mat)
+    c2 = rft_center_0(size(mat))
     c2 = replace_dim(c2,1,new_size[1].÷2);
     return resize(mat;new_size=new_size, center=c2.+1)
 end

@@ -1,6 +1,7 @@
 @testset "Test util functions" begin
 
     @testset "Test ft and ift wrappers" begin
+        Random.seed!(42)
         testft(arr) = @test(ft(arr) ≈ fftshift(fft(arr)))
         testift(arr) = @test(ift(arr) ≈ ifft(ifftshift(arr)))
         # testrft(arr) = @test(rft(arr) ≈ fftshift(rft(arr)))
@@ -20,6 +21,7 @@
 
 
     @testset "Test fftshift_view and ifftshift_view" begin
+        Random.seed!(42)
         x = randn((2,3,4,5,6,7,8,9))
         dims = (4,6,7)
         @test fftshift(x,dims) == FourierTools.fftshift_view(x, dims)
@@ -33,6 +35,7 @@
 
 
     @testset "Test fft center" begin
+        Random.seed!(42)
         @test 2 == FourierTools.fft_center(3)
         @test 3 == FourierTools.fft_center(4)
         @test 3 == FourierTools.fft_center(5)

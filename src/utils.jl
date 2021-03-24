@@ -12,6 +12,17 @@ function fft_center(x)
 end
 
 
+function ft_center_0(s::NTuple{N, T}, dims=ntuple(identity, Val(N))) where {N, T}
+    ntuple(i -> i ∈ dims ?  s[i] ÷ 2 : 0 , N)
+end
+
+
+function rft_center_0(sz::NTuple{N, T}, dims=ntuple(identity, Val(N))::NTuple) where {N,T}
+    ntuple(i -> i == first(dims) ? 0 : i ∈ dims ? dims[i] ÷ 2 : 0, N)
+    # Tuple(d == 1 ? 0 : sz[d].÷2 for d in 1:length(sz))
+end
+
+
 """
     ft(A [, dims])
 
@@ -55,21 +66,20 @@ end
 
 
 
-
-function rft(mat)
-    rfftshift_view(rfft(mat));
+function rft(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
+    rfftshift_view(rfft(mat, dims), dims);
 end
 
-function irft(mat,d)
-    irfft(collect(irfftshift_view(mat)),d);
+function irft(mat::AbstractArray{T, N}, d::Int, dims=ntuple(identity, Val(N))) where {T, N}
+    irfft(collect(irfftshift_view(mat, dims)), d, dims);
 end
 
 
-function rfftshift_view(mat)
+function rfftshift_view(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
     ShiftedArrays.circshift(mat, rft_center_0(size(mat), dims))
 end
 
-function irfftshift_view(mat)
+function irfftshift_view(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
     ShiftedArrays.circshift(mat ,.-(rft_center_0(size(mat), dims)))
 end
 
@@ -85,18 +95,9 @@ end
 #     (sz.÷2)
 # end 
 
-function ft_center_0(s::NTuple{N, T}, dims=ntuple(identity, Val(N))) where {N, T}
-    ntuple(i -> i ∈ dims ?  s[i] ÷ 2 : 0 , N)
-end
 
 
-function rft_center_0(sz::NTuple)
-    Tuple(d == 1 ? 0 : sz[d].÷2 for d in 1:length(sz))
-end
 
-function rft_center_0(mat :: AbstractArray) 
-    rft_center_0(size(mat))
-end
 
 
 function selectsizes(x::AbstractArray{T},dim::NTuple{N,Int};
@@ -130,4 +131,3 @@ Base.@propagate_inbounds function Base.setindex!(A::PaddedView{T, N}, v, i::Vara
     return A
 end
  =#
-
