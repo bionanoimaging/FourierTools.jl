@@ -15,74 +15,83 @@ Base.@propagate_inbounds function Base.setindex!(A::PaddedView{T, N}, v, i::Vara
         _throw_argument_error() = throw(ArgumentError("PaddedViews do not support (re)setting the padding value. Consider making a copy of the array first."))
         _throw_bounds_error(A, i) = throw(BoundsError(A, i))
         if checkbounds(Bool, A, i...)
-            # checkbounds(Bool, A.data, i...) || _throw_argument_error()
+            # checkbounds(Bool, parent(A), i...) || _throw_argument_error()
             # just ignore assignments in this region
         else
             _throw_bounds_error(A, i)
         end
     end
-    setindex!(A.data, v, i...)
+    setindex!(parent(A), v, i...)
     return A
 end
  =#
 
 ##  This View checks for the index to be L1 or the mirrored version (L2)
-# and then replaces the value by half of the data at L1
+# and then replaces the value by half of the parent at L1
 struct FourierDuplicate{T,N, AA<:AbstractArray{T, N}} <: AbstractArray{T,N}
-    data::AA
+    parent::AA
     D::Int # dimension along which to apply to copy
     L1::Int # low index position to copy from (and half)
     L2::Int # high index positon to copy to (and half)
 
-    function FourierDuplicate(data::AA, D::Int,L1::Int) where {T,N, AA<:AbstractArray{T, N}}
-        if ndims(data) != N
-            throw(DimensionMismatch("data and indices should have the same dimension, instead they're $(ndims(data)) and $N."))
+    function FourierDuplicate(parent::AA, D::Int,L1::Int) where {T,N, AA<:AbstractArray{T, N}}
+        if ndims(parent) != N
+            throw(DimensionMismatch("parent and indices should have the same dimension, instead they're $(ndims(parent)) and $N."))
         end
-        mid = fft_center(size(data)[D])
+        mid = fft_center(size(parent)[D])
         L2 = mid + (mid-L1)
-        return new{T,N, AA}(data, D, L1, L2)
+        return new{T,N, AA}(parent, D, L1, L2)
     end
 end
 
-Base.size(A::FourierDuplicate) = size(A.data)
+Base.IndexStyle(::Type{FS}) where {FS<:FourierDuplicate} = IndexStyle(parenttype(FourierDuplicate))
+parenttype(::Type{FourierDuplicate{T,N,AA}}) where {T,N,AA} = AA
+parenttype(A::FourierDuplicate) = parenttype(typeof(FourierDuplicate))
+Base.parent(A::FourierDuplicate) = A.parent 
+Base.size(A::FourierDuplicate) = size(parent(A))
+
+Base.size(A::FourierDuplicate) = size(parent(A))
 
 @inline function Base.getindex(A::FourierDuplicate{T,N, <:AbstractArray{T, N}}, i::Vararg{Int,N}) where {T,N}
     @boundscheck checkbounds(A, i...)
     if i[A.D]==A.L1
-        @inbounds return A.data[i...] / 2
+        @inbounds return parent(A)[i...] / 2
     elseif i[A.D]==A.L2
-        @inbounds return A.data[replace_dim(i,A.D,A.L1)...] / 2
+        @inbounds return parent(A)[replace_dim(i,A.D,A.L1)...] / 2
     else 
-        @inbounds return A.data[i...]
+        @inbounds return parent(A)[i...]
     end
 end
 
 ## This View checks for the index to be L1 
 # and then replaces the value by add the value at the mirrored position L2
 struct FourierSum{T,N, AA<:AbstractArray{T, N}} <: AbstractArray{T, N}
-    data::AA
+    parent::AA
     D::Int # dimension along which to apply to copy
     L1::Int # low index position to copy from (and half)
     L2::Int # high index positon to copy to (and half)
 
-    function FourierSum(data::AA, D::Int,L1::Int) where {T, N, AA<:AbstractArray{T, N}}
-        if ndims(data) != N
-            throw(DimensionMismatch("data and indices should have the same dimension, instead they're $(ndims(data)) and $N."))
+    function FourierSum(parent::AA, D::Int,L1::Int) where {T, N, AA<:AbstractArray{T, N}}
+        if ndims(parent) != N
+            throw(DimensionMismatch("parent and indices should have the same dimension, instead they're $(ndims(parent)) and $N."))
         end
-        mid = fft_center(size(data)[D])
+        mid = fft_center(size(parent)[D])
         L2 = mid + (mid-L1)
-        return new{T, N, AA}(data, D, L1, L2)
+        return new{T, N, AA}(parent, D, L1, L2)
     end
 end
-
-Base.size(A::FourierSum) = size(A.data)
+Base.IndexStyle(::Type{FS}) where {FS<:FourierSum} = IndexStyle(parenttype(FourierSum))
+parenttype(::Type{FourierSum{T,N,AA}}) where {T,N,AA} = AA
+parenttype(A::FourierSum) = parenttype(typeof(FourierSum))
+Base.parent(A::FourierSum) = A.parent
+Base.size(A::FourierSum) = size(parent(A))
 
 @inline function Base.getindex(A::FourierSum{T,N, <:AbstractArray{T, N}}, i::Vararg{Int,N}) where {T,N}
     @boundscheck checkbounds(A, i...)
     if i[A.D]==A.L1
-        @inbounds return A.data[i...] + A.data[replace_dim(i,A.D,A.L2)...]
+        @inbounds return parent(A)[i...] + parent(A)[replace_dim(i,A.D,A.L2)...]
     else 
-        @inbounds return A.data[i...]
+        @inbounds return parent(A)[i...]
     end
 end
 
@@ -153,7 +162,8 @@ function resample(mat, new_size; take_real=true)
         res = ft_fix_after(mat_pad ,old_size,new_size)
     end
     # go back to real space
-    @show typeof(res)
+    # @show typeof(res)
+    # return res
     res = ift(res)
     if eltype(mat) <: Real && take_real
         real(res)

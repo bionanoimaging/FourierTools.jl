@@ -1,4 +1,5 @@
 using Random, Test
+using FourierTools
 
 @testset "Test resample method" begin
     @testset "Test that upsample and downsample is reversible" begin
