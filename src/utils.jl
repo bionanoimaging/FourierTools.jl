@@ -12,8 +12,8 @@ ift_shift(mat) = ShiftedArrays.circshift(mat, .-(ft_center_0(mat)))
 rft_shift(mat) = ShiftedArrays.circshift(mat, rft_center_0(mat))
 irft_shift(mat) = ShiftedArrays.circshift(mat ,.-(rft_center_0(mat)))
 
-function replace_dim(iterable::NTuple{T,N}, dim, val) where{T,N}
-    Tuple(d == dim ? val : iterable[d] for d in 1:length(iterable))
+@inline function replace_dim(iterable::NTuple{N,T}, dim::Int, val::Int) where{N,T}
+    return ntuple(d -> d==dim ? val : iterable[d], Val(N))
 end
 # attention: all the center functions are zero-based as they are applied in shifts!
 
