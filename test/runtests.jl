@@ -1,5 +1,8 @@
-using Random, Test
+using Random, Test, FFTW
 using FourierTools
+
+include("utils.jl")
+
 
 @testset "Test resampling  methods" begin
     @testset "Test that upsample and downsample is reversible" begin

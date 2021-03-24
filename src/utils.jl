@@ -1,16 +1,79 @@
+export ft,ift, rft, irft
+
+
+"""
+    fft_center(x)
+
+Returns the center of a size in Fourier sense and Julia 
+1-based indices.
+"""
 function fft_center(x)
     return x ÷ 2 + 1
 end
 
-ft(mat) = ft_shift(fft(mat));
-ift(mat) = ifft(collect(ift_shift(mat)));
-rft(mat) = rft_shift(rfft(mat));
-irft(mat,d) = irfft(collect(irft_shift(mat)),d);
 
-ft_shift(mat) = ShiftedArrays.circshift(mat, ft_center_0(mat))
-ift_shift(mat) = ShiftedArrays.circshift(mat, .-(ft_center_0(mat)))
-rft_shift(mat) = ShiftedArrays.circshift(mat, rft_center_0(mat))
-irft_shift(mat) = ShiftedArrays.circshift(mat ,.-(rft_center_0(mat)))
+"""
+    ft(A [, dims])
+
+Result is semantically equivalent to `fftshift(fft(A, dims), dims)`
+However, the shift is done with `ShiftedArrays` and therefore doesn't allocate memory.
+"""
+function ft(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
+    return fftshift_view(fft(mat, dims), dims)
+end
+
+"""
+    ift(A [, dims])
+
+Result is semantically equivalent to `ifft(ifftshift(A), dims), dims)`
+"""
+function ift(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
+    # remove ift shift
+    # return ifft(collect(ifftshift_view(mat, dims)), dims);
+    return ifft(ifftshift(mat, dims), dims)
+end
+
+"""
+    fftshift_view(A [, dims])
+
+Result is semantically equivalent to `fftshift(A, dims)` but returns 
+a view view instead. 
+"""
+function fftshift_view(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
+    ShiftedArrays.circshift(mat, ft_center_0(size(mat), dims))
+end
+
+"""
+    ifftshift_view(A [, dims])
+
+Result is semantically equivalent to `fftshift(A, dims)` but returns 
+a view view instead. 
+"""
+function ifftshift_view(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
+    ShiftedArrays.circshift(mat, .-(ft_center_0(size(mat), dims)))
+end
+
+
+
+
+function rft(mat)
+    rfftshift_view(rfft(mat));
+end
+
+function irft(mat,d)
+    irfft(collect(irfftshift_view(mat)),d);
+end
+
+
+function rfftshift_view(mat)
+    ShiftedArrays.circshift(mat, rft_center_0(size(mat), dims))
+end
+
+function irfftshift_view(mat)
+    ShiftedArrays.circshift(mat ,.-(rft_center_0(size(mat), dims)))
+end
+
+
 
 @inline function replace_dim(iterable::NTuple{N,T}, dim::Int, val::Int)::NTuple{N, T} where{N,T}
     return ntuple(d -> d==dim ? val : iterable[d], Val(N))
@@ -18,13 +81,14 @@ end
 
 
 # attention: all the center functions are zero-based as they are applied in shifts!
-function ft_center_0(sz::NTuple) 
-    (sz.÷2)
-end 
+# function ft_center_0(sz::NTuple) 
+#     (sz.÷2)
+# end 
 
-function ft_center_0(mat :: AbstractArray) 
-    ft_center_0(size(mat))
+function ft_center_0(s::NTuple{N, T}, dims=ntuple(identity, Val(N))) where {N, T}
+    ntuple(i -> i ∈ dims ?  s[i] ÷ 2 : 0 , N)
 end
+
 
 function rft_center_0(sz::NTuple)
     Tuple(d == 1 ? 0 : sz[d].÷2 for d in 1:length(sz))
@@ -35,17 +99,17 @@ function rft_center_0(mat :: AbstractArray)
 end
 
 
-function size_d(x::AbstractArray{T},dims::NTuple{N,Int}; keep_dims=true) where{T,N}
+function selectsizes(x::AbstractArray{T},dim::NTuple{N,Int};
+                    keep_dims=true) where{T,N}
     if ~keep_dims
-        return map(n->size(x,n),dims)
+        return map(n->size(x,n),dim)
     end
-    sz=ones(Int, ndims(x))
-    for n in dims
-        sz[n]=size(x,n) 
+    sz = ones(Int, ndims(x))
+    for n in dim
+        sz[n] = size(x,n) 
     end
     return Tuple(sz)
 end 
-
 
 
 #= # This is the setindex function that used to be in PaddedViews
