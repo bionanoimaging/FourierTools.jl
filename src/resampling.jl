@@ -36,12 +36,22 @@ function resample(arr::AbstractArray{T, N}, new_size, normalize=true) where {T, 
 end
 
 
+"""
+    resample_by_RFFT(mat, new_size)
+
+Does a resampling based on `rfft`. This function is called by `resampling`.
+"""
 function resample_by_RFFT(mat, new_size) where {T}
     rf = rft(mat)
-    irft(extract_rft(rf,new_size),new_size[1])
+    irft(resize_rft(rf,new_size),new_size[1])
 end
 
 
+"""
+    resample_by_FFT(mat, new_size)
+
+Does a resampling based on `fft`. This function is called by `resampling`.
+"""
 function resample_by_FFT(mat, new_size)
     old_size = size(mat)
     # for real arrays we apply an operation so that mat_fixed_before is hermitian
