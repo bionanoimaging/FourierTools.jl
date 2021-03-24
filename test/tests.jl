@@ -8,11 +8,12 @@ mat=mat0[1:511,1:512];
 
 vv(mat)
 newsize=(1024,500)
-@time res = resample_by_FFT(mat, newsize; take_real=false);
-maximum(imag(res))
-vv(res)
-@time res = resample_by_RFFT(mat, newsize);
-vv(res)
+@time resF = resample_by_FFT(mat, newsize; take_real=false);
+maximum(imag(resF))
+vv(resF)
+@time resR = resample_by_RFFT(mat, newsize);
+@time resFR = resample_by_FFT(mat, newsize; take_real=true);
+vv(resR)
 
 # w=ft(mat)
 # q=ft_pad(w,newsize)
