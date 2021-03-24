@@ -13,6 +13,7 @@ maximum(imag(resF))
 vv(resF)
 @time resR = resample_by_RFFT(mat, newsize);
 @time resFR = resample_by_FFT(mat, newsize; take_real=true);
+resR ≈ resFR
 vv(resR)
 
 # w=ft(mat)
