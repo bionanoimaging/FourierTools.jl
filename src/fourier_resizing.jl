@@ -1,12 +1,23 @@
-export extract, extract_ft, extract_rft
+export select_region, select_region_ft, select_region_rft
 
 
 
 """
+    select_region_ft(mat,new_size)
 performs the necessary Fourier-space operations of resampling
 in the space of ft (meaning the already circshifted version of fft).
+Note that in dependence of the size fixes in Fourier-space are applied, which is
+why you should used this function of you want to select a region (extract) in Fourier space.
+`new_size`.
+The size of the array view after the operation finished. The Fourier-center
+is always assumed to align before and after the padding aperation.
+# Examples
+```jldoctest
+using FFTW, FourierTools
+select_region_ft(ft(rand(5,5)),(7,7))
+```
 """
-function resize_ft(mat,new_size)
+function select_region_ft(mat,new_size)
     old_size = size(mat)
     mat_fixed_before = ft_fix_before(mat,old_size,new_size)
     mat_pad = ft_pad(mat_fixed_before,new_size)
@@ -14,14 +25,23 @@ function resize_ft(mat,new_size)
     return ft_fix_after(mat_pad ,old_size,new_size)
 end
 
-
-
-
 """
+    select_region_rft(mat,new_size)
 performs the necessary Fourier-space operations of resampling
 in the space of rft (meaning the already circshifted version of rfft).
+Note that in dependence of the size fixes in Fourier-space are applied, which is
+why you should used this function of you want to select a region (extract) in rft space.
+
+`new_size`.
+The size of the array view after the operation finished. The Fourier-center
+is always assumed to align before and after the padding aperation.
+ # Examples
+```jldoctest
+using FFTW, FourierTools
+select_region_rft(rft(rand(5,5)),(7,7))
+```
 """
-function resize_rft(mat,new_size)
+function select_region_rft(mat,new_size)
     rft_old_size = size(mat)
     rft_new_size = Base.setindex(new_size,new_size[1]÷2 +1, 1)
     return rft_fix_after(rft_pad(
@@ -30,19 +50,35 @@ function resize_rft(mat,new_size)
 end
 
 
-function resize(mat; new_size=size(mat), center=ft_center_diff(size(mat)).+1)
+"""
+    select_region(mat,new_size)
+performs the necessary Fourier-space operations of resampling
+in the space of ft (meaning the already circshifted version of fft).
+
+`new_size`.
+The size of the array view after the operation finished. 
+
+`center`.
+Specifies the center of the new view in coordinates of the old view. By default an alignment of the Fourier-centers is assumed.
+# Examples
+```jldoctest
+using FFTW, FourierTools
+select_region(ones(3,3),new_size=(7,7),center=(1,3))
+```
+"""
+function select_region(mat; new_size=size(mat), center=ft_center_diff(size(mat)).+1)
     oldcenter = ft_center_diff(new_size).+1
     PaddedView(0,mat,new_size, oldcenter .- center.+1);
 end
 
 function ft_pad(mat, new_size)
-    return resize(mat;new_size=new_size)
+    return select_region(mat;new_size=new_size)
 end
 
 function rft_pad(mat, new_size)
     c2 = rft_center_diff(size(mat))
     c2 = Base.setindex(c2, new_size[1].÷2, 1);
-    return resize(mat;new_size=new_size, center=c2.+1)
+    return select_region(mat;new_size=new_size, center=c2.+1)
 end
 
 function ft_fix_before(mat, size_old, size_new; start_dim=1)
