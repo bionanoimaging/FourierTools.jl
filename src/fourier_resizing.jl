@@ -6,8 +6,11 @@ export select_region, select_region_ft, select_region_rft
     select_region_ft(mat,new_size)
 performs the necessary Fourier-space operations of resampling
 in the space of ft (meaning the already circshifted version of fft).
-Note that in dependence of the size fixes in Fourier-space are applied, which is
-why you should used this function of you want to select a region (extract) in Fourier space.
+Note that in dependence of the size, fixes in Fourier-space are applied under the assumption
+that the corresponding data in Real space is real-valued only. You should used this function 
+if you want to select a region (extract) in Fourier space and know that you are dealing with
+a real-valued signal. For complex-valued data, the ordinary select_region function should be
+used instead.
 `new_size`.
 The size of the array view after the operation finished. The Fourier-center
 is always assumed to align before and after the padding aperation.
@@ -29,8 +32,10 @@ end
     select_region_rft(mat,new_size)
 performs the necessary Fourier-space operations of resampling
 in the space of rft (meaning the already circshifted version of rfft).
-Note that in dependence of the size fixes in Fourier-space are applied, which is
-why you should used this function of you want to select a region (extract) in rft space.
+Note that in dependence of the size, fixes in Fourier-space are applied, which is
+why you should used this function if you want to select a region (extract) in rft space.
+Since rfts always assume the corresponding Real-space data to be real, this rule should
+have no exception for rft data.
 
 `new_size`.
 The size of the array view after the operation finished. The Fourier-center
