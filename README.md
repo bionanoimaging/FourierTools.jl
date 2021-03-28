@@ -9,6 +9,15 @@
 This package contains various functions that are useful in Fourier space. Most noteworth are FFT-based resampling and the 
 `ft`, `ift`, `rft`, `irft` functions, which represent FFTs including the Fourier-shift views.
 
+## Installation
+`FourierTools.jl` is available for all version equal or above Julia 1.3.
+Since it is not registered yet, it can be installed with the following command
+
+```julia
+julia> ] add https://github.com/roflmaostc/FFTResampling.jl
+```
+
+
 ## Resampling Example
 
 ### Sinc interpolation
@@ -88,4 +97,3 @@ The right image is the upsampled version of the left one.
 
 [codecov-img]: https://codecov.io/gh/bionanoimaging/FourierTools.jl/branch/main/graph/badge.svg?token=6XWI1M1MPB
 [codecov-url]: https://codecov.io/gh/bionanoimaging/FourierTools.jl
-
