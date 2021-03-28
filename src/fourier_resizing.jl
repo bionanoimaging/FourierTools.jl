@@ -4,6 +4,7 @@ export select_region, select_region_ft, select_region_rft
 
 """
     select_region_ft(mat,new_size)
+
 performs the necessary Fourier-space operations of resampling
 in the space of ft (meaning the already circshifted version of fft).
 Note that in dependence of the size, fixes in Fourier-space are applied under the assumption
@@ -30,6 +31,7 @@ end
 
 """
     select_region_rft(mat,new_size)
+
 performs the necessary Fourier-space operations of resampling
 in the space of rft (meaning the already circshifted version of rfft).
 Note that in dependence of the size, fixes in Fourier-space are applied, which is
@@ -57,6 +59,7 @@ end
 
 """
     select_region(mat,new_size)
+
 performs the necessary Fourier-space operations of resampling
 in the space of ft (meaning the already circshifted version of fft).
 
@@ -67,8 +70,17 @@ The size of the array view after the operation finished.
 Specifies the center of the new view in coordinates of the old view. By default an alignment of the Fourier-centers is assumed.
 # Examples
 ```jldoctest
-using FFTW, FourierTools
-select_region(ones(3,3),new_size=(7,7),center=(1,3))
+julia> using FFTW, FourierTools
+
+julia> select_region(ones(3,3),new_size=(7,7),center=(1,3))
+7×7 PaddedView(0.0, OffsetArray(::Matrix{Float64}, 4:6, 2:4), (Base.OneTo(7), Base.OneTo(7))) with eltype Float64:
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  1.0  1.0  1.0  0.0  0.0  0.0
+ 0.0  1.0  1.0  1.0  0.0  0.0  0.0
+ 0.0  1.0  1.0  1.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0
 ```
 """
 function select_region(mat; new_size=size(mat), center=ft_center_diff(size(mat)).+1)

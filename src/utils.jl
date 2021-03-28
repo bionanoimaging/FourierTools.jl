@@ -124,11 +124,6 @@ function irfftshift_view(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))
 end
 
 
-# attention: all the center functions are zero-based as they are applied in shifts!
-# function ft_center_diff(sz::NTuple) 
-#     (sz.÷2)
-# end 
-
 """
     selectsizes(x, dism; keep_dims=true)
 
