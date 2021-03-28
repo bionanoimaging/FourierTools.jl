@@ -14,18 +14,14 @@ If `size(new_size)[i] > size(arr)[i]`, we apply zero padding in Fourier space.
 If `size(new_size)[i] < size(arr)[i]`, we cut out a centered part of the
 Fourier spectrum.
 We apply some tricks at the boundary to increase accuracy of highest frequencies. 
-
- # Examples
-```jldoctest
-resample([1.0, 2.0, 3.0, 4.0], (8,) )
 ```
 """
 function resample(arr::AbstractArray{T, N}, new_size, normalize=true) where {T, N}
     # for complex arrays we need a full FFT
     if T <: Complex
-        arr_out = resample_by_FFT(arr, new_size)
+        arr_out = resample_by_FFT(arr, Tuple(new_size))
     else 
-        arr_out = resample_by_RFFT(arr, new_size)
+        arr_out = resample_by_RFFT(arr, Tuple(new_size))
     end
     # normalize that values scale accordingly
     # this violates energy!
