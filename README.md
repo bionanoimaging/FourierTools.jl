@@ -6,7 +6,7 @@
 | [![][docs-stable-img]][docs-stable-url] [![][docs-dev-img]][docs-dev-url] | [![][CI-img]][CI-url] | [![][codecov-img]][codecov-url] |
 
 
-This package contains various functions that are useful in Fourier space. Most noteworth are FFT-based resampling and the 
+This package contains various functions that are useful in Fourier space. Most noteworthy are FFT-based resampling and the 
 `ft`, `ift`, `rft`, `irft` functions, which represent FFTs including the Fourier-shift views.
 
 ## Installation
