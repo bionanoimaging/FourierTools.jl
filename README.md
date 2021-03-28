@@ -14,7 +14,7 @@ This package contains various functions that are useful in Fourier space. Most n
 Since it is not registered yet, it can be installed with the following command
 
 ```julia
-julia> ] add https://github.com/roflmaostc/FFTResampling.jl
+julia> ] add https://github.com/bionanoimaging/FourierTools.jl
 ```
 
 
