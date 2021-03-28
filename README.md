@@ -23,7 +23,7 @@ julia> ] add https://github.com/roflmaostc/FFTResampling.jl
 ### Sinc interpolation
 Below you can find a simple example for up sampling using `resample` and `sinc_interpolate_sum`.
 `sinc_interpolate_sum` is a slow sum based method.
-Furthermore, there is an image interpolation [Pluto.jl](https://github.com/fonsp/Pluto.jl) notebook in the [examples folder](examples/).
+Furthermore, there is an image interpolation [Pluto.jl](https://github.com/fonsp/Pluto.jl) notebook in the [examples folder](examples/output_images/).
 We can see that the interpolated signal matches the higher sampled signal well.
 ```julia
  begin
@@ -51,7 +51,7 @@ begin
 end
 ```
 
-![](examples/1D_resample.png)
+![](examples/output_images/1D_resample.png)
 
 ### Downsampling
 32 samples in the downsampled signal should be sufficient for Nyquist sampling.
@@ -71,17 +71,17 @@ begin
 end
 ```
 
-![](examples/plot_ds.png)
+![](examples/output_images/plot_ds.png)
 
 
 # Image Upsampling
 Having a Nyquist sampled image, it is possible to perform a sinc interpolation and creating visually much nicer images.
 However, the information content does not change between both images.
-The full Pluto notebook is [here](examples/resample_image.jl).
+The full Pluto notebook is [here](examples/output_images/resample_image.jl).
 The right image is the upsampled version of the left one.
 
-![](examples/image_low_res.png)
-![](examples/image_high_res.png)
+![](examples/output_images/image_low_res.png)
+![](examples/output_images/image_high_res.png)
 
 
 
