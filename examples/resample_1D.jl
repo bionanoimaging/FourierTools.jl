@@ -56,18 +56,14 @@ And as we can see, the downsampled signal still matches the original one.
 begin
 	N_ds = 32
 	xs_ds = range(x_min, x_max, length=N_ds+1)[1:N_ds]
-	arr_ds = real(resample(arr_high, (N_ds,))) # currently slightly wrong because of a bug
-	arr_ds2 = real(resample(0im .+ arr_high, (N_ds,)))
+	arr_ds = real(resample(arr_high, (N_ds,)))
 end
-
-# ╔═╡ 48c79aa6-8fbc-11eb-0596-b125f1331482
-arr_ds ≈ arr_ds2
 
 # ╔═╡ 29db9534-511b-11eb-1bdf-37ea0594681f
 begin
 	scatter(xs_low, arr_low, legend=:bottomleft, markersize=2, label="Low sampling")
 	plot!(xs_interp, arr_interp, label="FFT based sinc interpolation", linestyle=:dash)
-	plot!(xs_ds, arr_ds2, label="downsampled array", linestyle=:dot)	
+	plot!(xs_ds, arr_ds, label="downsampled array", linestyle=:dot)	
 end
 
 # ╔═╡ Cell order:
@@ -80,5 +76,4 @@ end
 # ╠═0511d792-47b4-11eb-316a-3d0148d68406
 # ╠═20f9491e-511b-11eb-1a6e-c3af6f5e11a5
 # ╠═2e7e1800-511b-11eb-3334-4ddf5076143e
-# ╠═48c79aa6-8fbc-11eb-0596-b125f1331482
 # ╠═29db9534-511b-11eb-1bdf-37ea0594681f
