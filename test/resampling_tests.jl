@@ -19,6 +19,19 @@
     end
 
 
+    @testset "Test that complex and real routine procude same result for real array" begin
+        for dim = 1:3
+            for _ in 1:4
+                s_small = ntuple(_ -> rand(1:13), dim)
+                s_large = ntuple(i -> max.(s_small[i], rand(10:16)), dim)
+                
+                x = randn(Float32, (s_small))
+                @test resample(x, s_large) ≈ real(resample(ComplexF32.(x), s_large))
+            end
+        end
+    end
+
+
     @testset "Tests that resample_by_FFT is purely real" begin
         function test_real(s_1, s_2)
             x = randn(Float32, (s_1))
@@ -213,6 +226,8 @@
     
     
     end
+
+
 
 
 end
