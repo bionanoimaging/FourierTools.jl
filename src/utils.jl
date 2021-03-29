@@ -1,4 +1,4 @@
-export ft,ift, rft, irft
+export ft,ift, rft, irft, rft_size, fft_center
 
 
 """
@@ -9,6 +9,15 @@ Returns the center of a size in Fourier sense and Julia
 """
 function fft_center(x)
     return x ÷ 2 + 1
+end
+
+"""
+    rft_size(x)
+
+Returns the size of an rft or rfft performed on the data x, without performing the rfft.
+"""
+function rft_size(x; dim=1)
+    return Base.setindex(size(x),size(x,dim)÷2+1,dim)
 end
 
 

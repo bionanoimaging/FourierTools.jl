@@ -1,5 +1,6 @@
-export shift
+export shift, shift_by_FT, shift_by_RFT
 using IndexFunArrays
+using LinearAlgebra
 
 """
     shift(arr, shift_vector)
@@ -11,9 +12,9 @@ The vector by which to shift
 function shift(arr::AbstractArray{T, N}, shift_vector) where {T, N}
     # for complex arrays we need a full FFT
     if T <: Complex
-        arr_out = shift_by_FFT(arr, Tuple(new_size))
+        arr_out = shift_by_FFT(arr, Tuple(shift_vector))
     else 
-        arr_out = shift_by_RFFT(arr, Tuple(new_size))
+        arr_out = shift_by_RFFT(arr, Tuple(shift_vector))
     end
     return arr_out
 end
@@ -24,11 +25,11 @@ end
 
 Does shifting based on `rfft`. This function is called by `shift`.
 """
-function shift_by_RFFT(mat, shift_vec) where {T}
+function shift_by_RFT(mat, shift_vec) where {T}
     old_size=size(mat)
-    rf = rft(mat)
-    shifted_rft = rf.*exp(idx(size(rf),ScaFT,offset=CtrFFT).*shift_vec)
-    irft(, old_size[1])
+    irft(rft(mat).*exp.(
+        dot.([shift_vec], idx(rft_size(mat),scale=ScaRFT,offset=CtrRFT)
+        ).*(2im*pi)), size(mat,1))
 end
 
 
@@ -37,14 +38,10 @@ end
 
 Does a resampling based on `fft`. This function is called by `resampling`.
 """
-function resample_by_FFT(mat, new_size)
-    old_size = size(mat)
-    # for real arrays we apply an operation so that mat_fixed_before is hermitian
-    mat_fixed_before = ft_fix_before(ft(mat),old_size,new_size)
-    mat_pad = ft_pad(mat_fixed_before,new_size)
-    # afterwards we add the highest pos. frequency to the highest lowest one 
-    res_f = ft_fix_after(mat_pad, old_size,new_size)
-    res = ift(res_f)
-    return res    
+function shift_by_FT(mat, shift_vec) where {T}
+    old_size=size(mat)
+    ift(ft(mat).*exp.(
+        dot.([shift_vec], idx(size(mat),scale=ScaFT,offset=CtrFT)
+        ).*(2im*pi)))
 end
 
