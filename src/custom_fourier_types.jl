@@ -6,13 +6,18 @@ struct FourierDuplicate{T,N, AA<:AbstractArray{T, N}} <: AbstractArray{T,N}
     L1::Int # low index position to copy from (and half)
     L2::Int # high index positon to copy to (and half)
 
-    function FourierDuplicate(parent::AA, D::Int,L1::Int) where {T,N, AA<:AbstractArray{T, N}}
+    # This version below is needed to avoid a split for the firs rft dimension but still return half the value
+    # FFTs and other RFT dimension should use the version without L2
+    function FourierDuplicate(parent::AA, D::Int,L1::Int,L2::Int) where {T,N, AA<:AbstractArray{T, N}}
         if ndims(parent) != N
             throw(DimensionMismatch("parent and indices should have the same dimension, instead they're $(ndims(parent)) and $N."))
         end
+        return new{T,N, AA}(parent, D, L1, L2)
+    end
+    function FourierDuplicate(parent::AA, D::Int,L1::Int) where {T,N, AA<:AbstractArray{T, N}}
         mid = fft_center(size(parent)[D])
         L2 = mid + (mid-L1)
-        return new{T,N, AA}(parent, D, L1, L2)
+        return FourierDuplicate(parent, D,L1,L2)
     end
 end
 
@@ -23,7 +28,8 @@ Base.parent(A::FourierDuplicate) = A.parent
 Base.size(A::FourierDuplicate) = size(parent(A))
 
 @inline function Base.getindex(A::FourierDuplicate{T,N, <:AbstractArray{T, N}}, i::Vararg{Int,N}) where {T,N}
-    if i[A.D]==A.L2
+    if i[A.D]==A.L2 # index along this dimension A.D corrsponds to slice L2
+        # not that "setindex" in the line below modifies only the index, not the array
         @inbounds return parent(A)[Base.setindex(i,A.L1, A.D)...] / 2
     else 
         @inbounds return parent(A)[i...] / (1 + Int(i[A.D]==A.L1))
@@ -39,13 +45,19 @@ struct FourierSum{T,N, AA<:AbstractArray{T, N}} <: AbstractArray{T, N}
     L1::Int # low index position to copy from (and half)
     L2::Int # high index positon to copy to (and half)
 
-    function FourierSum(parent::AA, D::Int,L1::Int) where {T, N, AA<:AbstractArray{T, N}}
+    # This version below is needed to avoid a split for the firs rft dimension but still return half the value
+    # FFTs and other RFT dimension should use the version without L2
+    function FourierSum(parent::AA, D::Int, L1::Int, L2::Int) where {T, N, AA<:AbstractArray{T, N}}
         if ndims(parent) != N
             throw(DimensionMismatch("parent and indices should have the same dimension, instead they're $(ndims(parent)) and $N."))
         end
+        return new{T, N, AA}(parent, D, L1, L2)
+    end
+
+    function FourierSum(parent::AA, D::Int,L1::Int) where {T, N, AA<:AbstractArray{T, N}}
         mid = fft_center(size(parent)[D])
         L2 = mid + (mid-L1)
-        return new{T, N, AA}(parent, D, L1, L2)
+        return FourierSum(parent, D, L1, L2)
     end
 end
 Base.IndexStyle(::Type{FS}) where {FS<:FourierSum} = IndexStyle(parenttype(FS))

@@ -1,5 +1,5 @@
 export select_region, select_region_ft, select_region_rft
-
+export rft_fix_after, rft_fix_before, ft_fix_after, ft_fix_before
 
 
 """
@@ -30,7 +30,7 @@ function select_region_ft(mat,new_size)
 end
 
 """
-    select_region_rft(mat,new_size)
+    select_region_rft(mat,old_size, new_size)
 
 performs the necessary Fourier-space operations of resampling
 in the space of rft (meaning the already circshifted version of rfft).
@@ -39,23 +39,25 @@ why you should used this function if you want to select a region (extract) in rf
 Since rfts always assume the corresponding Real-space data to be real, this rule should
 have no exception for rft data.
 
+`old_size`.
+The size of the corresponding real-space array before it was rfted. 
+    
 `new_size`.
-The size of the array view after the operation finished. The Fourier-center
+The size of the corresponding real-space array view after the operation finished. The Fourier-center
 is always assumed to align before and after the padding aperation.
  # Examples
 ```jldoctest
 using FFTW, FourierTools
-select_region_rft(rft(rand(5,5)),(7,7))
+select_region_rft(rft(rand(5,5)),(5,5),(7,7))
 ```
 """
-function select_region_rft(mat,new_size)
+function select_region_rft(mat,old_size, new_size)
     rft_old_size = size(mat)
     rft_new_size = Base.setindex(new_size,new_size[1]÷2 +1, 1)
     return rft_fix_after(rft_pad(
-        rft_fix_before(mat,rft_old_size,rft_new_size),
-        rft_new_size),rft_old_size,rft_new_size)
+        rft_fix_before(mat,old_size,new_size),
+        rft_new_size),old_size,new_size)
 end
-
 
 """
     select_region(mat,new_size)
@@ -111,6 +113,8 @@ function ft_fix_before(mat, size_old, size_new; start_dim=1)
 end
 
 function ft_fix_after(mat,size_old,size_new; start_dim=1)
+    start_dim
+    ndims(mat)
     for d=start_dim:ndims(mat)
         sn = size_new[d]
         so = size_old[d]
@@ -123,13 +127,33 @@ function ft_fix_after(mat,size_old,size_new; start_dim=1)
     return mat
 end
 
+function rft_fix_first_dim_before(mat,size_old,size_new;dim=1)
+    sn = size_new[dim] # Note that this dim is the corresponding real-space size
+    so = size_old[dim] # Note that this dim is the corresponding real-space size
+    if sn < so && iseven(sn) # result size is even upon cropping
+        L1 = size_new[dim] ÷ 2 + 1
+        mat = FourierSum(mat, dim, L1, L1) # a hack to dublicate the value
+    end
+    return mat
+end
+
+function rft_fix_first_dim_after(mat,size_old,size_new;dim=1)
+    sn = size_new[dim] # Note that this dim is the corresponding real-space size
+    so = size_old[dim] # Note that this dim is the corresponding real-space size
+    if sn > so && iseven(so) # source size is even upon padding
+        L1 = size_old[dim] ÷ 2 + 1
+        mat = FourierDuplicate(mat,dim,L1,-1) # This hack prevents a second position to be affected
+    end
+    # if equal do nothing
+    return mat
+end
 
 function rft_fix_before(mat,size_old,size_new)
+    mat=rft_fix_first_dim_before(mat,size_old,size_new;dim=1) # ignore the first dimension
     ft_fix_before(mat,size_old,size_new;start_dim=2) # ignore the first dimension
 end
 
-
-
 function rft_fix_after(mat,size_old,size_new)
+    mat = rft_fix_first_dim_after(mat,size_old,size_new;dim=1) # ignore the first dimension
     ft_fix_after(mat,size_old,size_new;start_dim=2) # ignore the first dimension
 end

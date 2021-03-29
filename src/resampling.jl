@@ -38,8 +38,9 @@ end
 Does a resampling based on `rfft`. This function is called by `resampling`.
 """
 function resample_by_RFFT(mat, new_size) where {T}
+    old_size=size(mat)
     rf = rft(mat)
-    irft(select_region_rft(rf,new_size), new_size[1])
+    irft(select_region_rft(rf,old_size,new_size), new_size[1])
 end
 
 
