@@ -76,7 +76,7 @@ function shift!(arr::AbstractArray{<:Real, N}, shifts) where {T, N}
 
         arr_ft = p * arr
         arr_ft .*= ϕ
-        arr .= inv(p) *arr_ft
+        mul!(arr, inv(p), arr_ft)
 
         # in principle mul! could improve performance since in-place
         # however, does not work currently
