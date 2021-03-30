@@ -1,5 +1,5 @@
 export ft,ift, rft, irft, rft_size, fft_center
-
+export expanddims
 
 """
     fft_center(x)
@@ -161,6 +161,92 @@ function selectsizes(x::AbstractArray{T},dims::NTuple{N,Int};
     end
     return Tuple(sz)
 end 
+
+
+
+"""
+    slice(arr, dim, index)
+Return a `N` dimensional slice (where one dimensions has size 1) of the N-dimensional `arr` at the index position
+`index` in the `dim` dimension of the array.
+It holds `size(out)[dim] == 1`.
+# Examples
+```jldoctest
+julia> x = [1 2 3; 4 5 6; 7 8 9]
+3×3 Array{Int64,2}:
+ 1  2  3
+ 4  5  6
+ 7  8  9
+julia> FFTResampling.slice(x, 1, 1)
+1×3 view(::Array{Int64,2}, 1:1, :) with eltype Int64:
+ 1  2  3
+julia> FFTResampling.slice(x, 2, 3)
+3×1 view(::Array{Int64,2}, :, 3:3) with eltype Int64:
+ 3
+ 6
+ 9
+```
+"""
+function slice(arr::AbstractArray{T, N}, dim::Integer, index::Integer) where {T, N}
+    inds = slice_indices(axes(arr), dim, index)
+    return @view arr[inds...]
+end
+
+function slice_indices(a::NTuple{N, T}, dim::Integer, index::Integer) where {T, N}
+    inds = ntuple(i -> i == dim ? (a[i][index]:a[i][index])
+                                : (first(a[i]):last(a[i])), 
+                  Val(N))
+    return inds
+end
+
+
+"""
+    rfft_size(size, dims)
+
+Returns the size `rfft` would return if applied
+to a real array. `size` is the input size to `rfft` 
+and `dims` the dimensions the `rfft` transforms over.
+Actually we only would need `first(dims)`.
+
+```jldoctest
+julia> rfft((randn((4,3,2))), (2,3)) |> size
+(4, 2, 2)
+
+julia> FourierTools.rfft_size((4,3,2), (2, 3))
+(4, 2, 2)
+```
+"""
+function rfft_size(size, dims)
+    dim = first(dims)
+    Base.setindex(size, size[dim] ÷ 2 + 1, dim)
+end
+
+
+
+"""
+    expanddims(x, ::Val{N})
+
+Adds trailing singleton dimensions to an array:
+
+# Examples
+The result is a 5D array with singleton dimensions at the end
+```jldoctest
+julia> @time expanddims(randn((1,2,3)), 2)
+  0.006832 seconds (13.25 k allocations: 817.742 KiB, 99.45% compilation time)
+1×2×3×1×1 Array{Float64, 5}:
+[:, :, 1, 1, 1] =
+ -0.532866  -0.734607
+
+[:, :, 2, 1, 1] =
+ -0.0361594  0.899272
+
+[:, :, 3, 1, 1] =
+ -1.06599  1.26927
+```
+"""
+function expanddims(x, N)
+    return reshape(x, (size(x)..., ntuple(x -> 1, N)...))
+end
+
 
 
 #= # This is the setindex function that used to be in PaddedViews

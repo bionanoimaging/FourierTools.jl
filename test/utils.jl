@@ -61,4 +61,55 @@
 
     end
 
+
+
+    @testset "slice" begin
+    
+        x = randn((1,2,3,4))
+        y = FourierTools.slice(x, 2, 2)
+        @test x[:, 2:2, :, :] == y
+
+        x = randn((5,2,3,4))
+        y = FourierTools.slice(x, 1, 4)
+        @test x[4:4, :, :, :] == y
+
+        x = randn((5))
+        y = FourierTools.slice(x, 1, 5)
+        @test x[5:5] == y
+
+    end
+    
+    
+    @testset "slice indices" begin
+        x = randn((1,2,3))
+        y = FourierTools.slice_indices(axes(x), 1, 1)
+        @test y == (1:1, 1:2, 1:3)
+    
+    
+        x = randn((20,4,20, 1, 2))
+        y = FourierTools.slice_indices(axes(x), 2, 3)
+        @test y == (1:20, 3:3, 1:20, 1:1, 1:2)
+    end
+
+
+    @testset "test expanddims" begin
+        function f(s, N)
+            @test FourierTools.expanddims(randn(s), N)|> size == (s..., ones(Int,N)...)
+        end
+        f((1,2,3), 2)
+        f((1,2,3,4,5), 8)
+        f((1), 5)
+    end
+
+
+    @testset "Test rfft_size" begin
+        s = (11, 20, 10)
+        @test FourierTools.rfft_size(s, 2) == size(rfft(randn(s),2))
+        
+        s = (11, 21, 10)
+        @test FourierTools.rfft_size(s, 2) == size(rfft(randn(s),2))
+        
+        s = (11, 21, 10)
+        @test FourierTools.rfft_size(s, 1) == size(rfft(randn(s),(1,2,3)))
+    end
 end
