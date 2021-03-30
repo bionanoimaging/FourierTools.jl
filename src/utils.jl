@@ -176,10 +176,10 @@ julia> x = [1 2 3; 4 5 6; 7 8 9]
  1  2  3
  4  5  6
  7  8  9
-julia> FFTResampling.slice(x, 1, 1)
+julia> FourierTools.slice(x, 1, 1)
 1×3 view(::Array{Int64,2}, 1:1, :) with eltype Int64:
  1  2  3
-julia> FFTResampling.slice(x, 2, 3)
+julia> FourierTools.slice(x, 2, 3)
 3×1 view(::Array{Int64,2}, :, 3:3) with eltype Int64:
  3
  6
@@ -208,7 +208,9 @@ and `dims` the dimensions the `rfft` transforms over.
 Actually we only would need `first(dims)`.
 
 ```jldoctest
-julia> rfft((randn((4,3,2))), (2,3)) |> size
+julia> using FFTW
+
+julia> rfft((ones((4,3,2))), (2,3)) |> size
 (4, 2, 2)
 
 julia> FourierTools.rfft_size((4,3,2), (2, 3))
@@ -230,17 +232,16 @@ Adds trailing singleton dimensions to an array:
 # Examples
 The result is a 5D array with singleton dimensions at the end
 ```jldoctest
-julia> @time expanddims(randn((1,2,3)), 2)
-  0.006832 seconds (13.25 k allocations: 817.742 KiB, 99.45% compilation time)
+julia> expanddims(ones((1,2,3)), 2)
 1×2×3×1×1 Array{Float64, 5}:
 [:, :, 1, 1, 1] =
- -0.532866  -0.734607
+ 1.0  1.0
 
 [:, :, 2, 1, 1] =
- -0.0361594  0.899272
+ 1.0  1.0
 
 [:, :, 3, 1, 1] =
- -1.06599  1.26927
+ 1.0  1.0
 ```
 """
 function expanddims(x, N)
