@@ -60,7 +60,8 @@ end
 """
     ft!(A [, dims])
 
-Result is semantically equivalent to `fftshift(fft!(A, dims), dims)`
+Result is semantically equivalent to `fftshift(fft!(A, dims), dims)`.
+`A` is in-place modified.
 However, the shift is done with `ShiftedArrays` and therefore doesn't allocate memory.
 """
 function ft!(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
