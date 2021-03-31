@@ -106,7 +106,7 @@ function ft_fix_before(mat, size_old, size_new; start_dim=1)
         so = size_old[d]
         if sn < so && iseven(sn)
             L1 = (size_old[d] -size_new[d] )÷2 +1
-            mat = FourierSum(mat, d, L1)
+            mat = FourierJoin(mat, d, L1)
         end
     end
     return mat
@@ -120,7 +120,7 @@ function ft_fix_after(mat,size_old,size_new; start_dim=1)
         so = size_old[d]
         if sn > so && iseven(so)
             L1 = (size_new[d]-size_old[d])÷2+1
-            mat = FourierDuplicate(mat,d,L1)
+            mat = FourierSplit(mat,d,L1)
         end
         # if equal do nothing
     end
@@ -132,7 +132,7 @@ function rft_fix_first_dim_before(mat,size_old,size_new;dim=1)
     so = size_old[dim] # Note that this dim is the corresponding real-space size
     if sn < so && iseven(sn) # result size is even upon cropping
         L1 = size_new[dim] ÷ 2 + 1
-        mat = FourierSum(mat, dim, L1, L1) # a hack to dublicate the value
+        mat = FourierJoin(mat, dim, L1, L1) # a hack to dublicate the value
     end
     return mat
 end
@@ -142,7 +142,7 @@ function rft_fix_first_dim_after(mat,size_old,size_new;dim=1)
     so = size_old[dim] # Note that this dim is the corresponding real-space size
     if sn > so && iseven(so) # source size is even upon padding
         L1 = size_old[dim] ÷ 2 + 1
-        mat = FourierDuplicate(mat,dim,L1,-1) # This hack prevents a second position to be affected
+        mat = FourierSplit(mat,dim,L1,-1) # This hack prevents a second position to be affected
     end
     # if equal do nothing
     return mat
