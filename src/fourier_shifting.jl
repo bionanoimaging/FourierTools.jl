@@ -2,7 +2,6 @@ export shift!
 
 
 
-
 """
     shift!(arr, shifts)
 
@@ -45,6 +44,24 @@ julia> shift!(x, 0.5)
 ```
 """
 function shift!(arr::AbstractArray{<:Complex, N}, shifts) where {N}
+    return shift_by_1D_FT!(arr, shifts)
+end
+
+function shift!(arr::AbstractArray{<:Real, N}, shifts) where {N}
+    return shift_by_1D_RFT!(arr, shifts)
+end
+
+"""
+    shift(arr, shifts)
+
+Out of place shift.
+See `shift!` for more details
+"""
+function shift(arr, shifts)
+    return shift!(copy(arr), shifts)
+end
+
+function shift_by_1D_FT!(arr::AbstractArray{<:Complex, N}, shifts) where {N}
     for (d, shift) in pairs(shifts)
         freqs = reshape(fftfreq(size(arr, d)), ntuple(i -> 1, Val(d-1))..., size(arr,d)) 
         # allocates a 1D slice of exp values 
@@ -64,7 +81,7 @@ function shift!(arr::AbstractArray{<:Complex, N}, shifts) where {N}
 end
 
 
-function shift!(arr::AbstractArray{<:Real, N}, shifts) where {T, N}
+function shift_by_1D_RFT!(arr::AbstractArray{<:Real, N}, shifts) where {T, N}
     for (d, shift) in pairs(shifts)
         s = size(arr, d) ÷ 2 + 1
         freqs = reshape(fftfreq(size(arr, d))[1:s], ntuple(i -> 1, d-1)..., s) 
@@ -77,20 +94,51 @@ function shift!(arr::AbstractArray{<:Real, N}, shifts) where {T, N}
         arr_ft = p * arr
         arr_ft .*= ϕ
         mul!(arr, inv(p), arr_ft)
-
-        # in principle mul! could improve performance since in-place
-        # however, does not work currently
-        #inds = top_left_indices(rft_size(size(arr), d))
-        #mul!(arr_ft2, p, arr)
-        #arr_ft2 .= p * arr
-        #arr_ft2 .= rfft(arr, d)
-        #arr_ft2 .*= ϕ
-        #p_inv = plan_irfft(arr_ft2, size(arr, d), d,  flags=FFTW.UNALIGNED)
-        
-        #arr_ft2 = @view arr_ft[inds...]
-        #mul!(arr, inv(p), arr_ft2)
-        #arr .= irfft(arr_ft2, size(arr, d), d)
     end
 
     return arr
 end
+
+
+
+
+
+"""
+    shift_by_ND(arr, shift_vector)
+
+Shifts an array by the shift_vector using sinc-interpolation via FFTs
+`shift_vector`.
+The vector by which to shift
+```
+"""
+function shift_by_ND(arr::AbstractArray{T, N}, shift_vector) where {T, N}
+    # for complex arrays we need a full FFT
+    if T <: Complex
+        arr_out = shift_by_FFT(arr, Tuple(shift_vector))
+    else 
+        arr_out = shift_by_RFFT(arr, Tuple(shift_vector))
+    end
+    return arr_out
+end
+
+
+"""
+    shift_by_RFFT(mat, new_size)
+
+Does shifting based on `rfft`. This function is called by `shift`.
+"""
+function shift_by_ND_RFT(mat, shift_vec) where {T}
+    old_size=size(mat)
+    irft(rft(mat).*exp.(
+        dot.([shift_vec], idx(rft_size(mat),scale=ScaRFT,offset=CtrRFT)
+        ).*(2im*pi)), size(mat,1))
+end
+
+
+function shift_by_ND_FT(mat, shift_vec) where {T}
+    old_size=size(mat)
+    ift(ft(mat).*exp.(
+        dot.([shift_vec], idx(size(mat),scale=ScaFT,offset=CtrFT)
+        ).*(2im*pi)))
+end
+

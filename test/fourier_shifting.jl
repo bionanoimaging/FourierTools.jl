@@ -1,14 +1,14 @@
 Random.seed!(42)
 
-@testset "Fourier moving methods" begin
+@testset "Fourier shifting methods" begin
 
     @testset "Integer shifts for complex and real arrays" begin
         x = randn(ComplexF32, (11, 12, 13))
 
         s = (2,2,2)
-        @test FourierTools.shift!(copy(x), s) ≈ circshift(x, s) 
+        @test FourierTools.shift(x, s) ≈ circshift(x, s) 
         s = (3,2,1)
-        @test FourierTools.shift!(copy(x), s) ≈ circshift(x, s) 
+        @test FourierTools.shift(x, s) ≈ circshift(x, s) 
 
         x = randn(Float32, (11, 12, 13))
 
