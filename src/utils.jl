@@ -251,12 +251,12 @@ end
 """
     expanddims(x, ::Val{N})
 
-Adds trailing singleton dimensions to an array:
+expands the dimensions of an array to a given number of dimensions:
 
 # Examples
 The result is a 5D array with singleton dimensions at the end
 ```jldoctest
-julia> expanddims(ones((1,2,3)), 2)
+julia> expanddims(ones((1,2,3)), 5)
 1×2×3×1×1 Array{Float64, 5}:
 [:, :, 1, 1, 1] =
  1.0  1.0
@@ -269,7 +269,7 @@ julia> expanddims(ones((1,2,3)), 2)
 ```
 """
 function expanddims(x, N)
-    return reshape(x, (size(x)..., ntuple(x -> 1, N)...))
+    return reshape(x, (size(x)..., ntuple(x -> 1, (N - ndims(x)))...))
 end
 
 
