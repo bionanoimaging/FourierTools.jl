@@ -9,17 +9,19 @@
                 @test x ≈ resample(resample(x, s_large), s_small)
                 @test x ≈ resample_by_FFT(resample_by_FFT(x, s_large), s_small)
                 @test x ≈ resample_by_RFFT(resample_by_RFFT(x, s_large), s_small)
+                @test x ≈ FourierTools.resample_by_1D(FourierTools.resample_by_1D(x, s_large), s_small)
                 x = randn(ComplexF32, (s_small))
                 @test x ≈ resample(resample(x, s_large), s_small)
                 @test x ≈ resample_by_FFT(resample_by_FFT(x, s_large), s_small)
                 @test x ≈ resample_by_FFT(resample_by_FFT(real(x), s_large), s_small) + 1im .* resample_by_FFT(resample_by_FFT(imag(x), s_large), s_small) 
+                @test x ≈ FourierTools.resample_by_1D(FourierTools.resample_by_1D(x, s_large), s_small)
             end
         end
 
     end
 
 
-    @testset "Test that complex and real routine procude same result for real array" begin
+    @testset "Test that complex and real routine produce same result for real array" begin
         for dim = 1:3
             for _ in 1:4
                 s_small = ntuple(_ -> rand(1:13), dim)
@@ -27,6 +29,7 @@
                 
                 x = randn(Float32, (s_small))
                 @test resample(x, s_large) ≈ real(resample(ComplexF32.(x), s_large))
+                @test FourierTools.resample_by_1D(x, s_large) ≈ real(FourierTools.resample_by_1D(ComplexF32.(x), s_large))
             end
         end
     end
@@ -36,6 +39,8 @@
         function test_real(s_1, s_2)
             x = randn(Float32, (s_1))
             y = resample_by_FFT(x, s_2)
+            @test all(( imag.(y) .+ 1 .≈ 1))
+            y = FourierTools.resample_by_1D(x, s_2)
             @test all(( imag.(y) .+ 1 .≈ 1))
         end
 
@@ -76,6 +81,7 @@
 
 	    xs_interp = range(x_min, x_max, length=N+1)[1:N]
 	    arr_interp = resample(arr_low, N)
+	    arr_interp2 = FourierTools.resample_by_1D(arr_low, N)
 
 	    xs_interp_s = range(x_min, x_max, length=N+1)[1:N]
 
