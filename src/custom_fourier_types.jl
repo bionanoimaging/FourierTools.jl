@@ -70,7 +70,7 @@ Base.size(A::FourierJoin) = size(parent(A))
     if i[A.D]==A.L1
         @inbounds return (parent(A)[i...] + parent(A)[Base.setindex(i, A.L2, A.D)...])/2.0
     else 
-        @inbounds return (parent(A)[i...])/2.0
+        @inbounds return (parent(A)[i...])
     end
 end
 
