@@ -2,16 +2,20 @@
 
     @testset "Test ft and ift wrappers" begin
         Random.seed!(42)
-        testft(arr) = @test(ft(arr) ≈ fftshift(fft(arr)))
-        testift(arr) = @test(ift(arr) ≈ ifft(ifftshift(arr)))
+        testft(arr, dims) = @test(ft(arr, dims) ≈ fftshift(fft(arr, dims), dims))
+        testift(arr, dims) = @test(ift(arr, dims) ≈ ifft(ifftshift(arr, dims), dims))
         # testrft(arr) = @test(rft(arr) ≈ fftshift(rft(arr)))
         # testirft(arr) = @test( irft(arr, size(arr)[1]) ≈ irfft(ifftshift(arr)), size(arr)[1])
         for dim = 1:4
             for _ in 1:4
                 s = ntuple(_ -> rand(1:13), dim)
                 arr = randn(ComplexF32, s)
-                testft(arr)
-                testift(arr)
+                dims = 1:dim
+                testft(arr, dims)
+                testift(arr, dims)
+                dims = 1:rand(1:dim)
+                testft(arr, dims)
+                testift(arr, dims)
                 arr = randn(Float32, s)
                 # testrft(arr)
                 # testirft(arr)
@@ -112,4 +116,43 @@
         s = (11, 21, 10)
         @test FourierTools.rfft_size(s, 1) == size(rfft(randn(s),(1,2,3)))
     end
+
+
+
+    function center_test(x1, x2, x3, y1, y2, y3)
+        arr1 = randn((x1, x2, x3))
+        arr2 = zeros((y1, y2, y3))
+    
+        FourierTools.center_set!(arr2, arr1)
+        arr3 = FourierTools.center_extract(arr2, (x1, x2, x3))
+        @test arr1 == arr3
+    end
+    
+     # test center set and center extract methods
+    @testset "center methods" begin
+        center_test(4, 4, 4, 6,7,4)
+        center_test(5, 4, 4, 7, 8, 4)
+        center_test(5, 4, 4, 8, 8, 8)
+        center_test(6, 4, 4, 7, 8, 8)
+    
+    
+        @test 1 == FourierTools.center_pos(1)
+        @test 2 == FourierTools.center_pos(2)
+        @test 2 == FourierTools.center_pos(3)
+        @test 3 == FourierTools.center_pos(4)
+        @test 3 == FourierTools.center_pos(5)
+        @test 513 == FourierTools.center_pos(1024)
+    
+        @test FourierTools.get_indices_around_center((5), (2)) == (2, 3)
+        @test FourierTools.get_indices_around_center((5), (3)) == (2, 4)
+        @test FourierTools.get_indices_around_center((4), (3)) == (2, 4)
+        @test FourierTools.get_indices_around_center((4), (2)) == (2, 3)
+    end
+
+
+
+
+
+
+
 end
