@@ -63,6 +63,9 @@ end
 
 function shift_by_1D_FT!(arr::AbstractArray{<:Complex, N}, shifts) where {N}
     for (d, shift) in pairs(shifts)
+        if iszero(shift)
+            continue
+        end
         freqs = reshape(fftfreq(size(arr, d)), ntuple(i -> 1, Val(d-1))..., size(arr,d)) 
         # allocates a 1D slice of exp values 
         ϕ = exp.(-1im .* freqs .* 2pi .* shift)
@@ -74,15 +77,30 @@ function shift_by_1D_FT!(arr::AbstractArray{<:Complex, N}, shifts) where {N}
         # go to fourier space and apply ϕ
         fft!(arr, d)
         arr .*= ϕ
-        ifft!(arr, d)
     end
+
+    # do one single multi dimensional fft to go back to real space
+    # but only over those dimensions where shift != 0
+    dims = Int[]
+    for (i, s) in pairs(shifts)
+        if !iszero(s)
+            push!(dims, i)
+        end
+    end
+    ifft!(arr, dims)
 
     return arr
 end
 
-
+# the idea is the following:
+# rfft(x, 1) -> exp shift -> fft(x, 2) -> exp shift ->  fft(x, 3) -> exp shift -> ifft(x, [2,3]) -> irfft(x, 1)
+# So once we did a rft to shift something we can call the routine for complex arrays to shift
 function shift_by_1D_RFT!(arr::AbstractArray{<:Real, N}, shifts) where {T, N}
     for (d, shift) in pairs(shifts)
+        if iszero(shift)
+            continue
+        end
+        
         s = size(arr, d) ÷ 2 + 1
         freqs = reshape(fftfreq(size(arr, d))[1:s], ntuple(i -> 1, d-1)..., s) 
         ϕ = exp.(-1im .* freqs .* 2pi .* shift)
@@ -93,10 +111,11 @@ function shift_by_1D_RFT!(arr::AbstractArray{<:Real, N}, shifts) where {T, N}
 
         arr_ft = p * arr
         arr_ft .*= ϕ
+        new_shifts = ntuple(i -> i ≤ d ? 0 : shifts[i], N)
+        shift_by_1D_FT!(arr_ft, new_shifts) 
         mul!(arr, inv(p), arr_ft)
+        return arr
     end
-
-    return arr
 end
 
 
