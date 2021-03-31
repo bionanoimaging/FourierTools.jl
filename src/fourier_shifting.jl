@@ -1,5 +1,4 @@
-export shift!
-
+export shift, shift!
 
 
 """
@@ -54,7 +53,7 @@ end
 """
     shift(arr, shifts)
 
-Out of place shift.
+Returning a shifted array.
 See `shift!` for more details
 """
 function shift(arr, shifts)
@@ -111,8 +110,11 @@ function shift_by_1D_RFT!(arr::AbstractArray{<:Real, N}, shifts) where {T, N}
 
         arr_ft = p * arr
         arr_ft .*= ϕ
+        # since we now did a single rfft dim, we can switch to the complex routine
         new_shifts = ntuple(i -> i ≤ d ? 0 : shifts[i], N)
         shift_by_1D_FT!(arr_ft, new_shifts) 
+        # go back to real space now and return because shift_by_1D_FT processed
+        # the other dimensions already
         mul!(arr, inv(p), arr_ft)
         return arr
     end
