@@ -45,7 +45,15 @@ function shear!(arr::AbstractArray{<:Real, N}, Δ, shear_dir_dim=1, shear_dim=2)
     
     apply_shift_strength!(arr_ft, shift, shear_dir_dim, shear_dim, Δ)
     # go back to real space
-    mul!(arr, inv(p), arr_ft)
+ 
+    # for even arrays we need to fix real property of highest frequency
+    if iseven(size(arr, shear_dir_dim))
+        inds = slice_indices(axes(arr), shear_dir_dim, fft_center(size(arr, shear_dir_dim))) 
+        arr_ft[inds...] .= real.(view(arr_ft, inds...))
+    end
+    
+    # overwrites arr in-place
+    ldiv!(arr, p, arr_ft)
     return arr
 end
 
@@ -56,12 +64,5 @@ function apply_shift_strength!(arr, shift, shear_dir_dim, shear_dim, Δ)
 
     # do the exp multiplication in place
     arr .*= exp.(1im .* 2π .* Δ .* shift .* shift_strength)
-
-    # for even arrays we need to fix real property of highest frequency
-    if iseven(size(arr, shear_dir_dim))
-        inds = slice_indices(axes(arr), shear_dir_dim, fft_center(size(arr, shear_dir_dim))) 
-        arr[inds...] .= real(arr[inds...])
-    end
-
     return arr
 end
