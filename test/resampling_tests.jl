@@ -6,9 +6,9 @@
                 s_large = ntuple(i -> max.(s_small[i], rand(10:16)), dim)
                 
                 x = randn(Float32, (s_small))
-                @test x ≈ resample(resample(x, s_large), s_small)
+                @test Float32.(x) ≈ Float32.(resample(resample(x, s_large), s_small))
                 @test x ≈ resample_by_FFT(resample_by_FFT(x, s_large), s_small)
-                @test x ≈ resample_by_RFFT(resample_by_RFFT(x, s_large), s_small)
+                @test Float32.(x) ≈ Float32.(resample_by_RFFT(resample_by_RFFT(x, s_large), s_small))
                 @test x ≈ FourierTools.resample_by_1D(FourierTools.resample_by_1D(x, s_large), s_small)
                 x = randn(ComplexF32, (s_small))
                 @test x ≈ resample(resample(x, s_large), s_small)
