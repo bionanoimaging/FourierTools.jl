@@ -28,7 +28,7 @@
                 s_large = ntuple(i -> max.(s_small[i], rand(10:16)), dim)
                 
                 x = randn(Float32, (s_small))
-                @test resample(x, s_large) ≈ real(resample(ComplexF32.(x), s_large))
+                @test Float32.(resample(x, s_large)) ≈ Float32.(real(resample(ComplexF32.(x), s_large)))
                 @test FourierTools.resample_by_1D(x, s_large) ≈ real(FourierTools.resample_by_1D(ComplexF32.(x), s_large))
             end
         end

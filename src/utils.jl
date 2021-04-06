@@ -192,6 +192,8 @@ function rfftshift_view(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N)))
     ShiftedArrays.circshift(mat, rft_center_diff(size(mat), dims))
 end
 
+get_RFT_scale(real_size) = 0.5 ./ (max.(real_size ./ 2, 1))  # The same as the FFT scale but for the full array in real space!
+
 """
     rfftshiftshift_view(A,real_size, dims)
 
@@ -200,7 +202,8 @@ and positive frequency. This version also accounts for centering the real space 
 """
 function rfftshiftshift_view(mat::AbstractArray{T, N}, real_size, dims=ntuple(identity, Val(N))) where {T, N}
     # exp_ikx(mat,shift_by= .-rft_center_diff(size(mat), dims)).*ShiftedArrays.circshift(mat, rft_center_diff(size(mat), dims))
-    exp_ikx(mat, shift_by=.- ft_center_diff(real_size, dims), offset=CtrRFT).*ShiftedArrays.circshift(mat, rft_center_diff(size(mat), dims))
+    exp_ikx(mat, shift_by=.- ft_center_diff(real_size, dims), scale=get_RFT_scale(real_size), offset=CtrRFT) .*
+        ShiftedArrays.circshift(mat, rft_center_diff(size(mat), dims))
 end
 
 """
@@ -211,7 +214,7 @@ and positive frequency. This version also accounts for centering the real space 
 """
 function irfftshiftshift_view(mat::AbstractArray{T, N}, real_size, dims=ntuple(identity, Val(N))) where {T, N}
     # ShiftedArrays.circshift(exp_ikx(mat,shift_by=rft_center_diff(size(mat), dims)) .* mat ,.-(rft_center_diff(size(mat), dims)))
-    ShiftedArrays.circshift(mat .* exp_ikx(mat, shift_by=ft_center_diff(real_size,dims), offset=CtrRFT), .-(rft_center_diff(size(mat), dims)))
+    ShiftedArrays.circshift(mat .* exp_ikx(mat, shift_by=ft_center_diff(real_size,dims), scale=get_RFT_scale(real_size), offset=CtrRFT), .-(rft_center_diff(size(mat), dims)))
 end
 
 
