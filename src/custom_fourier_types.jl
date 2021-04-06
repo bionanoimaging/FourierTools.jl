@@ -28,10 +28,10 @@ Base.parent(A::FourierSplit) = A.parent
 Base.size(A::FourierSplit) = size(parent(A))
 
 @inline function Base.getindex(A::FourierSplit{T,N, <:AbstractArray{T, N}}, i::Vararg{Int,N}) where {T,N}
-    if i[A.D]==A.L2 # index along this dimension A.D corrsponds to slice L2
+    if i[A.D]==A.L2 || i[A.D]==A.L1 # index along this dimension A.D corrsponds to slice L2
         # not that "setindex" in the line below modifies only the index, not the array
-        @inbounds return parent(A)[Base.setindex(i,A.L1, A.D)...]
-    else 
+        @inbounds return parent(A)[Base.setindex(i,A.L1, A.D)...] / 2
+    else i[A.D]==A.L2
         @inbounds return parent(A)[i...]
         # @inbounds return parent(A)[i...]
     end
@@ -68,7 +68,7 @@ Base.size(A::FourierJoin) = size(parent(A))
 
 @inline function Base.getindex(A::FourierJoin{T,N, <:AbstractArray{T, N}}, i::Vararg{Int,N}) where {T,N}
     if i[A.D]==A.L1
-        @inbounds return (parent(A)[i...] + parent(A)[Base.setindex(i, A.L2, A.D)...])/2.0
+        @inbounds return (parent(A)[i...] + parent(A)[Base.setindex(i, A.L2, A.D)...])
     else 
         @inbounds return (parent(A)[i...])
     end

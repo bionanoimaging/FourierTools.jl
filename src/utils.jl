@@ -155,7 +155,7 @@ In addition to the ifftshift, this version also includes the phase modification 
 for centering the zero coordinate system in real space after the ifft. 
 """
 function ifftshiftshift_view(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
-    ShiftedArrays.circshift(exp_ikx(mat).*mat, ft_center_diff(size(mat), dims))
+    ShiftedArrays.circshift(mat .* exp_ikx(mat, shift_by=ft_center_diff(size(mat),dims)), .-(ft_center_diff(size(mat), dims)))
 end
 
 
@@ -198,7 +198,7 @@ Shifts the frequencies to the center expect for `dims[1]` because there os no ne
 and positive frequency. This version also accounts for centering the real space coordinate system.
 """
 function rfftshiftshift_view(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
-    exp_ikx(mat,shift_by=-rft_center_diff(size(mat), dims)).*ShiftedArrays.circshift(mat, rft_center_diff(size(mat), dims))
+    exp_ikx(mat,shift_by= .-rft_center_diff(size(mat), dims)).*ShiftedArrays.circshift(mat, rft_center_diff(size(mat), dims))
 end
 
 """

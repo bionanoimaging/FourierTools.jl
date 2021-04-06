@@ -2,8 +2,8 @@
 
     @testset "Test ft and ift wrappers" begin
         Random.seed!(42)
-        testft(arr, dims) = @test(ft(arr, dims) ≈ fftshift(fft(arr, dims), dims))
-        testift(arr, dims) = @test(ift(arr, dims) ≈ ifft(ifftshift(arr, dims), dims))
+        testft(arr, dims) = @test(ft(arr, dims) ≈ fftshift(fft(ifftshift(arr), dims), dims))
+        testift(arr, dims) = @test(ift(arr, dims) ≈ ifft(ifftshift(fftshift(arr), dims), dims))
         # testrft(arr) = @test(rft(arr) ≈ fftshift(rft(arr)))
         # testirft(arr) = @test( irft(arr, size(arr)[1]) ≈ irfft(ifftshift(arr)), size(arr)[1])
         for dim = 1:4
