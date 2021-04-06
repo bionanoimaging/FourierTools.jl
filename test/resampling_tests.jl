@@ -27,7 +27,7 @@
                 s_large = ntuple(i -> max.(s_small[i], rand(10:16)), dim)
                 
                 x = randn(Float32, (s_small))
-                @test FourierTools.resample(x, s_large) ≈ FourierTools.resample_by_1D(x, s_large)
+                @test ≈(FourierTools.resample(x, s_large), FourierTools.resample_by_1D(x, s_large))
             end
         end
     end

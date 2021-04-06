@@ -4,8 +4,10 @@
         Random.seed!(42)
         testft(arr, dims) = @test(ft(arr, dims) ≈ fftshift(fft(ifftshift(arr, dims), dims), dims))
         testift(arr, dims) = @test(ift(arr, dims) ≈ fftshift(ifft(ifftshift(arr, dims), dims), dims))
-        # testrft(arr) = @test(rft(arr) ≈ fftshift(rft(arr)))
-        # testirft(arr) = @test( irft(arr, size(arr)[1]) ≈ irfft(ifftshift(arr)), size(arr)[1])
+        testffts(arr, dims) = @test(ffts(arr, dims) ≈ fftshift(fft(arr, dims), dims))
+        testiffts(arr, dims) = @test(iffts(arr, dims) ≈ ifft(ifftshift(arr, dims), dims))
+        testrft(arr, dims) = @test(rffts(arr, dims) ≈ fftshift(rfft(arr, dims), dims[2:end]))
+        testirft(arr, dims, d) = @test(irffts(arr, d, dims) ≈ irfft(ifftshift(arr, dims[2:end]), d, dims))
         for dim = 1:4
             for _ in 1:4
                 s = ntuple(_ -> rand(1:13), dim)
@@ -16,9 +18,15 @@
                 dims = 1:rand(1:dim)
                 testft(arr, dims)
                 testift(arr, dims)
-                arr = randn(Float32, s)
-                # testrft(arr)
-                # testirft(arr)
+                testffts(arr, dims)
+                testiffts(arr, dims)
+                
+                if dim > 1
+                    dims = 1:dim
+                    arr = randn(Float32, s)
+                    testrft(arr, dims)
+                    testirft(rfft(arr, dims), dims, size(arr)[1])
+                end
             end
         end
     end
