@@ -1,7 +1,7 @@
 @testset "Test resampling  methods" begin
     @testset "Test that upsample and downsample is reversible" begin
         for dim = 1:3
-            for _ in 1:4
+            for _ in 1:5
                 s_small = ntuple(_ -> rand(1:13), dim)
                 s_large = ntuple(i -> max.(s_small[i], rand(10:16)), dim)
                 
@@ -20,10 +20,21 @@
 
     end
 
+    @testset "Test that different resample methods are consistent" begin
+        for dim = 1:3
+            for _ in 1:5
+                s_small = ntuple(_ -> rand(1:13), dim)
+                s_large = ntuple(i -> max.(s_small[i], rand(10:16)), dim)
+                
+                x = randn(Float32, (s_small))
+                @test FourierTools.resample(x, s_large) ≈ FourierTools.resample_by_1D(x, s_large)
+            end
+        end
+    end
 
     @testset "Test that complex and real routine produce same result for real array" begin
         for dim = 1:3
-            for _ in 1:4
+            for _ in 1:5
                 s_small = ntuple(_ -> rand(1:13), dim)
                 s_large = ntuple(i -> max.(s_small[i], rand(10:16)), dim)
                 
@@ -83,9 +94,9 @@
 	    arr_interp = resample(arr_low, N)
 	    arr_interp2 = FourierTools.resample_by_1D(arr_low, N)
 
-	    xs_interp_s = range(x_min, x_max, length=N+1)[1:N]
 
         @test ≈(arr_interp[2*N ÷10: N*8÷10], arr_high[2* N ÷10: N*8÷10], rtol=0.05)
+        @test ≈(arr_interp2[2*N ÷10: N*8÷10], arr_high[2* N ÷10: N*8÷10], rtol=0.05)
     end
 
     test_interpolation_sum_fft(128, 1000)
