@@ -1,5 +1,5 @@
 export ft,ift, rft, irft, rft_size, fft_center, fftpos
-export ffts, ffts!, iffts
+export ffts, ffts!, iffts, rffts, irffts
 export expanddims
 
 using IndexFunArrays
@@ -269,7 +269,7 @@ and positive frequency. This version also accounts for centering the real space 
 """
 function irfftshiftshift_view(mat::AbstractArray{T, N}, real_size, dims=ntuple(identity, Val(N))) where {T, N}
     # ShiftedArrays.circshift(exp_ikx(mat,shift_by=rft_center_diff(size(mat), dims)) .* mat ,.-(rft_center_diff(size(mat), dims)))
-    ShiftedArrays.circshift(mat .* exp_ikx(mat, shift_by=ft_center_diff(real_size,dims), scale=get_RFT_scale(real_size), offset=CtrRFT), .-(rft_center_diff(size(mat), dims)))
+    ShiftedArrays.circshift(mat .* exp_ikx(mat, shift_by=rft_center_diff(real_size,dims), scale=get_RFT_scale(real_size), offset=CtrRFT), .-(rft_center_diff(size(mat), dims)))
 end
 
 
