@@ -1,6 +1,7 @@
 export ft,ift, rft, irft, rft_size, fft_center
 export expanddims
 
+using IndexFunArrays
 """
     fft_center(x)
 
@@ -54,7 +55,7 @@ Result is semantically equivalent to `fftshift(fft(A, dims), dims)`
 However, the shift is done with `ShiftedArrays` and therefore doesn't allocate memory.
 """
 function ft(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
-    return fftshift_view(fft(mat, dims), dims)
+    return fftshiftshift_view(fft(mat, dims), dims)
 end
 
 """
@@ -65,7 +66,7 @@ Result is semantically equivalent to `fftshift(fft!(A, dims), dims)`.
 However, the shift is done with `ShiftedArrays` and therefore doesn't allocate memory.
 """
 function ft!(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
-    return fftshift_view(fft!(mat, dims), dims)
+    return fftshiftshift_view(fft!(mat, dims), dims)
 end
 
 
@@ -76,8 +77,8 @@ Result is semantically equivalent to `ifft(ifftshift(A), dims), dims)`
 """
 function ift(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
     # remove ift shift
-    # return ifft(collect(ifftshift_view(mat, dims)), dims);
-    return ifft(ifftshift(mat, dims), dims)
+    return ifft(collect(ifftshiftshift_view(mat, dims)), dims);
+    # return ifft(ifftshift(mat, dims), dims)
 end
 
 """
@@ -91,6 +92,16 @@ function fftshift_view(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) 
 end
 
 """
+    fftshiftshift_view(A [, dims])
+
+In addition to the fftshift, this version also includes the phase modification to account
+for centering the zero coordinate system in real space befor the fft. 
+"""
+function fftshiftshift_view(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
+    exp_ikx(mat, shift_by=.- ft_center_diff(size(mat), dims)).*ShiftedArrays.circshift(mat, ft_center_diff(size(mat), dims))
+end
+
+"""
     ifftshift_view(A [, dims])
 
 Result is semantically equivalent to `fftshift(A, dims)` but returns 
@@ -100,6 +111,15 @@ function ifftshift_view(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N)))
     ShiftedArrays.circshift(mat, .-(ft_center_diff(size(mat), dims)))
 end
 
+"""
+    ifftshiftshift_view(A [, dims])
+
+In addition to the ifftshift, this version also includes the phase modification to account
+for centering the zero coordinate system in real space after the ifft. 
+"""
+function ifftshiftshift_view(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
+    ShiftedArrays.circshift(exp_ikx(mat).*mat, ft_center_diff(size(mat), dims))
+end
 
 
 """
@@ -110,7 +130,7 @@ Calculates a `rfft(A, dims)` and then shift the frequencies to the center.
 The shift is done with `ShiftedArrays` and therefore doesn't allocate memory.
 """
 function rft(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
-    rfftshift_view(rfft(mat, dims), dims);
+    rfftshiftshift_view(rfft(mat, dims), dims);
 end
 
 """
@@ -121,7 +141,7 @@ Calculates a `irfft(A, d, dims)` and then shift the frequencies back to the corn
 The shift is done with `ShiftedArrays` and therefore doesn't allocate memory.
 """
 function irft(mat::AbstractArray{T, N}, d::Int, dims=ntuple(identity, Val(N))) where {T, N}
-    irfft(collect(irfftshift_view(mat, dims)), d, dims);
+    irfft(collect(irfftshiftshift_view(mat, dims)), d, dims);
 end
 
 """
@@ -135,13 +155,23 @@ function rfftshift_view(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N)))
 end
 
 """
-    irfftshift_view(A, dims)
+    rfftshiftshift_view(A, dims)
+
+Shifts the frequencies to the center expect for `dims[1]` because there os no negative
+and positive frequency. This version also accounts for centering the real space coordinate system.
+"""
+function rfftshiftshift_view(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
+    exp_ikx(mat,shift_by=-rft_center_diff(size(mat), dims)).*ShiftedArrays.circshift(mat, rft_center_diff(size(mat), dims))
+end
+
+"""
+    irfftshiftshift_view(A, dims)
 
 Shifts the frequencies back to the corner except for `dims[1]` because there os no negative
-and positive frequency.
+and positive frequency. This version also accounts for centering the real space coordinate system.
 """
-function irfftshift_view(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
-    ShiftedArrays.circshift(mat ,.-(rft_center_diff(size(mat), dims)))
+function irfftshiftshift_view(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
+    ShiftedArrays.circshift(exp_ikx(mat,shift_by=rft_center_diff(size(mat), dims)) .* mat ,.-(rft_center_diff(size(mat), dims)))
 end
 
 
