@@ -1,4 +1,5 @@
 export ft,ift, rft, irft, rft_size, fft_center, fftpos
+export ffts, ffts!, iffts
 export expanddims
 
 using IndexFunArrays
@@ -86,31 +87,80 @@ end
 
 
 """
-    ft(A [, dims])
+    ffts(A [, dims])
 
 Result is semantically equivalent to `fftshift(fft(A, dims), dims)`
+However, the shift is done with `ShiftedArrays` and therefore doesn't allocate memory.
+"""
+function ffts(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
+    return fftshift_view(fft(mat, dims), dims)
+end
+
+
+"""
+    ffts!(A [, dims])
+
+Result is semantically equivalent to `fftshift(fft!(A, dims), dims)`.
+`A` is in-place modified.
+However, the shift is done with `ShiftedArrays` and therefore doesn't allocate memory.
+"""
+function ffts!(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
+    return fftshift_view(fft!(mat, dims), dims)
+end
+
+"""
+    iffts(A [, dims])
+
+Result is semantically equivalent to `ifft(ifftshift(A, dims), dims)`.
+`A` is in-place modified.
+However, the shift is done with `ShiftedArrays` and therefore doesn't allocate memory.
+"""
+function iffts(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
+    return ifft(ifftshift(mat, dims), dims)
+end
+
+
+"""
+    rffts(A [, dims])
+
+Calculates a `rfft(A, dims)` and then shift the frequencies to the center.
+`dims[1]` is not shifted, because there is no negative and positive frequency.
+The shift is done with `ShiftedArrays` and therefore doesn't allocate memory.
+"""
+function rffts(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
+    rfftshift_view(rfft(mat, dims), size(mat), dims);
+end
+
+"""
+    irffts(A, d, [, dims])
+
+Calculates a `irfft(A, d, dims)` and then shift the frequencies back to the corner.
+`dims[1]` is not shifted, because there is no negative and positive frequency.
+The shift is done with `ShiftedArrays` and therefore doesn't allocate memory.
+"""
+function irffts(mat::AbstractArray{T, N}, d::Int, dims=ntuple(identity, Val(N))) where {T, N}
+    sz = Base.setindex(size(mat),d,1)
+    irfft(irfftshift_view(mat, sz, dims), d, dims);
+end
+
+
+
+
+"""
+    ft(A [, dims])
+
+Result is semantically equivalent to `fftshift(fft(ifftshift(A, dims), dims), dims)`
 However, the shift is done with `ShiftedArrays` and therefore doesn't allocate memory.
 """
 function ft(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
     return fftshiftshift_view(fft(mat, dims), dims)
 end
 
-"""
-    ft!(A [, dims])
-
-Result is semantically equivalent to `fftshift(fft!(A, dims), dims)`.
-`A` is in-place modified.
-However, the shift is done with `ShiftedArrays` and therefore doesn't allocate memory.
-"""
-function ft!(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
-    return fftshiftshift_view(fft!(mat, dims), dims)
-end
-
 
 """
     ift(A [, dims])
 
-Result is semantically equivalent to `ifft(ifftshift(A), dims), dims)`
+
 """
 function ift(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
     # remove ift shift
@@ -162,9 +212,6 @@ end
 """
     rft(A [, dims])
 
-Calculates a `rfft(A, dims)` and then shift the frequencies to the center.
-`dims[1]` is not shifted, because there is no negative and positive frequency.
-The shift is done with `ShiftedArrays` and therefore doesn't allocate memory.
 """
 function rft(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
     rfftshiftshift_view(rfft(mat, dims), size(mat), dims);
@@ -173,9 +220,6 @@ end
 """
     irft(A, d, [, dims])
 
-Calculates a `irfft(A, d, dims)` and then shift the frequencies back to the corner.
-`dims[1]` is not shifted, because there is no negative and positive frequency.
-The shift is done with `ShiftedArrays` and therefore doesn't allocate memory.
 """
 function irft(mat::AbstractArray{T, N}, d::Int, dims=ntuple(identity, Val(N))) where {T, N}
     sz = Base.setindex(size(mat),d,1)
