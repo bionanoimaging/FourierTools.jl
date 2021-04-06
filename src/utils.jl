@@ -167,7 +167,7 @@ Calculates a `rfft(A, dims)` and then shift the frequencies to the center.
 The shift is done with `ShiftedArrays` and therefore doesn't allocate memory.
 """
 function rft(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
-    rfftshiftshift_view(rfft(mat, dims), dims);
+    rfftshiftshift_view(rfft(mat, dims), size(mat), dims);
 end
 
 """
@@ -178,7 +178,8 @@ Calculates a `irfft(A, d, dims)` and then shift the frequencies back to the corn
 The shift is done with `ShiftedArrays` and therefore doesn't allocate memory.
 """
 function irft(mat::AbstractArray{T, N}, d::Int, dims=ntuple(identity, Val(N))) where {T, N}
-    irfft(collect(irfftshiftshift_view(mat, dims)), d, dims);
+    sz = Base.setindex(size(mat),d,1)
+    irfft(collect(irfftshiftshift_view(mat, sz, dims)), d, dims);
 end
 
 """
@@ -192,23 +193,25 @@ function rfftshift_view(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N)))
 end
 
 """
-    rfftshiftshift_view(A, dims)
+    rfftshiftshift_view(A,real_size, dims)
 
 Shifts the frequencies to the center expect for `dims[1]` because there os no negative
 and positive frequency. This version also accounts for centering the real space coordinate system.
 """
-function rfftshiftshift_view(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
-    exp_ikx(mat,shift_by= .-rft_center_diff(size(mat), dims)).*ShiftedArrays.circshift(mat, rft_center_diff(size(mat), dims))
+function rfftshiftshift_view(mat::AbstractArray{T, N}, real_size, dims=ntuple(identity, Val(N))) where {T, N}
+    # exp_ikx(mat,shift_by= .-rft_center_diff(size(mat), dims)).*ShiftedArrays.circshift(mat, rft_center_diff(size(mat), dims))
+    exp_ikx(mat, shift_by=.- ft_center_diff(real_size, dims), offset=CtrRFT).*ShiftedArrays.circshift(mat, rft_center_diff(size(mat), dims))
 end
 
 """
-    irfftshiftshift_view(A, dims)
+    irfftshiftshift_view(A, real_size, dims)
 
 Shifts the frequencies back to the corner except for `dims[1]` because there os no negative
 and positive frequency. This version also accounts for centering the real space coordinate system.
 """
-function irfftshiftshift_view(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
-    ShiftedArrays.circshift(exp_ikx(mat,shift_by=rft_center_diff(size(mat), dims)) .* mat ,.-(rft_center_diff(size(mat), dims)))
+function irfftshiftshift_view(mat::AbstractArray{T, N}, real_size, dims=ntuple(identity, Val(N))) where {T, N}
+    # ShiftedArrays.circshift(exp_ikx(mat,shift_by=rft_center_diff(size(mat), dims)) .* mat ,.-(rft_center_diff(size(mat), dims)))
+    ShiftedArrays.circshift(mat .* exp_ikx(mat, shift_by=ft_center_diff(real_size,dims), offset=CtrRFT), .-(rft_center_diff(size(mat), dims)))
 end
 
 

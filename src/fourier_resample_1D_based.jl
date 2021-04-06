@@ -8,7 +8,7 @@ end
 
 
 function resample_by_1D_FT!(arr::AbstractArray{<:Complex, N}, new_size) where N
-    correction_factor = √2
+    correction_factor = 1 # √2
     for d = 1:N
         ns = new_size[d]
         s = size(arr, d)
