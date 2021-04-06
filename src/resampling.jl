@@ -39,8 +39,8 @@ Does a resampling based on `rfft`. This function is called by `resampling`.
 """
 function resample_by_RFFT(mat, new_size) where {T}
     old_size=size(mat)
-    rf = rft(mat)
-    irft(select_region_rft(rf,old_size,new_size), new_size[1])
+    rf = rffts(mat)
+    irffts(select_region_rft(rf,old_size,new_size), new_size[1])
 end
 
 
@@ -52,11 +52,11 @@ Does a resampling based on `fft`. This function is called by `resampling`.
 function resample_by_FFT(mat, new_size)
     old_size = size(mat)
     # for real arrays we apply an operation so that mat_fixed_before is hermitian
-    mat_fixed_before = ft_fix_before(ft(mat),old_size,new_size)
+    mat_fixed_before = ft_fix_before(ffts(mat),old_size,new_size)
     mat_pad = ft_pad(mat_fixed_before,new_size)
     # afterwards we add the highest pos. frequency to the highest lowest one 
     res_f = ft_fix_after(mat_pad, old_size,new_size)
-    res = ift(res_f)
+    res = iffts(res_f)
     return res    
 end
 
