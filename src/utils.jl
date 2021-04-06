@@ -128,7 +128,7 @@ Calculates a `rfft(A, dims)` and then shift the frequencies to the center.
 The shift is done with `ShiftedArrays` and therefore doesn't allocate memory.
 """
 function rffts(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
-    rfftshift_view(rfft(mat, dims), size(mat), dims);
+    rfftshift_view(rfft(mat, dims), dims);
 end
 
 """
@@ -139,8 +139,7 @@ Calculates a `irfft(A, d, dims)` and then shift the frequencies back to the corn
 The shift is done with `ShiftedArrays` and therefore doesn't allocate memory.
 """
 function irffts(mat::AbstractArray{T, N}, d::Int, dims=ntuple(identity, Val(N))) where {T, N}
-    sz = Base.setindex(size(mat),d,1)
-    irfft(irfftshift_view(mat, sz, dims), d, dims);
+    irfft(collect(irfftshift_view(mat, dims)), d, dims)
 end
 
 
@@ -249,6 +248,18 @@ function rfftshiftshift_view(mat::AbstractArray{T, N}, real_size, dims=ntuple(id
     exp_ikx(mat, shift_by=.- ft_center_diff(real_size, dims), scale=get_RFT_scale(real_size), offset=CtrRFT) .*
         ShiftedArrays.circshift(mat, rft_center_diff(size(mat), dims))
 end
+
+
+"""
+    irfftshift_view(A, dims)
+Shifts the frequencies back to the corner except for `dims[1]` because there os no negative
+and positive frequency.
+"""
+function irfftshift_view(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
+    ShiftedArrays.circshift(mat ,.-(rft_center_diff(size(mat), dims)))
+end
+
+
 
 """
     irfftshiftshift_view(A, real_size, dims)
