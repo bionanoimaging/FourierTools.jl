@@ -6,6 +6,7 @@ makedocs(modules = [FourierTools],
          sitename = "FourierTools.jl", 
          pages = Any[
             "FourierTools.jl" => "index.md",
+            "Resampling (sinc Interpolation)" => "resampling.md",
          ]
         )
 
