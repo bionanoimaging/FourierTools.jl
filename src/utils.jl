@@ -212,7 +212,9 @@ In addition to the fftshift, this version also includes the phase modification t
 for centering the zero coordinate system in real space befor the fft. 
 """
 function fftshiftshift_view(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
-    exp_ikx(mat, shift_by=.- ft_center_diff(size(mat), dims)).*ShiftedArrays.circshift(mat, ft_center_diff(size(mat), dims))
+    sa = ShiftedArrays.circshift(mat, ft_center_diff(size(mat), dims))
+    ex = exp_ikx(mat, shift_by=.- ft_center_diff(size(mat), dims))
+    la = LazyArray(@~ sa .* ex)
 end
 
 """
@@ -232,7 +234,9 @@ In addition to the ifftshift, this version also includes the phase modification 
 for centering the zero coordinate system in real space after the ifft. 
 """
 function ifftshiftshift_view(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
-    ShiftedArrays.circshift(mat .* exp_ikx(mat, shift_by=ft_center_diff(size(mat),dims)), .-(ft_center_diff(size(mat), dims)))
+    ex = exp_ikx(mat, shift_by=ft_center_diff(size(mat),dims))
+    la = LazyArray(@~ mat .* ex)
+    return ShiftedArrays.circshift(la, .-(ft_center_diff(size(mat), dims)))
 end
 
 
