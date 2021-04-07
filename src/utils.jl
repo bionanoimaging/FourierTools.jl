@@ -1,6 +1,7 @@
 export ft,ift, rft, irft, rft_size, fft_center, fftpos
 export ffts, ffts!, iffts, rffts, irffts
 export expanddims
+export fftshiftshift_view, ft_center_diff
 
 """
     fftpos(L, N)
