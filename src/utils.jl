@@ -2,8 +2,6 @@ export ft,ift, rft, irft, rft_size, fft_center, fftpos
 export ffts, ffts!, iffts, rffts, irffts
 export expanddims
 
-using IndexFunArrays
-
 """
     fftpos(L, N)
 Construct a range from -L/2 to L/2.
@@ -298,8 +296,9 @@ and positive frequency. This version also accounts for centering the real space 
 """
 function rfftshiftshift_view(mat::AbstractArray{T, N}, real_size, dims=ntuple(identity, Val(N))) where {T, N}
     # exp_ikx(mat,shift_by= .-rft_center_diff(size(mat), dims)).*ShiftedArrays.circshift(mat, rft_center_diff(size(mat), dims))
-    exp_ikx(mat, shift_by=.- ft_center_diff(real_size, dims), scale=get_RFT_scale(real_size), offset=CtrRFT) .*
-        ShiftedArrays.circshift(mat, rft_center_diff(size(mat), dims))
+    ex = exp_ikx(mat, shift_by=.- ft_center_diff(real_size, dims), scale=get_RFT_scale(real_size), offset=CtrRFT)
+    sa = ShiftedArrays.circshift(mat, rft_center_diff(size(mat), dims))
+    LazyArray( @~ ex .* sa)
 end
 
 
@@ -321,7 +320,9 @@ Shifts the frequencies back to the corner except for `dims[1]` because there os 
 and positive frequency. This version also accounts for centering the real space coordinate system.
 """
 function irfftshiftshift_view(mat::AbstractArray{T, N}, real_size, dims=ntuple(identity, Val(N))) where {T, N}
-    ShiftedArrays.circshift(mat .* exp_ikx(mat, shift_by=ft_center_diff(real_size,dims), scale=get_RFT_scale(real_size), offset=CtrRFT), .-(rft_center_diff(size(mat), dims)))
+    ex = exp_ikx(mat, shift_by=ft_center_diff(real_size,dims), scale=get_RFT_scale(real_size), offset=CtrRFT)
+    la = LazyArray( @~ mat .* ex)
+    ShiftedArrays.circshift(la, .-(rft_center_diff(size(mat), dims)))    
 end
 
 

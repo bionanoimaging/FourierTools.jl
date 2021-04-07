@@ -4,6 +4,7 @@ using PaddedViews, ShiftedArrays
 using FFTW
 using LinearAlgebra
 using IndexFunArrays
+using LazyArrays
 
 include("utils.jl")
 include("resampling.jl")
