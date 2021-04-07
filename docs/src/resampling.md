@@ -69,7 +69,7 @@ The right image is the upsampled version of the left one.
 
 
 
-## Function references
+## Function References
 ```@docs
 FourierTools.resample
 ```
