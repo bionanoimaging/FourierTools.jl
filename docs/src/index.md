@@ -1,18 +1,8 @@
 # FourierTools.jl
 
-Here you can find the docstrings of all functions.
-
-
-## FFT based resampling 
-This allows to sinc interpolate a signal. The resulting size can be larger or smaller.
-
-
-## FFT helpers
-```@docs
-ft
-ift
-rft
-irft
-FourierTools.fftshift_view
-FourierTools.ifftshift_view
+Install FourierTools.jl via the package manager. Currently with
+```julia
+julia> add https://github.com/bionanoimaging/FourierTools.jl
 ```
+
+Check out the sub pages for different applications.

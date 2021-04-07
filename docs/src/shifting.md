@@ -5,7 +5,6 @@ Using the [Fourier shift property](https://en.wikipedia.org/wiki/Fourier_transfo
 ## Examples
 For full interactivity, have a look at this [Pluto notebook](https://github.com/bionanoimaging/FourierTools.jl/tree/main/examples/shifting.jl).
 
-
 ```julia
 begin
     f(x) = cos(4π * x / 30)
