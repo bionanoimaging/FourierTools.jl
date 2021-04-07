@@ -10,6 +10,7 @@ Random.seed!(42)
         s = (3,2,1)
         @test FourierTools.shift(x, s) ≈ circshift(x, s) 
 
+        @test FourierTools.shift(x, (0,0,0)) == x
         x = randn(Float32, (11, 12, 13))
 
         s = (2,2,2)
@@ -27,6 +28,7 @@ Random.seed!(42)
         
         s = [0.5]
         @test FourierTools.shift!(copy(x), s) ≈ FourierTools.shift!(copy(xc), s)
+        @test FourierTools.shift!(copy(x), s) ≈ FourierTools.shift!(copy(xc), 0.5)
         @test sum(x) ≈ sum(FourierTools.shift!(copy(x), s))
         
         xc = [0.0, 1im, 0.0, 1im]

@@ -118,6 +118,7 @@ function shift_by_1D_RFT!(arr::AbstractArray{<:Real, N}, shifts) where {T, N}
         mul!(arr, inv(p), arr_ft)
         return arr
     end
+    return arr
 end
 
 
