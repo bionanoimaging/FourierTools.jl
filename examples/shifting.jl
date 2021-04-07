@@ -14,7 +14,7 @@ macro bind(def, element)
 end
 
 # ╔═╡ f66e452c-97db-11eb-23fc-bd95da10e2d6
-using Revise, FourierTools, Plots, FFTW, TestImages, PlutoUI
+using Revise, FourierTools, Plots, FFTW, TestImages, PlutoUI, ImageShow
 
 # ╔═╡ 8ea180a2-97dc-11eb-2276-43d5c21fc168
 md"## Minimal Example"
