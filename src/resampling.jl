@@ -2,21 +2,50 @@ export resample, resample_by_FFT, resample_by_RFFT
 
 """
     resample(arr, new_size [, normalize])
+
 Calculates the `sinc` interpolation of an `arr` on a new array size
 `new_size`.
 It is a re-evaluation of the Fourier series at new grid points.
 `new_size` can be arbitrary. Each dimension is then independently either up or downsampled.
+
 This method is based on FFTs and therefore implicitly assumes periodic
 boundaries and a finite frequency support.
-`normalize=true` by default multiplies by an appropriate factor so that 
-the average intensity stays the same.
+
+`normalize=true` by default multiplies by an appropriate factor so that
+the array size is included in the scaling. This results in an array having roughly
+the same mean intensity.
+
+
+## Basic Principle
 If `size(new_size)[i] > size(arr)[i]`, we apply zero padding in Fourier space.
+
 If `size(new_size)[i] < size(arr)[i]`, we cut out a centered part of the
 Fourier spectrum.
+
 We apply some tricks at the boundary to increase accuracy of highest frequencies. 
+
+For real arrays we use `rfft` based operations, for complex one we use `fft` based ones.
+
+
+# Examples
+
+sinc interpolation of 2 datapoints result in an approximation of cosine.
+
+```jldoctest
+julia> resample([2.0, 0.0], (6,))
+6-element Vector{Float64}:
+ 2.0
+ 1.5
+ 0.5
+ 0.0
+ 0.5
+ 1.5
+
+julia> resample([2.0, 0.0], (6,)) ≈ 1 .+ cos.(2π .* (0:5)./6)
+true
 ```
 """
-function resample(arr::AbstractArray{T, N}, new_size, normalize=true) where {T, N}
+function resample(arr::AbstractArray{T, N}, new_size; normalize=true) where {T, N}
     # for complex arrays we need a full FFT
     if T <: Complex
         arr_out = resample_by_FFT(arr, Tuple(new_size))
