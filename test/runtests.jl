@@ -1,6 +1,7 @@
 using Random, Test, FFTW
 using FourierTools
 using ImageTransformations
+using IndexFunArrays
 
 Random.seed!(42)
 

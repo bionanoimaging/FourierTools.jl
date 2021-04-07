@@ -45,6 +45,20 @@
 
     end
 
+    @testset "Test ft, ift, rft and irft real space centering" begin
+        szs = ((10,10),(11,10),(100,101),(101,101))
+        for sz in szs
+            # print(" $sz \n")
+            @test ft(ones(sz)) ≈ prod(sz) .* delta(sz)
+            @test ft(delta(sz)) ≈ ones(sz)
+            @test rft(ones(sz)) ≈ prod(sz) .* delta(rft_size(sz), offset=CtrRFT)
+            @test rft(delta(sz)) ≈ ones(rft_size(sz))
+            @test ift(ones(sz)) ≈ delta(sz)
+            @test ift(delta(sz)) ≈ ones(sz) ./ prod(sz)
+            @test irft(ones(rft_size(sz)),sz[1]) ≈ delta(sz)
+            @test irft(delta(rft_size(sz),offset=CtrRFT),sz[1]) ≈ ones(sz) ./ prod(sz)
+        end
+    end
 
     @testset "Test fft center and rfft_center_diff" begin
         Random.seed!(42)

@@ -51,14 +51,25 @@ function fft_center(x)
 end
 
 """
-    rft_size(x)
+    rft_size(sz::NTuple{Int})
 
 Returns the size of an rft or rfft performed on the data x, without performing the rfft.
+sz: corresponding real space size to obtain the rft size for
 """
-function rft_size(x; dim=1)
-    return Base.setindex(size(x),size(x,dim)÷2+1,dim)
+function rft_size(sz::NTuple{N, Int}; dim=1) where {N}
+    return Base.setindex(sz,sz[dim]÷2+1,dim)
 end
 
+"""
+    rft_size(arr)
+
+Returns the size of an rft or rfft performed on the data x, without performing the rfft.
+
+arr: array to optain the corresponding rft size for
+"""
+function rft_size(arr; dim=1)
+    return rft_size(size(arr),dim)
+end
 
 
 """
@@ -148,7 +159,16 @@ end
 """
     ft(A [, dims])
 
-Result is semantically equivalent to `fftshift(fft(ifftshift(A, dims), dims), dims)`
+Digital Fourier-transformation centered in both spaces.
+The result is semantically equivalent to `fftshift(fft(ifftshift(A, dims), dims), dims)`
+This is a digital Fourier transformation with both coordinate systems in real and Fourier-space being
+centered at position CtrFT == size÷2+1
+
+The following identities are true:
+ft(ones(sz)) ≈ prod(sz) .* delta(sz)
+ft(delta(sz)) ≈ ones(sz)
+
+#see also: ift, rft, irft, ffts, iffts
 However, the shift is done with `ShiftedArrays` and therefore doesn't allocate memory.
 """
 function ft(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
@@ -159,7 +179,17 @@ end
 """
     ift(A [, dims])
 
+    Digital inverse Fourier-transformation centered in both spaces.
+    The result is semantically equivalent to `fftshift(ifft(ifftshift(A, dims), dims), dims)`
+    This is a digital Fourier transformation with both coordinate systems in real and Fourier-space being
+    centered at position CtrFT == size÷2+1
+    
+    The following identities are true:
+    ift(ones(sz)) ≈ delta(sz)
+    ift(delta(sz)) ≈ ones(sz) ./ prod(sz)
 
+    #see also: ft, rft, irft, ffts, iffts
+    
 """
 function ift(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
     # remove ift shift
@@ -211,6 +241,17 @@ end
 """
     rft(A [, dims])
 
+    Digital real-valued Fourier-transformation centered in both spaces.
+    The result is semantically equivalent to `fftshift(rfft(ifftshift(A, dims), dims), dims)`
+    This is a digital Fourier transformation with the coordinate systems in real space centered at CtrFT == size÷2+1
+    and in (half) Fourier-space being centered at CtrRFT == setindex(size÷2 +1,1,1).
+    
+    The following identities are true:
+    rft(ones(sz)) ≈ prod(sz) .* delta(rft_size(sz), offset=CtrRFT)
+    rft(delta(sz)) ≈ ones(rft_size(sz))
+
+    #see also: ft, ift, irft, ffts, iffts
+
 """
 function rft(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
     rfftshiftshift_view(rfft(mat, dims), size(mat), dims);
@@ -219,9 +260,21 @@ end
 """
     irft(A, d, [, dims])
 
+    Digital real-valued inverse Fourier-transformation centered in both spaces.
+    The result is semantically equivalent to `fftshift(irfft(ifftshift(A, dims), dims), dims)`
+    This is a digital Fourier transformation with the coordinate systems in real space centered at CtrFT == size÷2+1
+    and in (half) Fourier-space being centered at CtrRFT == setindex(size÷2 +1,1,1).
+    Note that the size `d` of the first transform direction [1] is a required argument.
+    
+    The following identities are true:
+    irft(ones(rft_size(sz)),sz[1]) ≈ delta(sz)
+    irft(delta(rft_size(sz),offset=CtrRFT),sz[1]) ≈ ones(sz) ./ prod(sz)
+
+    #see also: ft, ift, rft, ffts, iffts
+
 """
 function irft(mat::AbstractArray{T, N}, d::Int, dims=ntuple(identity, Val(N))) where {T, N}
-    sz = Base.setindex(size(mat),d,1)
+    sz = Base.setindex(size(mat),d,1) # calculate the size of the final array after the irft
     irfft(collect(irfftshiftshift_view(mat, sz, dims)), d, dims);
 end
 
@@ -268,8 +321,7 @@ Shifts the frequencies back to the corner except for `dims[1]` because there os 
 and positive frequency. This version also accounts for centering the real space coordinate system.
 """
 function irfftshiftshift_view(mat::AbstractArray{T, N}, real_size, dims=ntuple(identity, Val(N))) where {T, N}
-    # ShiftedArrays.circshift(exp_ikx(mat,shift_by=rft_center_diff(size(mat), dims)) .* mat ,.-(rft_center_diff(size(mat), dims)))
-    ShiftedArrays.circshift(mat .* exp_ikx(mat, shift_by=rft_center_diff(real_size,dims), scale=get_RFT_scale(real_size), offset=CtrRFT), .-(rft_center_diff(size(mat), dims)))
+    ShiftedArrays.circshift(mat .* exp_ikx(mat, shift_by=ft_center_diff(real_size,dims), scale=get_RFT_scale(real_size), offset=CtrRFT), .-(rft_center_diff(size(mat), dims)))
 end
 
 
