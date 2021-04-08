@@ -2,7 +2,7 @@ export ft,ift, rft, irft
 export ffts, ffts!, iffts, rffts, irffts
 
 optional_collect(a::Array{T, N}) where {T, N} = a  # forces a collect if needed
-optional_collect(a::ShiftedArrays.CircShiftedArray{T, N}) where {T, N} = collect(a)
+optional_collect(a::ShiftedArrays.CircShiftedArray{T, N, AA}) where {T, N, AA} = collect(a)
 optional_collect(a::IndexFunArray{T, N}) where {T, N} = collect(a)
 optional_collect(a::FourierTools.FourierSplit{T, N}) where {T, N} = collect(a)
 optional_collect(a::PaddedViews.PaddedView{T, N}) where {T, N} = collect(a)
@@ -46,7 +46,7 @@ See also: [`ft`](@ref ift), [`ift`](@ref ift), [`rft`](@ref rft), [`irft`](@ref 
           [`ffts`](@ref ffts),  [`iffts`](@ref iffts),  [`ffts!`](@ref ffts!), [`rffts`](@ref rffts), [`irffts`](@ref irffts!), 
 """
 function iffts(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
-    return ifft(ifftshift(optional_collect(mat), dims), dims)
+    return ifft(optional_collect(ifftshift_view(mat, dims)), dims)
 end
 
 

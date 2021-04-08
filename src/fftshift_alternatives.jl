@@ -31,8 +31,21 @@ Result is semantically equivalent to `fftshift(A, dims)` but returns
 a view instead. 
 """
 function ifftshift_view(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
-    ShiftedArrays.circshift(mat, .-(ft_center_diff(size(mat), dims)))
+    diff = .-(ft_center_diff(size(mat), dims))
+    x = ShiftedArrays.circshift(mat, diff)
+    return x
 end
+
+function ifftshift_view(mat::CircShiftedArray{T, N, AA}, dims=ntuple(identity, Val(N))) where {T, N, AA}
+    diff = .-(ft_center_diff(size(mat), dims))
+
+    if all(iszero.(mod.(diff .+ mat.shifts, size(mat))))
+        return parent(mat)
+    else
+        return ShiftedArrays.circshift(mat, diff)
+    end
+end
+
 
 """
     ifftshiftshift_view(A [, dims])
