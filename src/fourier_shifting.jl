@@ -54,7 +54,7 @@ end
     shift(arr, shifts)
 
 Returning a shifted array.
-See `shift!` for more details
+See [`shift!`](@ref shift!) for more details
 """
 function shift(arr, shifts)
     return shift!(copy(arr), shifts)
