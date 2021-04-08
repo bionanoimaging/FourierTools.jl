@@ -1,7 +1,12 @@
 export ft,ift, rft, irft
 export ffts, ffts!, iffts, rffts, irffts
 
-
+optional_collect(a::Array{T, N}) where {T, N} = a  # forces a collect if needed
+optional_collect(a::ShiftedArrays.CircShiftedArray{T, N}) where {T, N} = collect(a)
+optional_collect(a::IndexFunArray{T, N}) where {T, N} = collect(a)
+optional_collect(a::FourierTools.FourierSplit{T, N}) where {T, N} = collect(a)
+optional_collect(a::PaddedViews.PaddedView{T, N}) where {T, N} = collect(a)
+optional_collect(a::SubArray{T,N}) where {T, N} = collect(a)
 """
     ffts(A [, dims])
 
@@ -41,7 +46,7 @@ See also: [`ft`](@ref ift), [`ift`](@ref ift), [`rft`](@ref rft), [`irft`](@ref 
           [`ffts`](@ref ffts),  [`iffts`](@ref iffts),  [`ffts!`](@ref ffts!), [`rffts`](@ref rffts), [`irffts`](@ref irffts!), 
 """
 function iffts(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
-    return ifft(ifftshift(mat, dims), dims)
+    return ifft(ifftshift(optional_collect(mat), dims), dims)
 end
 
 
@@ -71,8 +76,8 @@ See also: [`ft`](@ref ift), [`ift`](@ref ift), [`rft`](@ref rft), [`irft`](@ref 
 """
 function irffts(mat::AbstractArray{T, N}, d::Int, dims=ntuple(identity, Val(N))) where {T, N}
     irfft(collect(irfftshift_view(mat, dims)), d, dims)
+    # irfft(irfftshift(optional_collect(mat), dims), d, dims)
 end
-
 
 
 
@@ -101,7 +106,9 @@ See also: [`ft`](@ref ift), [`ift`](@ref ift), [`rft`](@ref rft), [`irft`](@ref 
 
 """
 function ft(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
-    return fftshiftshift_view(fft(mat, dims), dims)
+    # return fftshiftshift_view(fft(mat, dims), dims)
+    # return fftshift_view(fft(collect(ifftshift_view(mat)), dims), dims)
+    return fftshift(fft(ifftshift(optional_collect(mat),dims), dims), dims)
 end
 
 
@@ -133,7 +140,9 @@ See also: [`ft`](@ref ift), [`ift`](@ref ift), [`rft`](@ref rft), [`irft`](@ref 
 """
 function ift(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
     # remove ift shift
-    return ifft(collect(ifftshiftshift_view(mat, dims)), dims);
+    # return ifft(collect(ifftshiftshift_view(mat, dims)), dims);
+    # return fftshift_view(ifft(collect(ifftshift_view(mat, dims)), dims))  # is faster than the exp mulitplication
+    return fftshift(ifft(ifftshift(optional_collect(mat), dims), dims), dims)  # is faster than the exp mulitplication
     # return ifft(ifftshift(mat, dims), dims)
 end
 
@@ -163,7 +172,9 @@ See also: [`ft`](@ref ift), [`ift`](@ref ift), [`rft`](@ref rft), [`irft`](@ref 
 
 """
 function rft(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
-    rfftshiftshift_view(rfft(mat, dims), size(mat), dims);
+    # return rfftshiftshift_view(rfft(mat, dims), size(mat), dims);
+    # return rfftshift_view(rfft(collect(ifftshift_view(mat)), dims), dims);
+    return rfftshift_view(rfft(ifftshift(optional_collect(mat), dims), dims), dims);
 end
 
 """
@@ -192,7 +203,9 @@ See also: [`ft`](@ref ift), [`ift`](@ref ift), [`rft`](@ref rft), [`irft`](@ref 
 
 """
 function irft(mat::AbstractArray{T, N}, d::Int, dims=ntuple(identity, Val(N))) where {T, N}
-    sz = Base.setindex(size(mat),d,1) # calculate the size of the final array after the irft
-    irfft(collect(irfftshiftshift_view(mat, sz, dims)), d, dims);
+    # sz = Base.setindex(size(mat),d,1) # calculate the size of the final array after the irft
+    #irfft(collect(irfftshiftshift_view(mat, sz, dims)), d, dims);
+    # collect(fftshift_view(irfft(collect(irfftshift_view(mat, dims)), d, dims)));
+    fftshift(irfft(collect(irfftshift_view(optional_collect(mat), dims)), d, dims), dims);
 end
 
