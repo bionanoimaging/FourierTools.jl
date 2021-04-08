@@ -5,11 +5,12 @@ using IndexFunArrays
 
 Random.seed!(42)
 
-include("fourier_shifting.jl")
+include("fft_helpers.jl")
+include("fftshift_alternatives.jl")
 include("utils.jl")
-include("resampling_tests.jl")
+include("fourier_shifting.jl")
 include("fourier_shear.jl")
 include("fourier_rotate.jl")
-include("fft_helpers.jl")
+include("resampling_tests.jl")
 
 return
