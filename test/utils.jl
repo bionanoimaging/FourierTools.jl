@@ -48,7 +48,6 @@
     @testset "Test ft, ift, rft and irft real space centering" begin
         szs = ((10,10),(11,10),(100,101),(101,101))
         for sz in szs
-            print(" $sz \n")
             @test ft(ones(sz)) ≈ prod(sz) .* delta(sz)
             @test ft(delta(sz)) ≈ ones(sz)
             @test rft(ones(sz)) ≈ prod(sz) .* delta(rft_size(sz), offset=CtrRFT)

@@ -10,5 +10,6 @@ include("utils.jl")
 include("resampling_tests.jl")
 include("fourier_shear.jl")
 include("fourier_rotate.jl")
+include("fft_helpers.jl")
 
 return
