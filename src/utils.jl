@@ -53,7 +53,7 @@ end
 Returns the size of an rft or rfft performed on the data x, without performing the rfft.
 sz: corresponding real space size to obtain the rft size for
 """
-function rft_size(sz::NTuple{N, Int}; dim=1) where {N}
+function rft_size(sz::NTuple{N, Int}, dim=1) where {N}
     return Base.setindex(sz,sz[dim]÷2+1,dim)
 end
 
@@ -64,7 +64,7 @@ Returns the size of an rft or rfft performed on the data x, without performing t
 
 arr: array to optain the corresponding rft size for
 """
-function rft_size(arr; dim=1)
+function rft_size(arr, dim=1)
     return rft_size(size(arr),dim)
 end
 

@@ -70,7 +70,8 @@
     @testset "Test rfft_size" begin
         s = (11, 20, 10)
         @test FourierTools.rfft_size(s, 2) == size(rfft(randn(s),2))
-        
+        @test FourierTools.rft_size(randn(s), 2) == size(rfft(randn(s),2))
+         
         s = (11, 21, 10)
         @test FourierTools.rfft_size(s, 2) == size(rfft(randn(s),2))
         
