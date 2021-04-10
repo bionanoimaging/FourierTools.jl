@@ -1,5 +1,11 @@
 export fftshift_view, ifftshift_view
 
+# add constructor here, might be merged to ShiftedArrays
+# this prevents that CircShiftedArrays get nested with twice application
+# https://github.com/JuliaArrays/ShiftedArrays.jl/pull/44
+function ShiftedArrays.CircShiftedArray(csa::CircShiftedArray, n = Tuple(0 for i in 1:N))
+    CircShiftedArray(parent(csa), n .+ csa.shifts)
+end
 
 """
     fftshift_view(A [, dims])
@@ -38,12 +44,7 @@ end
 
 function ifftshift_view(mat::CircShiftedArray{T, N, AA}, dims=ntuple(identity, Val(N))) where {T, N, AA}
     diff = .-(ft_center_diff(size(mat), dims))
-
-    if all(iszero.(mod.(diff .+ mat.shifts, size(mat))))
-        return parent(mat)
-    else
-        return ShiftedArrays.circshift(mat, diff)
-    end
+    return ShiftedArrays.circshift(mat, diff)
 end
 
 

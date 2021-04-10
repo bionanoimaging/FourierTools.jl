@@ -1,10 +1,14 @@
 using FourierTools, BenchmarkTools
 
-x = randn((133, 513, 33))
+function main()
+    x = randn((133, 513, 33))
+    y = copy(x)
+    @btime $y .= real.(ifft(fft($x)));
+    @btime $y .= real.(ifft(ifftshift(fftshift(fft($x)))));
+    @btime $y .= real.(iffts(ffts($x)));
+    @btime $y .= real.(ift(ft($x)));
 
-@btime ifft(fft($x));
-@btime ifft(ifftshift(fftshift(fft($x))));
-@btime iffts(ffts($x));
-@btime ift(ft($x));
+    return
+end
 
-return
+main()
