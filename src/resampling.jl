@@ -46,6 +46,9 @@ true
 ```
 """
 function resample(arr::AbstractArray{T, N}, new_size; normalize=true) where {T, N}
+    if new_size == size(arr)
+        return copy(arr)
+    end
     # for complex arrays we need a full FFT
     if T <: Complex
         arr_out = resample_by_FFT(arr, Tuple(new_size))
