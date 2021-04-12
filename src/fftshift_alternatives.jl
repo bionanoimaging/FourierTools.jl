@@ -38,13 +38,8 @@ a view instead.
 """
 function ifftshift_view(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
     diff = .-(ft_center_diff(size(mat), dims))
-    x = ShiftedArrays.circshift(mat, diff)
-    return x
-end
-
-function ifftshift_view(mat::CircShiftedArray{T, N, AA}, dims=ntuple(identity, Val(N))) where {T, N, AA}
-    diff = .-(ft_center_diff(size(mat), dims))
     return ShiftedArrays.circshift(mat, diff)
+    return x
 end
 
 
