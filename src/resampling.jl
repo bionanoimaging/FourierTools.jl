@@ -1,4 +1,4 @@
-export resample, resample_by_FFT, resample_by_RFFT
+export resample, resample_by_FFT, resample_by_RFFT, upsample2_abs2, upsample2, upsample2_1D
 
 """
     resample(arr, new_size [, normalize])
@@ -92,3 +92,33 @@ function resample_by_FFT(mat, new_size)
     return res    
 end
 
+function upsample2_1D(mat::AbstractArray{T, N}, dim=1) where {T,N}
+    newsize = Tuple((d==dim) ? 2*size(mat,d) : size(mat,d) for d in 1:N)
+    res = zeros(newsize)
+    selectdim(res,dim,1:2:size(res,dim)) .= mat  
+    shifts = Tuple((d==dim) ? -0.5 : 0.0 for d in 1:N)
+    selectdim(res,dim,2:2:size(res,dim)) .= shift(mat, shifts) # this is highly optimized and all fft of zero-shift directions are automatically avoided
+    return res
+end
+
+"""
+    upsample2(mat)
+
+upsamples by a factor of two in all dimensions. The code is optimized for speed by using subpixelshifts rather than Fourier resizing.
+"""
+function upsample2(mat::AbstractArray{T, N}) where {T,N}
+    res = mat
+    for d in 1:N
+        res = upsample2_1D(res,d)
+    end
+    return res
+end
+
+"""
+    upsample2_abs2(mat)
+
+upsamples by a factor of two and applies the abs2 operation. The code is optimized for speed.
+"""
+function upsample2_abs2(mat::AbstractArray{T, N}) where {T,N}
+    return abs2.(upsample2(mat))
+end

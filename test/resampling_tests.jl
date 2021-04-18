@@ -107,6 +107,13 @@
     test_interpolation_sum_fft(121, 1211)
     end
 
+    @testset "Upsample2 compared to resample" begin
+    for sz in ((10,10),(5,8,9),(20,5,4))
+        a = rand(sz...)
+        @test ≈(upsample2(a),resample(a,sz.*2))
+        @test ≈(upsample2_abs2(a),abs2.(resample(a,sz.*2)))
+    end
+    end
 
     @testset "Downsampling based on frequency cutting" begin
     function test_resample(N_low, N)
