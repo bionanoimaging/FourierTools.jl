@@ -169,9 +169,6 @@ The following identities are true:
 julia> sz = (6,6)
 (6, 6)
 
-julia> rft(ones(sz)) ≈ prod(sz) .* δ(rft_size(sz), offset=CtrRFT)
-true
-
 julia> rft(δ(sz)) ≈ ones(rft_size(sz))
 true
 ```
@@ -199,9 +196,6 @@ julia> sz = (6,6)
 (6, 6)
 
 julia> irft(ones(rft_size(sz)),sz[1]) ≈ δ(sz)
-true
-
-julia> irft(δ(rft_size(sz),offset=CtrRFT),sz[1]) ≈ ones(sz) ./ prod(sz)
 true
 ```
 
