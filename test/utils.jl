@@ -125,4 +125,16 @@
             @test length(fftpos(123, N)) == N
         end
     end
+
+
+    @testset "Test δ" begin 
+        @test δ((3, 3)) == [0 0 0; 0 1 0; 0 0 0]
+        @test δ((4, 3)) == [0 0 0; 0 0 0; 0 1 0; 0 0 0]
+        @test δ(Float32, (4, 3)) == Float32[0.0 0.0 0.0; 0.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 0.0]
+        @test δ(Float32, (4, 3)) |> eltype == Float32
+        @test δ(Float32, (4, 3)) |> eltype == Float32
+        @test δ(Float32, (4, 3)) == Float32[0.0 0.0 0.0; 0.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 0.0]
+    end
+
+
 end

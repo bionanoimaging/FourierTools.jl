@@ -109,10 +109,10 @@ The following identities are true:
 julia> sz = (5,5)
 (5, 5)
 
-julia> ft(ones(sz)) ≈ prod(sz) .* delta(sz)
+julia> ft(ones(sz)) ≈ prod(sz) .* δ(sz)
 true
 
-julia> ft(delta(sz)) ≈ ones(sz)
+julia> ft(δ(sz)) ≈ ones(sz)
 true
 ```
 
@@ -139,10 +139,10 @@ The following identities are true:
 julia> sz = (5,6,7)
 (5, 6, 7)
 
-julia> ift(ones(sz)) ≈ delta(sz)
+julia> ift(ones(sz)) ≈ δ(sz)
 true
 
-julia> ift(delta(sz)) ≈ ones(sz) ./ prod(sz)
+julia> ift(δ(sz)) ≈ ones(sz) ./ prod(sz)
 true
 ```
 
@@ -169,10 +169,10 @@ The following identities are true:
 julia> sz = (6,6)
 (6, 6)
 
-julia> rft(ones(sz)) ≈ prod(sz) .* delta(rft_size(sz), offset=CtrRFT)
+julia> rft(ones(sz)) ≈ prod(sz) .* δ(rft_size(sz), offset=CtrRFT)
 true
 
-julia> rft(delta(sz)) ≈ ones(rft_size(sz))
+julia> rft(δ(sz)) ≈ ones(rft_size(sz))
 true
 ```
 
@@ -198,10 +198,10 @@ The following identities are true:
 julia> sz = (6,6)
 (6, 6)
 
-julia> irft(ones(rft_size(sz)),sz[1]) ≈ delta(sz)
+julia> irft(ones(rft_size(sz)),sz[1]) ≈ δ(sz)
 true
 
-julia> irft(delta(rft_size(sz),offset=CtrRFT),sz[1]) ≈ ones(sz) ./ prod(sz)
+julia> irft(δ(rft_size(sz),offset=CtrRFT),sz[1]) ≈ ones(sz) ./ prod(sz)
 true
 ```
 

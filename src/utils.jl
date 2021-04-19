@@ -1,5 +1,48 @@
 export rft_size, fft_center, fftpos
 export expanddims
+export δ
+
+
+
+"""
+    δ([T,] sz, pos=FourierTools.fft_center.(sz))
+
+Return an array which has `1` at `pos` in the 
+array of size `sz`.
+
+ # Examples
+```jldoctest
+julia> δ((3, 3))
+3×3 Matrix{Int64}:
+ 0  0  0
+ 0  1  0
+ 0  0  0
+
+julia> δ(Float32, (4, 3))
+4×3 Matrix{Float32}:
+ 0.0  0.0  0.0
+ 0.0  0.0  0.0
+ 0.0  1.0  0.0
+ 0.0  0.0  0.0
+
+julia> δ(Float32, (3, 3), (1,1))
+3×3 Matrix{Float32}:
+ 1.0  0.0  0.0
+ 0.0  0.0  0.0
+ 0.0  0.0  0.0
+```
+"""
+function δ(T::Type, sz, pos=fft_center.(sz))
+    z = zeros(T, sz)
+    z[pos...] = one(T)
+    return z 
+end
+
+function δ(sz, pos=fft_center.(sz))
+    return δ(Int, sz, pos)
+end
+
+
 
 """
     fftpos(L, N)

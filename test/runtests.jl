@@ -2,6 +2,7 @@ using Random, Test, FFTW
 using FourierTools
 using ImageTransformations
 using IndexFunArrays
+using Zygote
 
 Random.seed!(42)
 
@@ -12,5 +13,6 @@ include("fourier_shifting.jl")
 include("fourier_shear.jl")
 include("fourier_rotate.jl")
 include("resampling_tests.jl")
+include("convolutions.jl")
 
 return

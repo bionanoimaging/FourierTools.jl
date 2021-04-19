@@ -6,6 +6,7 @@ FFTW.set_num_threads(4)
 using LinearAlgebra
 using IndexFunArrays
 using LazyArrays
+using ChainRulesCore
 
 include("utils.jl")
 include("resampling.jl")
@@ -17,6 +18,6 @@ include("fourier_rotate.jl")
 include("fourier_shear.jl")
 include("fftshift_alternatives.jl")
 include("fft_helpers.jl")
-
+include("convolutions.jl")
 
 end # module
