@@ -5,20 +5,53 @@ export rft_fix_after, rft_fix_before, ft_fix_after, ft_fix_before
 """
     select_region_ft(mat,new_size)
 
-performs the necessary Fourier-space operations of resampling
+Performs the necessary Fourier-space operations of resampling
 in the space of ft (meaning the already circshifted version of fft).
+
 Note that in dependence of the size, fixes in Fourier-space are applied under the assumption
 that the corresponding data in Real space is real-valued only. You should used this function 
 if you want to select a region (extract) in Fourier space and know that you are dealing with
-a real-valued signal. For complex-valued data, the ordinary select_region function should be
+a real-valued signal. For complex-valued data, the ordinary `select_region` function should be
 used instead.
 `new_size`.
+
 The size of the array view after the operation finished. The Fourier-center
-is always assumed to align before and after the padding aperation.
-# Examples
+is always assumed to align before and after the padding operation.
+
+ # Examples
 ```jldoctest
-using FFTW, FourierTools
-select_region_ft(ft(rand(5,5)),(7,7))
+julia> x = randn((3,3));
+
+julia> ffts(x)
+3×3 ShiftedArrays.CircShiftedArray{ComplexF64, 2, Matrix{ComplexF64}}:
+ -1.98594-1.90505im  -1.57264+0.38516im  -1.26658+2.55434im
+ -2.28177-2.60433im   -3.7389+0.0im      -2.28177+2.60433im
+ -1.26658-2.55434im  -1.57264-0.38516im  -1.98594+1.90505im
+
+julia> select_region_ft(ffts(x), (4,4))
+4×4 PaddedView(0.0 + 0.0im, OffsetArray(::ShiftedArrays.CircShiftedArray{ComplexF64, 2, Matrix{ComplexF64}}, 2:4, 2:4), (Base.OneTo(4), Base.OneTo(4))) with eltype ComplexF64:
+ 0.0+0.0im       0.0+0.0im           0.0+0.0im           0.0+0.0im
+ 0.0+0.0im  -1.98594-1.90505im  -1.57264+0.38516im  -1.26658+2.55434im
+ 0.0+0.0im  -2.28177-2.60433im   -3.7389+0.0im      -2.28177+2.60433im
+ 0.0+0.0im  -1.26658-2.55434im  -1.57264-0.38516im  -1.98594+1.90505im
+
+julia> x = randn((4,4));
+
+julia> ffts(x)
+4×4 ShiftedArrays.CircShiftedArray{ComplexF64, 2, Matrix{ComplexF64}}:
+ 0.632808+0.0im        -1.75924-5.43787im  -2.66258+0.0im       -1.75924+5.43787im
+ -1.88949+0.892686im    3.91001-2.0083im    3.31736-5.97955im  -0.181724-2.36071im
+  3.34282+0.0im        -1.90996+3.74402im  -2.03768+0.0im       -1.90996-3.74402im
+ -1.88949-0.892686im  -0.181724+2.36071im   3.31736+5.97955im    3.91001+2.0083im
+
+julia> select_region_ft(ffts(x), (5,5))
+5×5 FourierTools.FourierSplit{ComplexF64, 2, FourierTools.FourierSplit{ComplexF64, 2, PaddedViews.PaddedView{ComplexF64, 2, Tuple{Base.OneTo{Int64}, Base.OneTo{Int64}}, OffsetArrays.OffsetMatrix{ComplexF64, ShiftedArrays.CircShiftedArray{ComplexF64, 2, Matrix{ComplexF64}}}}}}:
+  0.158202+0.0im       -0.879618-2.71894im  -1.33129+0.0im      -0.879618+2.71894im   0.158202+0.0im
+ -0.944743+0.446343im    3.91001-2.0083im    3.31736-5.97955im  -0.181724-2.36071im  -0.944743+0.446343im
+   1.67141+0.0im        -1.90996+3.74402im  -2.03768+0.0im       -1.90996-3.74402im    1.67141+0.0im
+ -0.944743-0.446343im  -0.181724+2.36071im   3.31736+5.97955im    3.91001+2.0083im   -0.944743-0.446343im
+  0.158202+0.0im       -0.879618-2.71894im  -1.33129+0.0im      -0.879618+2.71894im   0.158202+0.0im
+
 ```
 """
 function select_region_ft(mat,new_size)
@@ -45,11 +78,6 @@ The size of the corresponding real-space array before it was rfted.
 `new_size`.
 The size of the corresponding real-space array view after the operation finished. The Fourier-center
 is always assumed to align before and after the padding aperation.
- # Examples
-```jldoctest
-using FFTW, FourierTools
-select_region_rft(rft(rand(5,5)),(5,5),(7,7))
-```
 """
 function select_region_rft(mat,old_size, new_size)
     rft_old_size = size(mat)
