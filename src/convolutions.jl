@@ -122,7 +122,7 @@ julia> pconv(u)
  1.0  2.0  3.0  4.0  5.0
 ```
 """
-function plan_conv(v::AbstractArray{T, N}, dims=1:ndims(v)) where {T, N}
+function plan_conv(v::AbstractArray{T, N}, dims=ntuple(+, N)) where {T, N}
     plan = get_plan(T)
     # do the preplanning step
     P = plan(v, dims)

@@ -77,5 +77,14 @@
         @test conv(img, psf) ≈ conv(img, psf, dims)
     end
 
+    @testset "adjoint convolution" begin
+        x = randn(ComplexF32, (5,6))
+        y = randn(ComplexF32, (5,6))
+
+        y_ft, p = plan_conv(y)
+        @test ≈(exp(1im * 1.23) .+ conv(ones(eltype(y), size(x)), conj.(y)), exp(1im * 1.23) .+ Zygote.gradient(x -> sum(real(conv(x, y))), x)[1], rtol=1e-4)   
+        @test ≈(exp(1im * 1.23) .+ conv(ones(ComplexF32, size(x)), conj.(y)), exp(1im * 1.23) .+ Zygote.gradient(x -> sum(real(p(x, y_ft))), x)[1], rtol=1e-4) 
+    end
+
 
 end
