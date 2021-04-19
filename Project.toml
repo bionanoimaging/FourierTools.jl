@@ -19,7 +19,7 @@ IndexFunArrays = "0.1.5"
 LazyArrays = "0.20, 0.21.3"
 PaddedViews = "0.5.8"
 ShiftedArrays = "1"
-julia = "1, 1.5, 1.6"
+julia = "1.6"
 
 [extras]
 ImageTransformations = "02fcd773-0e25-5acc-982a-7f6622650795"
