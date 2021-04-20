@@ -2,6 +2,14 @@ Random.seed!(42)
 
 @testset "Fourier shifting methods" begin
 
+    @testset "Empty shifts" begin
+        x = randn(ComplexF32, (11, 12, 13))
+        @test FourierTools.shift(x, []) == x
+        
+        x = randn(Float32, (11, 12, 13))
+        @test FourierTools.shift(x, []) == x
+    end
+
     @testset "Integer shifts for complex and real arrays" begin
         x = randn(ComplexF32, (11, 12, 13))
 
@@ -19,6 +27,7 @@ Random.seed!(42)
         @test FourierTools.shift!(copy(x), s) ≈ circshift(x, s) 
         
         @test sum(x) ≈ sum(FourierTools.shift!(copy(x), s))
+
     end
 
     @testset "Half integer shifts" begin
@@ -47,5 +56,9 @@ Random.seed!(42)
         @test FourierTools.shift!(copy(x), s) ≈ FourierTools.shift!(copy(x) .+ 0im, s)
         @test sum(x) ≈ sum(FourierTools.shift!(copy(x), s))
     end
+
+
+
+    
 
 end
