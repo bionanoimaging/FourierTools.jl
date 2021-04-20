@@ -5,7 +5,7 @@
     fs = FourierTools.FourierSplit(x, 2, 2, 4)
     @test FourierTools.parenttype(fs) == typeof(x)
     
-    fj = FourierTools.FourierSplit(x, 2, 2, 4)
+    fj = FourierTools.FourierJoin(x, 2, 2, 4)
 
     @test FourierTools.parenttype(fj) == typeof(x)
     @test FourierTools.parenttype(typeof(fj)) == typeof(x)
