@@ -14,5 +14,7 @@ include("fourier_shear.jl")
 include("fourier_rotate.jl")
 include("resampling_tests.jl")
 include("convolutions.jl")
+include("custom_fourier_types.jl")
+
 
 return

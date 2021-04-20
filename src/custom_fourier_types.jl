@@ -9,9 +9,6 @@ struct FourierSplit{T,N, AA<:AbstractArray{T, N}} <: AbstractArray{T,N}
     # This version below is needed to avoid a split for the firs rft dimension but still return half the value
     # FFTs and other RFT dimension should use the version without L2
     function FourierSplit(parent::AA, D::Int,L1::Int,L2::Int) where {T,N, AA<:AbstractArray{T, N}}
-        if ndims(parent) != N
-            throw(DimensionMismatch("parent and indices should have the same dimension, instead they're $(ndims(parent)) and $N."))
-        end
         return new{T,N, AA}(parent, D, L1, L2)
     end
     function FourierSplit(parent::AA, D::Int,L1::Int) where {T,N, AA<:AbstractArray{T, N}}
@@ -48,9 +45,6 @@ struct FourierJoin{T,N, AA<:AbstractArray{T, N}} <: AbstractArray{T, N}
     # This version below is needed to avoid a split for the firs rft dimension but still return half the value
     # FFTs and other RFT dimension should use the version without L2
     function FourierJoin(parent::AA, D::Int, L1::Int, L2::Int) where {T, N, AA<:AbstractArray{T, N}}
-        if ndims(parent) != N
-            throw(DimensionMismatch("parent and indices should have the same dimension, instead they're $(ndims(parent)) and $N."))
-        end
         return new{T, N, AA}(parent, D, L1, L2)
     end
 
