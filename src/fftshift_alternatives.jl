@@ -27,7 +27,6 @@ a view instead.
 function ifftshift_view(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
     diff = .-(ft_center_diff(size(mat), dims))
     return ShiftedArrays.circshift(mat, diff)
-    return x
 end
 
 
@@ -42,7 +41,6 @@ function rfftshift_view(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N)))
     ShiftedArrays.circshift(mat, rft_center_diff(size(mat), dims))
 end
 
-get_RFT_scale(real_size) = 0.5 ./ (max.(real_size ./ 2, 1))  # The same as the FFT scale but for the full array in real space!
 
 
 """

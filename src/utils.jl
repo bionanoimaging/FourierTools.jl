@@ -3,6 +3,7 @@ export expanddims
 export δ
 
 
+ #get_RFT_scale(real_size) = 0.5 ./ (max.(real_size ./ 2, 1))  # The same as the FFT scale but for the full array in real space!
 
 """
     δ([T,] sz, pos=FourierTools.fft_center.(sz))
