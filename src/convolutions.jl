@@ -89,8 +89,8 @@ If either `u` or `psf` is complex we use `fft` and output is hence complex.
 `conv_psf` is a shorthand for `conv(u,ifftshift(psf))`. For examples see `conv`.
 """
 
-function conv_psf(u, psf)
-    return conv(u,ifftshift(psf))
+function conv_psf(u, psf, dims=ntuple(+, min(N, M)))
+    return conv(u,ifftshift(psf), dims)
 end
 
  # define custom adjoint for conv
@@ -195,7 +195,7 @@ If either `u` or `psf` is complex we use `fft` and output is hence complex.
 `conv_psf` is a shorthand for `conv(u,ifftshift(psf))`. For examples see `conv`.
 """
 function plan_conv_psf(psf::AbstractArray{T, N}, dims=ntuple(+, N)) where {T, N}
-    return plan_conv(ifftshift(psf))
+    return plan_conv(ifftshift(psf), dims)
 end
 
 function p_conv_aux(P, P_inv, u, v_ft)
