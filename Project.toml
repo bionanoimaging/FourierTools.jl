@@ -15,7 +15,7 @@ ShiftedArrays = "1277b4bf-5013-50f5-be3d-901d8477a67a"
 [compat]
 ChainRulesCore = "0.9"
 FFTW = "1.3.2"
-IndexFunArrays = "0.1.5"
+IndexFunArrays = "0.1.6"
 LazyArrays = "0.20, 0.21.3"
 PaddedViews = "0.5.8"
 ShiftedArrays = "1"
