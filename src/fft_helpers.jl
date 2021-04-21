@@ -207,3 +207,73 @@ function irft(mat::AbstractArray{T, N}, d::Int, dims=ntuple(identity, Val(N))) w
     fftshift_view(irfft(optional_collect(irfftshift_view(optional_collect(mat), dims)), d, dims), dims);
 end
 
+## Short-hand versions of the functions
+export ft2d,ift2d, rft2d, irft2d
+"""
+    ft2d(mat::AbstractArray{T, N}) where {T, N}
+    Short-hand for ft(mat, (1,2)) performing only a 2D ft.
+    See ft for details.
+"""
+function ft2d(mat::AbstractArray{T, N}) where {T, N}
+    ft(mat,(1,2))
+end
+"""
+    ift2d(mat::AbstractArray{T, N}) where {T, N}
+    Short-hand for ift(mat, (1,2)) performing only a 2D inverse ft.
+    See ift for details.
+"""
+function ift2d(mat::AbstractArray{T, N}) where {T, N}
+    ift(mat,(1,2))
+end
+"""
+    rft2d(mat::AbstractArray{T, N}) where {T, N}
+    Short-hand for ft(mat, (1,2)) performing only a 2D real-valued ft.
+    See ft for details.
+"""
+function rft2d(mat::AbstractArray{T, N}) where {T, N}
+    rft(mat,(1,2))
+end
+
+"""
+    irft2d(mat::AbstractArray{T, N}, d) where {T, N}
+    Short-hand for irft(mat, (1,2)) performing only a 2D inverse real-valued ft.
+    See rift for details.
+"""
+function irft2d(mat::AbstractArray{T, N}, d::Int) where {T, N}
+    irft(mat,d,(1,2))
+end
+
+export ffts2d, ffts2d!, iffts2d, rffts2d, irffts2d
+"""
+    ft2d(mat::AbstractArray{T, N}) where {T, N}
+    Short-hand for ffts(mat, (1,2)) performing only a 2D ffts.
+    See ffts for details.
+"""
+function ffts2d(mat::AbstractArray{T, N}) where {T, N}
+    ffts(mat,(1,2))
+end
+"""
+    iffts2d(mat::AbstractArray{T, N}) where {T, N}
+    Short-hand for iffts(mat, (1,2)) performing only a 2D inverse ffts.
+    See iffts for details.
+"""
+function iffts2d(mat::AbstractArray{T, N}) where {T, N}
+    iffts(mat,(1,2))
+end
+"""
+    rffts2d(mat::AbstractArray{T, N}) where {T, N}
+    Short-hand for rffts(mat, (1,2)) performing only a 2D real-valued ffts.
+    See ffts for details.
+"""
+function rffts2d(mat::AbstractArray{T, N}) where {T, N}
+    rffts(mat,(1,2))
+end
+
+"""
+    riffts2d(mat::AbstractArray{T, N}, d) where {T, N}
+    Short-hand for irffts(mat, (1,2)) performing only a 2D inverse real-valued ffts.
+    See riffts for details.
+"""
+function irffts2d(mat::AbstractArray{T, N}, d::Int) where {T, N}
+    irffts(mat,d,(1,2))
+end
