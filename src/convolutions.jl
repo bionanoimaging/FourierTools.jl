@@ -64,6 +64,34 @@ function conv(u::AbstractArray{<:Real, N}, v::AbstractArray{<:Real, M}, dims=ntu
     return irfft(rfft(u, dims) .* rfft(v, dims), size(u, dims[1]), dims)
 end
 
+"""
+    conv_psf(u, psf[, dims])
+
+    Convolve `u` with `psf` over `dims` dimensions with an FFT based method.
+    Note, that this method introduces wrap-around artifacts without
+    proper padding/windowing.
+    In comparison to `conv` the argument `psf` is assumed 
+    to be centered at the FTCenter coordinate: `1+size(psf)÷2`
+
+# Arguments
+* `u` is an array in real space.
+* `psf` is the centered array to convolve with.
+* Per default `dims=1:ndims(v)` means that we perform the convolution 
+    over all dimensions of `v`. 
+    If `dims` is an array with integers, we perform convolution 
+    only over these dimensions. Eg. `dims=[1,3]` would perform the convolution
+    over the first and third dimension. Second dimension is not convolved.
+
+If `u` and `psf` are both a real valued array we use `rfft` and hence
+the output is real as well.
+If either `u` or `psf` is complex we use `fft` and output is hence complex.
+
+`conv_psf` is a shorthand for `conv(u,ifftshift(psf))`. For examples see `conv`.
+"""
+
+function conv_psf(u, psf)
+    return conv(u,ifftshift(psf))
+end
 
  # define custom adjoint for conv
  # so far only defined for the derivative regarding the first component
@@ -86,6 +114,7 @@ Pre-plan an optimized convolution for array shaped like `u` (based on pre-plan F
 along the given dimenions `dims`.
 `dims = 1:ndims(u)` per default.
 The 0 frequency of `u` must be located at the first entry.
+
 We return first the `v_ft` (obtained by `fft(u)` or `rfft(u)`).
 The second return is the convolution function `pconv`.
 `pconv` itself has two arguments. `pconv(u, v_ft=v_ft)` where `u` is the object and `v_ft` the v_ft.
@@ -134,6 +163,39 @@ function plan_conv(v::AbstractArray{T, N}, dims=ntuple(+, N)) where {T, N}
     # but their computation is fast
     conv(u, v_ft=v_ft) = p_conv_aux(P, P_inv, u, v_ft)
     return v_ft, conv
+end
+
+"""
+    plan_conv_psf(psf [, dims]) where {T, N}
+
+Returns a planned convolution of `u` with `psf` over `dims` dimensions with an FFT based method.
+Note, that this method introduces wrap-around artifacts without
+proper padding/windowing.
+In comparison to `conv` the argument `psf` is assumed  to be centered at the FTCenter coordinate: `1+size(psf)÷2`
+
+We return first the `psf_ft` (obtained by `fft(ifftshift(u))` or `rfft(ifftshift(u))`).
+The second return is the convolution function `pconv`.
+`pconv` itself has two arguments. `pconv(u, v_ft=v_ft)` where `u` is the object and `v_ft` the v_ft.
+This function achieves faster convolution than `conv(u, u)`.
+Depending whether `u` is real or complex we do `fft`s or `rfft`s
+
+# Arguments
+* `u` is an array in real space.
+* `psf` is the centered array to convolve with.
+* Per default `dims=1:ndims(v)` means that we perform the convolution 
+    over all dimensions of `v`. 
+    If `dims` is an array with integers, we perform convolution 
+    only over these dimensions. Eg. `dims=[1,3]` would perform the convolution
+    over the first and third dimension. Second dimension is not convolved.
+
+If `u` and `psf` are both a real valued array we use `rfft` and hence
+the output is real as well.
+If either `u` or `psf` is complex we use `fft` and output is hence complex.
+
+`conv_psf` is a shorthand for `conv(u,ifftshift(psf))`. For examples see `conv`.
+"""
+function plan_conv_psf(psf::AbstractArray{T, N}, dims=ntuple(+, N)) where {T, N}
+    return plan_conv(ifftshift(psf))
 end
 
 function p_conv_aux(P, P_inv, u, v_ft)

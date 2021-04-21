@@ -7,6 +7,7 @@
         otf_r = rfft(psf, dims)
         otf_p, conv_p = plan_conv(psf, dims)
         otf_p2, conv_p2 = plan_conv(0.0im .+ psf, dims)
+        otf_p3, conv_p3 = plan_conv(fftshift(psf), dims)
         @testset "$s" begin
             @test img_out ≈ conv(0.0im .+ img, psf, dims)
             @test img_out ≈ conv(img, psf, dims)
@@ -14,6 +15,8 @@
             @test img_out ≈ conv_p(img)
             @test img_out ≈ conv_p2(img, otf_p2)
             @test img_out ≈ conv_p2(img)
+            @test img_out ≈ conv_psf(img, fftshift(psf))
+            @test img_out ≈ conv_p3(img)
         end
     end
     
