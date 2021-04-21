@@ -35,13 +35,17 @@
     @testset "Test 2d fft helpers" begin
         arr = randn((6,7,8))
         dims = [1,2]
-        testft2d(arr) = @test(ft2d(arr) ≈ fftshift(fft(ifftshift(arr, (1,2)), (1,2)), dims))
-        testift2d(arr) = @test(ift2d(arr) ≈ fftshift(ifft(ifftshift(arr, (1,2)), (1,2)), dims))
-        testffts2d(arr) = @test(ffts2d(arr) ≈ fftshift(fft(arr, (1,2)), (1,2)))
-        testiffts2d(arr) = @test(iffts2d(arr) ≈ ifft(ifftshift(arr, (1,2)), (1,2)))
-        testrft2d(arr) = @test(rffts2d(arr) ≈ fftshift(rfft(arr, (1,2)), dims[2:2]))
-        testirft2d(arr, d) = @test(irffts2d(arr, d) ≈ irfft(ifftshift(arr, dims[2:2]), d, (1,2)))
-
+        d = 6
+        @test(ft2d(arr) == fftshift(fft(ifftshift(arr, (1,2)), (1,2)), dims))
+        @test(ift2d(arr) == fftshift(ifft(ifftshift(arr, (1,2)), (1,2)), dims))
+        @test(ffts2d(arr) == fftshift(fft(arr, (1,2)), (1,2)))
+        @test(iffts2d(arr) == ifft(ifftshift(arr, (1,2)), (1,2)))
+        @test(rffts2d(arr) == fftshift(rfft(arr, (1,2)), dims[2:2]))
+        @test(rft2d(arr) == fftshift(rfft(ifftshift(arr, (1,2)), (1,2)), dims[2:2]))
+        arr = randn(ComplexF32, (4,7,8))
+        @test(irffts2d(arr, d) == irfft(ifftshift(arr, dims[2:2]), d, (1,2)))
+        @test(irft2d(arr, d) == irft(arr, d, (1,2))) 
+        
 
     end
 
