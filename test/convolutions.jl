@@ -15,8 +15,8 @@
             @test img_out ≈ conv_p(img)
             @test img_out ≈ conv_p2(img, otf_p2)
             @test img_out ≈ conv_p2(img)
-            @test img_out ≈ conv_psf(img, fftshift(psf))
-            @test img_out ≈ conv_p3(img)
+            @test img_out ≈ conv_psf(img, fftshift(psf, dims), dims)
+            @test img_out ≈ conv_p3(img, dims)
         end
     end
     

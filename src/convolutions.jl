@@ -1,4 +1,4 @@
-export conv, plan_conv
+export conv, plan_conv, conv_psf, plan_conv_psf
 
 
 """
