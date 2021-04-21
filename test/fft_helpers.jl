@@ -14,6 +14,12 @@
         testiffts(arr, dims) = @test(iffts(arr, dims) ≈ ifft(ifftshift(arr, dims), dims))
         testrft(arr, dims) = @test(rffts(arr, dims) ≈ fftshift(rfft(arr, dims), dims[2:end]))
         testirft(arr, dims, d) = @test(irffts(arr, d, dims) ≈ irfft(ifftshift(arr, dims[2:end]), d, dims))
+        testft2d(arr) = @test(ft2d(arr) ≈ fftshift(fft(ifftshift(arr, (1,2)), (1,2)), dims))
+        testift2d(arr) = @test(ift2d(arr) ≈ fftshift(ifft(ifftshift(arr, (1,2)), (1,2)), dims))
+        testffts2d(arr) = @test(ffts2d(arr) ≈ fftshift(fft(arr, (1,2)), (1,2)))
+        testiffts2d(arr) = @test(iffts2d(arr) ≈ ifft(ifftshift(arr, (1,2)), (1,2)))
+        testrft2d(arr) = @test(rffts2d(arr) ≈ fftshift(rfft(arr, (1,2)), dims[2:2]))
+        testirft2d(arr, d) = @test(irffts2d(arr, d) ≈ irfft(ifftshift(arr, dims[2:2]), d, (1,2)))
         for dim = 1:4
             for _ in 1:4
                 s = ntuple(_ -> rand(1:13), dim)
@@ -28,10 +34,17 @@
                 testiffts(arr, dims)
                 
                 if dim > 1
+                    testft2d(arr)
+                    testift2d(arr)
+                    testffts2d(arr)
+                    testiffts2d(arr)
                     dims = 1:dim
                     arr = randn(Float32, s)
                     testrft(arr, dims)
                     testirft(rfft(arr, dims), dims, size(arr)[1])
+
+                    testrft2d(arr)
+                    testirft2d(rfft(arr, (1,2)), size(arr)[1])
                 end
             end
         end
