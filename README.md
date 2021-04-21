@@ -9,7 +9,7 @@
 This package contains various functions that are useful for working with and in Fourier space.
 
 ## Installation
-`FourierTools.jl` is available for all version equal or above Julia 1.5.
+`FourierTools.jl` is available for all version equal or above Julia 1.6.
 Since it is not registered yet, it can be installed with the following command
 
 ```julia
@@ -17,7 +17,8 @@ julia> ] add https://github.com/bionanoimaging/FourierTools.jl
 ```
 
 ## Features
-* sinc interpolation allows to up and downsample a signal 
+* sinc interpolation allows to up and downsample a (bandlimited) signal
+* FFT based convolutions
 * array rotation 
 * array shifting (including noteworthy subpixel shifts)
 * array shearing
