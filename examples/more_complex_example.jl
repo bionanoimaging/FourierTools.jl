@@ -64,6 +64,23 @@ Gray.(img_filtered2)
 # ╔═╡ 53546c5d-f718-4618-bcf1-2f6e9cd2c118
 img_filtered2 ≈ img_filtered
 
+# ╔═╡ a49ab07b-59e4-488d-ad35-522fb298dd28
+md"## Rotate image"
+
+# ╔═╡ 6b9e4923-4104-41ff-959a-2b5423f14542
+begin
+	img_pad = FourierTools.center_set!(zeros(Float32, (800, 800)), img_filtered2)
+	Gray.(rotate(img_pad, 30))
+end
+
+# ╔═╡ 63e7924a-9f11-4088-8e9d-35219dfc7caa
+md"## Shift image"
+
+# ╔═╡ 4863b1af-16e7-44d0-a868-13220b768bf9
+begin
+	Gray.(shift(img_filtered, (200.23, 0)))
+end
+
 # ╔═╡ Cell order:
 # ╠═b0b0700c-a8f0-4f13-b9d2-799db5904b69
 # ╠═09637070-a4f8-11eb-3e6d-ab2106c891d3
@@ -84,3 +101,7 @@ img_filtered2 ≈ img_filtered
 # ╠═de770699-474d-42f1-a9aa-d5bfdeb2261e
 # ╠═e83ab89a-ea25-4623-a198-503676f445ef
 # ╠═53546c5d-f718-4618-bcf1-2f6e9cd2c118
+# ╠═a49ab07b-59e4-488d-ad35-522fb298dd28
+# ╠═6b9e4923-4104-41ff-959a-2b5423f14542
+# ╠═63e7924a-9f11-4088-8e9d-35219dfc7caa
+# ╠═4863b1af-16e7-44d0-a868-13220b768bf9
