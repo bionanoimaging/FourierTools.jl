@@ -13,7 +13,7 @@ This package contains various functions that are useful for working with and in 
 Since it is not registered yet, it can be installed with the following command
 
 ```julia
-julia> ] add https://github.com/bionanoimaging/FourierTools.jl
+julia> ] add FourierTools
 ```
 
 ## Features
@@ -22,7 +22,7 @@ julia> ] add https://github.com/bionanoimaging/FourierTools.jl
 * array rotation 
 * array shifting (including noteworthy subpixel shifts)
 * array shearing
-* several tools like `ffts`, `ft` etc. allowing simpler use with Fourier tranforms
+* several tools like `ffts`, `ft` etc. allowing simpler use with Fourier transforms
 
 Have a look in the [examples folder](examples/) for interactive examples. The [documentation](https://bionanoimaging.github.io/FourierTools.jl/dev/) offers a quick overview.
 
