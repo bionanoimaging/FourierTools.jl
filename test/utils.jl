@@ -60,6 +60,7 @@
     @testset "test expanddims" begin
         function f(s, N)
             @test FourierTools.expanddims(randn(s), N + length(s))|> size == (s..., ones(Int,N)...)
+            @test FourierTools.expanddims(randn(s), Val(N + length(s)))|> size == (s..., ones(Int,N)...)
         end
         f((1,2,3), 2)
         f((1,2,3,4,5), 8)
