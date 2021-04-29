@@ -23,6 +23,9 @@ end
 # needed to interpolation
 @pyimport scipy.interpolate as si
 
+# ╔═╡ d8111917-6b7e-49bf-a065-9ad9f7b59b42
+md"### Create some spatial coordinates in different formats and sizes"
+
 # ╔═╡ b5767f75-b84a-44bc-9d30-1f6630b37382
 begin
 	N = 8192
@@ -37,6 +40,9 @@ end;
 
 # ╔═╡ ea21c127-c762-43ef-b7c9-9e0fa6df4b43
 typeof(ρ)
+
+# ╔═╡ b399e58e-12f7-48f2-911b-52de291e8b74
+md"## Create a nice Image :)"
 
 # ╔═╡ 571a8e1b-38f6-4552-9fde-fc909c9bf196
 begin
@@ -58,7 +64,11 @@ end;
 heatmap(U_small)
 
 # ╔═╡ a0f9fc70-8636-4df6-bb02-f0f9d2b6cb63
-md"## Analytical spherical phase"
+md"## Analytical spherical phase
+
+`ψ_sph` depends only on `ρ` and `R` was already passed to it.
+`R` is defined in front of the figures
+"
 
 # ╔═╡ 82f7f1e2-8ca7-40e7-a165-4adb4eb77e04
 ψsph_full(ρ, R, λ=550f-9, k0=oftype(λ, 2π/λ)) = sign(R) * k0 * sqrt(dot(ρ, ρ) + R^2)
@@ -67,10 +77,15 @@ md"## Analytical spherical phase"
 md"# Homeomorphic FFT"
 
 # ╔═╡ 5b05249c-c244-41ca-97ef-263a083e9bac
-md"### Interpolation to regular grid with scipy"
+md"### Interpolation to regular grid with scipy
+
+The output is on a irregular grid, therefore we need a sophisticated interpolation routine
+"
 
 # ╔═╡ 50e2cc4a-c8ab-4422-9aa0-8c44d99ae553
-md"## Regular FFT"
+md"## Regular FFT
+To compare with HFFT
+"
 
 # ╔═╡ 359e61f2-9d23-4848-9853-3d01d2f5c4c3
 @bind R NumberField(range(1e-3, 50e-3, length=50))
@@ -94,9 +109,6 @@ end
 
 # ╔═╡ f25bd1d3-a582-4095-93b7-9e392036caea
 typeof(κ_lin_x)
-
-# ╔═╡ 274d79ed-4493-4dc6-a117-7419d7c73338
-typeof(κ_lin)
 
 # ╔═╡ 61442cb9-801b-4cd3-8f3b-b2ae27a71fb1
 begin
@@ -160,7 +172,9 @@ heatmap(abs.(Ũ))
 # ╠═2c1154be-a8fb-11eb-2dfa-d3fc55d26ba0
 # ╠═8e53f88c-5a90-4b20-8c03-6e7780e6d7bd
 # ╠═ea21c127-c762-43ef-b7c9-9e0fa6df4b43
+# ╠═d8111917-6b7e-49bf-a065-9ad9f7b59b42
 # ╠═b5767f75-b84a-44bc-9d30-1f6630b37382
+# ╠═b399e58e-12f7-48f2-911b-52de291e8b74
 # ╠═571a8e1b-38f6-4552-9fde-fc909c9bf196
 # ╠═e47d7441-6431-41da-ab54-a9b003f4cea0
 # ╠═46fca5cf-1c9a-4a96-a083-7bc6e9246dc3
@@ -174,7 +188,6 @@ heatmap(abs.(Ũ))
 # ╠═17b70cd4-251a-43a0-bbec-bb50da27b0ff
 # ╠═f25bd1d3-a582-4095-93b7-9e392036caea
 # ╠═61442cb9-801b-4cd3-8f3b-b2ae27a71fb1
-# ╠═274d79ed-4493-4dc6-a117-7419d7c73338
 # ╠═15f4a321-3949-4a9a-91cb-10879139393c
 # ╠═50e2cc4a-c8ab-4422-9aa0-8c44d99ae553
 # ╠═d6ae639c-3908-495a-93b2-bd2cc1adc720
