@@ -3,7 +3,8 @@ export fftshift_view, ifftshift_view
 # add constructor here, might be merged to ShiftedArrays
 # this prevents that CircShiftedArrays get nested with twice application
 # https://github.com/JuliaArrays/ShiftedArrays.jl/pull/44
-function ShiftedArrays.CircShiftedArray(csa::CircShiftedArray, n = Tuple(0 for i in 1:N))
+function ShiftedArrays.CircShiftedArray(csa::CircShiftedArray{T, N, <:AbstractArray},
+                                        n = Tuple(0 for i in 1:N)) where {T, N, }
     CircShiftedArray(parent(csa), n .+ csa.shifts)
 end
 
