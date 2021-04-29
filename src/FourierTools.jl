@@ -7,9 +7,11 @@ using LinearAlgebra
 using IndexFunArrays
 using LazyArrays
 using ChainRulesCore
+using ForwardDiff
 
 include("utils.jl")
 include("resampling.jl")
+include("homeomorphic_fft.jl")
 include("custom_fourier_types.jl")
 include("fourier_resizing.jl")
 include("fourier_shifting.jl")
