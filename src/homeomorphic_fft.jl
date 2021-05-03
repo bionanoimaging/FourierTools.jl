@@ -9,14 +9,18 @@
 
 
 """
-function hfft(U, ρ, ψ)
+function hfft(U, ρ, ψ; ϕ=nothing, λ0=550f-9, Δz=1f-3)
     # note the . to apply gradient and hessian elementwise
     κ = ForwardDiff.gradient.(Ref(ψ), ρ)
     Hψ = ForwardDiff.hessian.(Ref(ψ), ρ)
     a = _hfft_a.(Hψ)
     ψ_of_ρ = ψ.(ρ)
-
-    Ṽ = a .* U .* exp.(1im .* ψ_of_ρ .- 1im .* dot.(κ, ρ))
+    if isnothing(ϕ)
+        Ṽ = a .* U .* exp.(1im .* ψ_of_ρ .- 1im .* dot.(κ, ρ))
+    else
+        full_phase = ψ_of_ρ .- dot.(κ, ρ) .+ Δz .* sqrt.(complex.(eltype(U)(2π)^2 ./ λ0^2 .- dot.(κ, κ)))
+        Ṽ = a .* U .* exp.(1im .* full_phase)
+    end
     return Ṽ, κ
 end
 

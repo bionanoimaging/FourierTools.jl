@@ -4,19 +4,10 @@
 using Markdown
 using InteractiveUtils
 
-# This Pluto notebook uses @bind for interactivity. When running this notebook outside of Pluto, the following 'mock version' of @bind gives bound variables a default value (instead of an error).
-macro bind(def, element)
-    quote
-        local el = $(esc(element))
-        global $(esc(def)) = Core.applicable(Base.get, el) ? Base.get(el) : missing
-        el
-    end
-end
-
 # ╔═╡ 2c1154be-a8fb-11eb-2dfa-d3fc55d26ba0
 begin
-	using Revise, FourierTools, Plots, ForwardDiff, LinearAlgebra, PyCall, FFTW, PlutoUI
-	FFTW.set_num_threads(1)
+	using Revise, FourierTools, Plots, ForwardDiff, LinearAlgebra, PyCall, FFTW, PlutoUI, PhysicalOptics
+	FFTW.set_num_threads(12)
 end
 
 # ╔═╡ 8e53f88c-5a90-4b20-8c03-6e7780e6d7bd
@@ -29,8 +20,8 @@ md"### Create some spatial coordinates in different formats and sizes"
 # ╔═╡ b5767f75-b84a-44bc-9d30-1f6630b37382
 begin
 	N = 8192
-	N_disp = 200
-	N_small = 200
+	N_disp = 300
+	N_small = 300
 	ρ_1D = range(-2f-3, 2f-3, length=N)
 	ρ_1D_small = range(-2f-3, 2f-3, length=N_small)
 
@@ -56,7 +47,7 @@ end;
 begin
 	psf = Float32.(exp.(.- (ρ_1D.^2 .+ ρ_1D'.^2)./5e-9))
 	psf ./= sum(psf)
-	U = conv_psf(U_hard, psf)
+	U = FourierTools.conv_psf(U_hard, psf)
 	U_small = resample(U, (N_small, N_small))
 end;
 
@@ -73,8 +64,40 @@ md"## Analytical spherical phase
 # ╔═╡ 82f7f1e2-8ca7-40e7-a165-4adb4eb77e04
 ψsph_full(ρ, R, λ=550f-9, k0=oftype(λ, 2π/λ)) = sign(R) * k0 * sqrt(dot(ρ, ρ) + R^2)
 
+# ╔═╡ 534cc94f-3029-4952-91f4-bd7424630b3a
+ψsph(ρ, R=-5f-3) = ψsph_full(ρ, Float32(-5f-3))
+
 # ╔═╡ 44e8d5eb-29c9-4fa4-a63d-0ce46d83ec2c
 md"# Homeomorphic FFT"
+
+# ╔═╡ 0d1e7725-1ed9-4db1-9523-0bd31672c992
+begin
+	Ũ, κ = FourierTools.hfft(U_small, ρ_small, ψsph)
+end
+
+# ╔═╡ 10b92bf4-3816-4365-bad7-bc434594a4c0
+κ
+
+# ╔═╡ 8f36f985-8755-44e7-87a7-2039cdb8b216
+Ũ2, κ2 = FourierTools.hfft(U_small, ρ_small, ψsph, ϕ=0, Δz=4.97f-3)
+
+# ╔═╡ c9b32da7-6b51-4974-8b6d-4287b2387906
+heatmap(abs2.(ift(Ũ2)))
+
+# ╔═╡ 3db5598c-4285-4da0-8d9c-17ae7cf1de45
+heatmap(imag.(Ũ2) .+ real.(Ũ2))
+
+# ╔═╡ 75599c42-7a48-4533-a310-06b3506f964c
+heatmap(angle.(Ũ2))
+
+# ╔═╡ 650a28a2-020a-45d0-a528-98c74c57a115
+heatmap(abs2.(Ũ2))
+
+# ╔═╡ 69d22dc0-384a-4cc5-bfe1-b04d62381d9e
+heatmap(angle.(out))
+
+# ╔═╡ aaf22e28-9faa-4b7e-85ac-ac470e0011f3
+typeof(Ũ)
 
 # ╔═╡ 5b05249c-c244-41ca-97ef-263a083e9bac
 md"### Interpolation to regular grid with scipy
@@ -82,26 +105,9 @@ md"### Interpolation to regular grid with scipy
 The output is on a irregular grid, therefore we need a sophisticated interpolation routine
 "
 
-# ╔═╡ 50e2cc4a-c8ab-4422-9aa0-8c44d99ae553
-md"## Regular FFT
-To compare with HFFT
-"
-
-# ╔═╡ 359e61f2-9d23-4848-9853-3d01d2f5c4c3
-@bind R NumberField(range(1e-3, 50e-3, length=50))
-
-# ╔═╡ 534cc94f-3029-4952-91f4-bd7424630b3a
-ψsph(ρ) = ψsph_full(ρ, Float32(R))
-
-# ╔═╡ 0d1e7725-1ed9-4db1-9523-0bd31672c992
-Ũ, κ = FourierTools.hfft(U_small, ρ_small, ψsph)
-
-# ╔═╡ aaf22e28-9faa-4b7e-85ac-ac470e0011f3
-typeof(Ũ)
-
 # ╔═╡ 17b70cd4-251a-43a0-bbec-bb50da27b0ff
 begin
-	Ũ_lin = reshape(Ũ[:, end:-1:1], (length(Ũ, )))
+	Ũ_lin = reshape(Ũ2[:, end:-1:1], (length(Ũ2, )))
 	κ_lin = reshape(κ[:, end:-1:1], (length(κ, )))
 	κ_lin_x = [i[1] for i in κ_lin]	
 	κ_lin_y = [i[2] for i in κ_lin]
@@ -119,8 +125,22 @@ begin
 	κ_reg_y = o .* κ_reg_y_1D
 end;
 
+# ╔═╡ 324b29ca-b194-429d-97ab-fffc3d1c0397
+Ũ_interp_imag = si.griddata(κ_lin, imag.(Ũ_lin), (κ_reg_y, κ_reg_x), method="cubic");
+
+# ╔═╡ 4195f594-10f8-4f81-b31c-79cb7a4035e7
+Ũ_interp_real = si.griddata(κ_lin, real.(Ũ_lin), (κ_reg_y, κ_reg_x), method="cubic");
+
+# ╔═╡ 12aceeef-e296-4bab-81d8-845d023b36c8
+Ũ_interp_compl = Ũ_interp_real .+ 1im .* Ũ_interp_imag
+
 # ╔═╡ 15f4a321-3949-4a9a-91cb-10879139393c
-Ũ_interp_abs = si.griddata(κ_lin, abs.(Ũ_lin), (κ_reg_y, κ_reg_x), method="cubic");
+Ũ_interp_abs = si.griddata(κ_lin, abs.(Ũ_lin), (κ_reg_y, κ_reg_x), method="linear");
+
+# ╔═╡ 50e2cc4a-c8ab-4422-9aa0-8c44d99ae553
+md"## Regular FFT
+To compare with HFFT
+"
 
 # ╔═╡ d6ae639c-3908-495a-93b2-bd2cc1adc720
 U_fft_abs = resample(abs.(ffts(U .* exp.(1im .* ψsph.(ρ)))), (N_disp, N_disp))
@@ -129,7 +149,10 @@ U_fft_abs = resample(abs.(ffts(U .* exp.(1im .* ψsph.(ρ)))), (N_disp, N_disp))
 md"## Display results"
 
 # ╔═╡ aee7354d-5e2f-4dec-a1f4-40db579c26dc
-heatmap(κ_reg_x_1D', κ_reg_y_1D, Ũ_interp_abs, title="Homeomorphic FFT $N_small x $N_small")
+heatmap(.- κ_reg_x_1D', .- κ_reg_y_1D, abs.(Ũ_interp_abs), title="Homeomorphic FFT $N_small x $N_small")
+
+# ╔═╡ 16d396d8-d8b3-43d4-8e41-bc1663b15038
+heatmap(.- κ_reg_x_1D', .- κ_reg_y_1D, abs.(Ũ_interp_imag .* 1im .+ Ũ_interp_real), title="Homeomorphic FFT $N_small x $N_small")
 
 # ╔═╡ dfeaafff-394f-4328-a509-0c266c0b568b
 heatmap(ρ_1D_small, ρ_1D_small, U_fft_abs, title="FFT $N x $N")
@@ -138,13 +161,13 @@ heatmap(ρ_1D_small, ρ_1D_small, U_fft_abs, title="FFT $N x $N")
 heatmap(abs.(Ũ))
 
 # ╔═╡ 60e52d82-b531-40bd-9f61-ae476b075f88
-
+κ_reg_x[100, 1] - κ_reg_x[100, 2]
 
 # ╔═╡ 8003ee99-f455-4137-ad04-04386fdbf8f9
-
+κ_reg_x[100, 101] - κ_reg_x[100, 102]
 
 # ╔═╡ d9aa5146-4a5b-459e-b171-fecd3e351d9f
-
+κ_reg_x
 
 # ╔═╡ 7375365f-e363-4ae2-bb96-4ef1e59fd05f
 
@@ -183,17 +206,27 @@ heatmap(abs.(Ũ))
 # ╠═534cc94f-3029-4952-91f4-bd7424630b3a
 # ╠═44e8d5eb-29c9-4fa4-a63d-0ce46d83ec2c
 # ╠═0d1e7725-1ed9-4db1-9523-0bd31672c992
+# ╠═10b92bf4-3816-4365-bad7-bc434594a4c0
+# ╠═8f36f985-8755-44e7-87a7-2039cdb8b216
+# ╠═c9b32da7-6b51-4974-8b6d-4287b2387906
+# ╠═3db5598c-4285-4da0-8d9c-17ae7cf1de45
+# ╠═75599c42-7a48-4533-a310-06b3506f964c
+# ╠═650a28a2-020a-45d0-a528-98c74c57a115
+# ╠═69d22dc0-384a-4cc5-bfe1-b04d62381d9e
 # ╠═aaf22e28-9faa-4b7e-85ac-ac470e0011f3
 # ╠═5b05249c-c244-41ca-97ef-263a083e9bac
 # ╠═17b70cd4-251a-43a0-bbec-bb50da27b0ff
 # ╠═f25bd1d3-a582-4095-93b7-9e392036caea
 # ╠═61442cb9-801b-4cd3-8f3b-b2ae27a71fb1
+# ╠═324b29ca-b194-429d-97ab-fffc3d1c0397
+# ╠═4195f594-10f8-4f81-b31c-79cb7a4035e7
+# ╠═12aceeef-e296-4bab-81d8-845d023b36c8
 # ╠═15f4a321-3949-4a9a-91cb-10879139393c
 # ╠═50e2cc4a-c8ab-4422-9aa0-8c44d99ae553
 # ╠═d6ae639c-3908-495a-93b2-bd2cc1adc720
-# ╠═359e61f2-9d23-4848-9853-3d01d2f5c4c3
 # ╠═6abfdc7a-0cec-4da1-8a98-61d8448e2e1f
 # ╠═aee7354d-5e2f-4dec-a1f4-40db579c26dc
+# ╠═16d396d8-d8b3-43d4-8e41-bc1663b15038
 # ╠═dfeaafff-394f-4328-a509-0c266c0b568b
 # ╠═60cd58b1-9786-41d8-afd4-6b365991c918
 # ╠═60e52d82-b531-40bd-9f61-ae476b075f88
