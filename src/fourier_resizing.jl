@@ -1,4 +1,4 @@
-export select_region, select_region_ft, select_region_rft
+export select_region_ft, select_region_rft
 export rft_fix_after, rft_fix_before, ft_fix_after, ft_fix_before
 
 
