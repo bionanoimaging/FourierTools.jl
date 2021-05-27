@@ -5,9 +5,9 @@
     function conv_test(psf, img, img_out, dims, s)
         otf = fft(psf, dims)
         otf_r = rfft(psf, dims)
-        otf_p, conv_p = plan_conv(psf, dims)
-        otf_p2, conv_p2 = plan_conv(0.0im .+ psf, dims)
-        otf_p3, conv_p3 = plan_conv_psf(fftshift(psf,dims), dims)
+        otf_p, conv_p = plan_conv(img, psf, dims)
+        otf_p2, conv_p2 = plan_conv(img .+ 0.0im, 0.0im .+ psf, dims)
+        otf_p3, conv_p3 = plan_conv_psf(img, fftshift(psf,dims), dims)
         @testset "$s" begin
             @test img_out ≈ conv(0.0im .+ img, psf, dims)
             @test img_out ≈ conv(img, psf, dims)
@@ -26,6 +26,13 @@
     psf[1, 1] = 1
     img = randn((N, N))
     conv_test(psf, img, img, [1,2], "Convolution random image with delta peak")
+
+
+    N = 5
+    psf = zeros((N, N))
+    psf[1, 1] = 1
+    img = randn((N, N, N))
+    conv_test(psf, img, img, [1,2], "Convolution with different dimensions psf, img delta")
 
 
     N = 5
@@ -84,7 +91,7 @@
         x = randn(ComplexF32, (5,6))
         y = randn(ComplexF32, (5,6))
 
-        y_ft, p = plan_conv(y)
+        y_ft, p = plan_conv(x, y)
         @test ≈(exp(1im * 1.23) .+ conv(ones(eltype(y), size(x)), conj.(y)), exp(1im * 1.23) .+ Zygote.gradient(x -> sum(real(conv(x, y))), x)[1], rtol=1e-4)   
         @test ≈(exp(1im * 1.23) .+ conv(ones(ComplexF32, size(x)), conj.(y)), exp(1im * 1.23) .+ Zygote.gradient(x -> sum(real(p(x, y_ft))), x)[1], rtol=1e-4) 
     end

@@ -88,14 +88,15 @@ end
 
 
 """
-    plan_conv(u [, dims])
+    plan_conv(u, v [, dims])
 
-Pre-plan an optimized convolution for array shaped like `u` (based on pre-plan FFT)
+Pre-plan an optimized convolution for arrays shaped like `u` and `v` (based on pre-plan FFT)
 along the given dimenions `dims`.
 `dims = 1:ndims(u)` per default.
 The 0 frequency of `u` must be located at the first entry.
 
-We return first the `v_ft` (obtained by `fft(u)` or `rfft(u)`).
+We return two arguments: 
+The first one is `v_ft` (obtained by `fft(v)` or `rfft(v)`).
 The second return is the convolution function `pconv`.
 `pconv` itself has two arguments. `pconv(u, v_ft=v_ft)` where `u` is the object and `v_ft` the v_ft.
 This function achieves faster convolution than `conv(u, u)`.
@@ -112,15 +113,7 @@ julia> v = [1 0 0 0 0]
 1×5 Matrix{Int64}:
  1  0  0  0  0
 
-julia> v_ft, pconv = plan_conv(v)
-(ComplexF64[1.0 + 0.0im 1.0 + 0.0im … 1.0 + 0.0im 1.0 + 0.0im], FourierTools.var"#conv#40"{Matrix{ComplexF64}, AbstractFFTs.ScaledPlan{ComplexF64, FFTW.rFFTWPlan{ComplexF64, 1, false, 2, UnitRange{Int64}}, Float64}, FFTW.rFFTWPlan{Float64, -1, false, 2, UnitRange{Int64}}}(ComplexF64[1.0 + 0.0im 1.0 + 0.0im … 1.0 + 0.0im 1.0 + 0.0im], 0.2 * FFTW complex-to-real plan for 1×5 array of ComplexF64
-(rdft2-rank>=2/1
-  (rdft2-hc2r-rank0
-    (rdft-rank0-iter-ci/1-x5))
-  (dft-direct-5 "n1bv_5_avx2_128")), FFTW real-to-complex plan for 1×5 array of Float64
-(rdft2-rank>=2/1
-  (rdft2-r2hc-rank0-x5)
-  (dft-direct-5 "n1fv_5_avx2_128"))))
+julia> v_ft, pconv = plan_conv(u, v);
 
 julia> pconv(u, v_ft)
 1×5 Matrix{Float64}:
@@ -131,13 +124,14 @@ julia> pconv(u)
  1.0  2.0  3.0  4.0  5.0
 ```
 """
-function plan_conv(v::AbstractArray{T, N}, dims=ntuple(+, N)) where {T, N}
+function plan_conv(u::AbstractArray{T, N}, v::AbstractArray{T, M}, dims=ntuple(+, N)) where {T, N, M}
     plan = get_plan(T)
     # do the preplanning step
-    P = plan(v, dims)
-    v_ft = P * v
+    P = plan(u, dims)
+    u_ft = P * u
     P_inv = inv(P)
 
+    v_ft = fft_or_rfft(T)(v, dims)
     # construct the efficient conv function
     # P and P_inv can be understood like matrices
     # but their computation is fast
@@ -146,16 +140,16 @@ function plan_conv(v::AbstractArray{T, N}, dims=ntuple(+, N)) where {T, N}
 end
 
 """
-    plan_conv_psf(psf [, dims]) where {T, N}
+    plan_conv_psf(u, psf [, dims]) where {T, N}
 
-`plan_conv_psf` is a shorthand for `plan_conv(ifftshift(psf))`. For examples see `plan_conv`.
+`plan_conv_psf` is a shorthand for `plan_conv(u, ifftshift(psf))`. For examples see `plan_conv`.
 """
-function plan_conv_psf(psf::AbstractArray{T, N}, dims=ntuple(+, N)) where {T, N}
-    return plan_conv(ifftshift(psf, dims), dims)
+function plan_conv_psf(u::AbstractArray{T, N}, psf::AbstractArray{T, M}, dims=ntuple(+, N)) where {T, N, M}
+    return plan_conv(u, ifftshift(psf, dims), dims)
 end
 
 function p_conv_aux(P, P_inv, u, v_ft)
-    return P_inv * ((P * u) .* v_ft)
+    return P_inv.scale .* (P_inv.p * ((P * u) .* v_ft))
 end
 
 function ChainRulesCore.rrule(::typeof(p_conv_aux), P, P_inv, u, v)
@@ -168,7 +162,27 @@ function ChainRulesCore.rrule(::typeof(p_conv_aux), P, P_inv, u, v)
     return Y, conv_pullback
 end
 
+"""
+    fft_or_rfft(T)
 
+Small helper function to decide whether a real
+or a complex valued FFT is appropriate.
+"""
+function fft_or_rfft(::Type{<:Real})
+    return rfft
+end
+
+function fft_or_rfft(::Type{T}) where T
+    return fft
+end
+
+
+"""
+    get_plan(T)
+
+Small helper function to decide whether a real
+or a complex valued FFT plan is appropriate.
+"""
 function get_plan(::Type{<:Real})
     return plan_rfft
 end
