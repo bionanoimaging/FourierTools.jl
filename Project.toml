@@ -1,7 +1,7 @@
 name = "FourierTools"
 uuid = "b18b359b-aebc-45ac-a139-9c0ccbb2871e"
 authors = ["Felix Wechsler (roflmaostc) <fxw+git@mailbox.org>", "rheintzmann <heintzmann@gmail.com>"]
-version = "0.2.0"
+version = "0.2.1"
 
 [deps]
 ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
@@ -13,7 +13,7 @@ PaddedViews = "5432bcbf-9aad-5242-b902-cca2824c8663"
 ShiftedArrays = "1277b4bf-5013-50f5-be3d-901d8477a67a"
 
 [compat]
-ChainRulesCore = "0.9, 0.10"
+ChainRulesCore = "0.9"
 FFTW = "1.3.2, 1.4"
 IndexFunArrays = "0.1.6"
 LazyArrays = "0.20, 0.21.3"
