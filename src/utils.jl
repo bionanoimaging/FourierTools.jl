@@ -1,5 +1,5 @@
 export rft_size, fft_center, fftpos
-export expanddims
+export expanddims, fourierspace_pixelsize, realspace_pixelsize
 export δ
 
 
@@ -399,6 +399,29 @@ end
 
 
 
+"""
+    fourierspace_pixelsize(realspace_pixelsize, mysize)
+converts a real space pixel pitch `realspace_pixelsize` into a Fourier-space pixel size.
+This applies to all types of fft, ft, rft, or rfft alike.
+Arguments:
++ realspace_pixelsize: pixel pitch in real space
++ mysize: the size of the array that is fourier transformed.
+"""
+function fourierspace_pixelsize(realspace_pixelsize, mysize)
+    1.0 ./ (realspace_pixelsize .* mysize)
+end
+
+"""
+    realspace_pixelsize(fourier_pixelsize, mysize)
+converts a fourier space pixel pitch `fourier_pixelsize` into a pixel pitch in real space.
+This applies to all types of ifft, ift, irft, or irfft alike.
+Arguments:
++ fourier_pixelsize: pixel pitch in real space
++ mysize: the size of the array that is fourier transformed.
+"""
+function realspace_pixelsize(fourier_pixelsize, mysize)
+    1.0 ./ (fourier_pixelsize .* mysize) 
+end
 
 
 
