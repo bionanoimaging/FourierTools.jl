@@ -32,6 +32,12 @@ md"### FourierTools.jl | Working with the Frequency Space
 * **Rainer Heintzmann**: Head of the biological nanoimaging research group at the IPHT and FSU Jena, Germany
 "
 
+# ╔═╡ 6e445cd5-6e51-4a8f-ad5c-2636b3da68f4
+
+
+# ╔═╡ 4b1c0058-81ac-4670-b468-ea3e1facf1e2
+
+
 # ╔═╡ e28dc936-04da-48cb-b324-73632d008290
 md"
 ### Definition of Fourier Transform
@@ -42,13 +48,13 @@ $\mathcal{F}[U](\mathbf k) = \frac{1}{\sqrt{2\pi}} \int_{-\infty}^{\infty} U(\ma
 
 $\mathcal{F}^{-1}[\tilde U](\mathbf x) = \frac{1}{\sqrt{2\pi}} \int_{-\infty}^{\infty} U(\mathbf r) \cdot \exp[i  (\mathbf x \cdot \mathbf k)] \, \mathrm d \mathbf k$
 
-* visually it decomposes a signal in harmonic basis functions
-* the so called _Fourier_ or _Frequency_ space
+* qualitatively it decomposes a signal into harmonic basis functions
+* The signal is then represented in the _Fourier_ or _Frequency_ space
 
-### FFT
+### Fast Fourier Transform - FFT
 * naive integral calculation takes $\mathcal O(N^2)$ operations for a 1D dataset with $N$ points 
 * FFT algorithms evaluates this with $\mathcal O(N \cdot log(N))$ operations
-* In Julia _FFTW.jl_
+* In Julia available _FFTW.jl_ 
 "
 
 # ╔═╡ e8f1e951-26dd-4c0e-83f9-4a2c60b0ebed
@@ -59,7 +65,7 @@ begin
 	x = range(0, 50, length=999)
 	f(x) = (0.1 * sin(17.3 + x) + 0.5 * cos(1.2*x) + 0.3 * sin(5*x)^2 + 0.05 * sin(13.1*x) + sin(27.2 * x)) * exp(-x/20)
 	data = add_gauss(f.(x), 0.1)
-end
+end;
 
 # ╔═╡ 850869e6-32da-48cf-b2a0-081cc9f8e524
 plot(x, data)
@@ -78,15 +84,6 @@ end
 
 # ╔═╡ 979d641e-83ad-4484-bc28-912947711936
 fftshift(fft(data)) == ffts(data)
-
-# ╔═╡ 24298466-c360-4c7d-b408-9f7d155faea5
-
-
-# ╔═╡ dfdfb8ff-6c30-4a95-8d6b-efbd9d943fd8
-
-
-# ╔═╡ 2004c39e-f650-440e-858e-20b9f81c6632
-
 
 # ╔═╡ cc160200-5911-4c80-b651-a54e1608f186
 begin
@@ -169,12 +166,6 @@ begin
 	plot!(y3, label="Fourier shifted with $offset")
 end
 
-# ╔═╡ 73c916e8-5761-40f4-8082-df5d6920d50b
-
-
-# ╔═╡ 16f61a24-afe4-4e22-aa9c-a941b1819a90
-
-
 # ╔═╡ 105344de-8617-47fd-aeed-84102f19eaeb
 md"## Based on Shifting $\Longrightarrow$ Rotation
 
@@ -195,36 +186,67 @@ Gray.(FourierTools.rotate(z, ϕ))
 # ╔═╡ a5ea8226-ff14-432c-974e-68e1a79155cf
 Gray.(FourierTools.rotate(img, ϕ))
 
+# ╔═╡ e1600b0a-b8ef-49b8-8ed0-f9c4ae0c436b
+
+
+# ╔═╡ 7ff8de2d-85fd-402a-88eb-16427e1e0b47
+md"## Convolution
+Efficient FFT convolutions for both real and complex functions are included as well
+"
+
+# ╔═╡ 03effebd-e918-4847-b13a-7d41d4f159e7
+md"Blurring strength"
+
+# ╔═╡ e9862df6-8d1a-4c5e-88ab-1da28c2652af
+@bind pow Slider(1:0.01:6, show_value=true)
+
+# ╔═╡ bf631ded-b54c-4768-9a8d-825ab7612695
+begin
+	x3 = fftpos(1, size(img, 1))
+	kernel = exp.(.- 10.0 .^pow .* (x3 .^2 .+ x3'.^2))
+	kernel ./= sum(kernel)
+end;
+
+# ╔═╡ f4870819-9db6-4bdc-8c8d-141c8fa67461
+img_blurry = conv_psf(img, kernel);
+
+# ╔═╡ 9d22e799-fe80-47ef-a326-1f5f1ccc07f8
+[Gray.(img) Gray.(img_blurry)]
+
 # ╔═╡ Cell order:
-# ╠═e6db292c-d2be-11eb-1c25-05ed50a9256c
-# ╠═4958079f-da85-4357-94df-b122cf01c958
-# ╠═b71a5e39-0805-4e3f-aa83-c3972f6c54af
+# ╟─e6db292c-d2be-11eb-1c25-05ed50a9256c
+# ╟─4958079f-da85-4357-94df-b122cf01c958
+# ╟─b71a5e39-0805-4e3f-aa83-c3972f6c54af
 # ╟─c39440fc-17e6-440c-9e10-7b2c9a7e9331
-# ╠═e28dc936-04da-48cb-b324-73632d008290
+# ╠═6e445cd5-6e51-4a8f-ad5c-2636b3da68f4
+# ╠═4b1c0058-81ac-4670-b468-ea3e1facf1e2
+# ╟─e28dc936-04da-48cb-b324-73632d008290
 # ╟─e8f1e951-26dd-4c0e-83f9-4a2c60b0ebed
 # ╟─3adab086-0c77-40e5-990a-6b89b183cc4d
 # ╟─850869e6-32da-48cf-b2a0-081cc9f8e524
 # ╠═d6f9bd7a-ddcb-40b5-8509-f4dac3f8bd5d
 # ╟─f0746bc6-f50a-49f1-96d2-0379498a0168
 # ╠═979d641e-83ad-4484-bc28-912947711936
-# ╠═24298466-c360-4c7d-b408-9f7d155faea5
-# ╠═dfdfb8ff-6c30-4a95-8d6b-efbd9d943fd8
-# ╠═2004c39e-f650-440e-858e-20b9f81c6632
 # ╟─cc160200-5911-4c80-b651-a54e1608f186
 # ╟─a725ae98-e2cc-439c-9cc1-692972ac98e7
 # ╟─d5717c9c-2c16-47da-8533-a28acf189e55
 # ╟─3d8f11a3-4ebf-4d36-a227-b2cafa13e1d6
-# ╠═eb1de74c-266e-4d7e-9bb2-b34f241b0c20
+# ╟─eb1de74c-266e-4d7e-9bb2-b34f241b0c20
 # ╟─a5977c5c-dbcd-402d-b7a3-56614968ccb7
 # ╟─f411f944-f08a-4c69-a334-35780b6d7418
-# ╠═7f3be670-cfe3-4e60-b38f-ebacb4eaf8d3
+# ╟─7f3be670-cfe3-4e60-b38f-ebacb4eaf8d3
 # ╟─1ab61f99-799f-4c34-b0d1-205c01c20dbc
 # ╟─55667950-4542-4505-9d21-e44ea8b6074d
 # ╟─cfb02910-fb2d-4de0-bc81-8ecea50e5cb5
-# ╠═73c916e8-5761-40f4-8082-df5d6920d50b
-# ╠═16f61a24-afe4-4e22-aa9c-a941b1819a90
 # ╠═105344de-8617-47fd-aeed-84102f19eaeb
 # ╠═344f9221-4213-4540-bb40-8a2de2d9b48c
-# ╟─27a7bcae-e50f-4225-bd7f-45934ec55be3
+# ╠═27a7bcae-e50f-4225-bd7f-45934ec55be3
 # ╠═bf2c54f1-8110-4e25-b89c-7276cf55f42a
 # ╠═a5ea8226-ff14-432c-974e-68e1a79155cf
+# ╠═e1600b0a-b8ef-49b8-8ed0-f9c4ae0c436b
+# ╟─7ff8de2d-85fd-402a-88eb-16427e1e0b47
+# ╟─03effebd-e918-4847-b13a-7d41d4f159e7
+# ╟─e9862df6-8d1a-4c5e-88ab-1da28c2652af
+# ╠═f4870819-9db6-4bdc-8c8d-141c8fa67461
+# ╟─9d22e799-fe80-47ef-a326-1f5f1ccc07f8
+# ╟─bf631ded-b54c-4768-9a8d-825ab7612695
