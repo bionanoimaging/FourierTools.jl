@@ -138,4 +138,14 @@
     end
 
 
+
+    @testset "Pixel size conversion" begin
+        @test fourierspace_pixelsize(1, 512) ≈ 1 / 512 
+        @test all(fourierspace_pixelsize(1, (512,256)) .≈ 1 ./ (512, 256))
+        @test realspace_pixelsize(1, 512) ≈ 1 / 512 
+        @test all(realspace_pixelsize(1, (512,256)) .≈ 1 ./ (512, 256))
+
+    end
+
+
 end
