@@ -19,6 +19,12 @@ using FourierTools, TestImages, ImageShow, Plots, Colors, FFTW, Noise, PlutoUI
 # ╔═╡ 4958079f-da85-4357-94df-b122cf01c958
 FFTW.set_num_threads(12)
 
+# ╔═╡ 2a47b7a9-7767-44a7-8dda-480ba1b41f57
+md"$\mathcal{F}[U](\mathbf k) = \frac{1}{\sqrt{2\pi}} \int_{-\infty}^{\infty} U(\mathbf r) \cdot \exp[-i  (\mathbf x \cdot \mathbf k)] \, \mathrm d \mathbf x$
+
+$\mathcal{F}^{-1}[\tilde U](\mathbf x) = \frac{1}{\sqrt{2\pi}} \int_{-\infty}^{\infty} U(\mathbf r) \cdot \exp[i  (\mathbf x \cdot \mathbf k)] \, \mathrm d \mathbf k$
+";
+
 # ╔═╡ b71a5e39-0805-4e3f-aa83-c3972f6c54af
 begin
 	img = Float32.(testimage("fabio_gray"));
@@ -42,14 +48,19 @@ md"### FourierTools.jl | Working with the Frequency Space
 md"
 ### Definition of Fourier Transform
 
-Complex valued integral 
+Complex valued sum 
 
-$\mathcal{F}[U](\mathbf k) = \frac{1}{\sqrt{2\pi}} \int_{-\infty}^{\infty} U(\mathbf r) \cdot \exp[-i  (\mathbf x \cdot \mathbf k)] \, \mathrm d \mathbf x$
+$\mathcal F[x_k] = X_k = \sum_{n=0}^{N-1} x_n \cdot \exp\left[-\frac{i 2 \pi}{N} k n\right] =$
 
-$\mathcal{F}^{-1}[\tilde U](\mathbf x) = \frac{1}{\sqrt{2\pi}} \int_{-\infty}^{\infty} U(\mathbf r) \cdot \exp[i  (\mathbf x \cdot \mathbf k)] \, \mathrm d \mathbf k$
+$=\sum_{n=0}^{N-1} x_n \cdot \left[ \cos\left(\frac{2 \pi}{N} k n\right) - i \cdot \sin\left(\frac{2 \pi}{N} k n\right)\right]$
 
-* qualitatively it decomposes a signal into harmonic basis functions
-* The signal is then represented in the _Fourier_ or _Frequency_ space
+Inverse transform
+
+$\mathcal F^{-1}[X_k] = x_k = \frac{1}{N} \sum_{k=0}^{N-1} X_k \cdot \exp\left[\frac{i 2 \pi}{N} k n\right]$
+
+
+* it decomposes a signal into harmonic basis functions
+* the signal is represented in the _Fourier_ or _Frequency_ space
 
 ### Fast Fourier Transform - FFT
 * naive integral calculation takes $\mathcal O(N^2)$ operations for a 1D dataset with $N$ points 
@@ -216,6 +227,7 @@ img_blurry = conv_psf(img, kernel);
 # ╔═╡ Cell order:
 # ╟─e6db292c-d2be-11eb-1c25-05ed50a9256c
 # ╟─4958079f-da85-4357-94df-b122cf01c958
+# ╠═2a47b7a9-7767-44a7-8dda-480ba1b41f57
 # ╟─b71a5e39-0805-4e3f-aa83-c3972f6c54af
 # ╟─c39440fc-17e6-440c-9e10-7b2c9a7e9331
 # ╠═6e445cd5-6e51-4a8f-ad5c-2636b3da68f4
