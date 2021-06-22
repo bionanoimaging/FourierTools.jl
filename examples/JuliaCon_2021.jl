@@ -39,10 +39,12 @@ md"### FourierTools.jl | Working with the Frequency Space
 "
 
 # ╔═╡ 6e445cd5-6e51-4a8f-ad5c-2636b3da68f4
+md"## FourierTools.jl
 
-
-# ╔═╡ 4b1c0058-81ac-4670-b468-ea3e1facf1e2
-
+* A package built on FFTW.jl
+* Provides several helper functions
+* implements algorithms (like interpolation) based on FFTs
+"
 
 # ╔═╡ e28dc936-04da-48cb-b324-73632d008290
 md"
@@ -63,8 +65,8 @@ $\mathcal F^{-1}[X_k] = x_k = \frac{1}{N} \sum_{k=0}^{N-1} X_k \cdot \exp\left[\
 * the signal is represented in the _Fourier_ or _Frequency_ space
 
 ### Fast Fourier Transform - FFT
-* naive integral calculation takes $\mathcal O(N^2)$ operations for a 1D dataset with $N$ points 
-* FFT algorithms evaluates this with $\mathcal O(N \cdot log(N))$ operations
+* naive sum calculation takes $\mathcal O(N^2)$ operations for a 1D dataset with $N$ points 
+* FFT algorithms evaluates this with $\mathcal O(N \cdot \log(N))$ operations
 * In Julia available _FFTW.jl_ 
 "
 
@@ -83,13 +85,20 @@ plot(x, data)
 
 # ╔═╡ d6f9bd7a-ddcb-40b5-8509-f4dac3f8bd5d
 begin
-	plot(real(fft(data)), title="FFT of the dataset", label="real part")
+	plot(real(fft(data)), title="FFT of the dataset", xlabel="frequency", label="real part")
 	plot!(imag(fft(data)), label="imaginary part")
 end
 
+# ╔═╡ b4b57f32-e405-4463-b0fa-625e9d54df34
+md"
+* Data: $[x_1, x_2, ..., x_N]$
+* FFT of Data: $[f_0, f_1, ..., f_{N/2}, f_{-N/2}, f_{-N/2+1}, ...,f_{-1}]$
+
+"
+
 # ╔═╡ f0746bc6-f50a-49f1-96d2-0379498a0168
 begin
-	plot(fftshift(fftfreq(size(data, 1))), real(ffts(data)), label="real part", title="FFT of the dataset but shifted")
+	plot(fftshift(fftfreq(size(data, 1))), real(ffts(data)), xlabel="frequency", label="real part", title="FFT of the dataset but shifted")
 	plot!(fftshift(fftfreq(size(data, 1))), imag(ffts(data)), label="imaginary part")
 end
 
@@ -110,7 +119,12 @@ begin
 end;
 
 # ╔═╡ a725ae98-e2cc-439c-9cc1-692972ac98e7
-md"## Calculate sinc interpolation"
+md"## Calculate sinc interpolation
+
+* Fourier coefficients represent coefficients of Fourier series
+* Inverse transform is essentially a re-evaluation of a Fourier Series
+* Evaluating this series at more samples points results in an interpolated signal
+"
 
 # ╔═╡ d5717c9c-2c16-47da-8533-a28acf189e55
 begin
@@ -225,18 +239,18 @@ img_blurry = conv_psf(img, kernel);
 [Gray.(img) Gray.(img_blurry)]
 
 # ╔═╡ Cell order:
-# ╟─e6db292c-d2be-11eb-1c25-05ed50a9256c
-# ╟─4958079f-da85-4357-94df-b122cf01c958
+# ╠═e6db292c-d2be-11eb-1c25-05ed50a9256c
+# ╠═4958079f-da85-4357-94df-b122cf01c958
 # ╠═2a47b7a9-7767-44a7-8dda-480ba1b41f57
 # ╟─b71a5e39-0805-4e3f-aa83-c3972f6c54af
 # ╟─c39440fc-17e6-440c-9e10-7b2c9a7e9331
-# ╠═6e445cd5-6e51-4a8f-ad5c-2636b3da68f4
-# ╠═4b1c0058-81ac-4670-b468-ea3e1facf1e2
+# ╟─6e445cd5-6e51-4a8f-ad5c-2636b3da68f4
 # ╟─e28dc936-04da-48cb-b324-73632d008290
 # ╟─e8f1e951-26dd-4c0e-83f9-4a2c60b0ebed
 # ╟─3adab086-0c77-40e5-990a-6b89b183cc4d
 # ╟─850869e6-32da-48cf-b2a0-081cc9f8e524
-# ╠═d6f9bd7a-ddcb-40b5-8509-f4dac3f8bd5d
+# ╟─d6f9bd7a-ddcb-40b5-8509-f4dac3f8bd5d
+# ╟─b4b57f32-e405-4463-b0fa-625e9d54df34
 # ╟─f0746bc6-f50a-49f1-96d2-0379498a0168
 # ╠═979d641e-83ad-4484-bc28-912947711936
 # ╟─cc160200-5911-4c80-b651-a54e1608f186
@@ -250,8 +264,8 @@ img_blurry = conv_psf(img, kernel);
 # ╟─1ab61f99-799f-4c34-b0d1-205c01c20dbc
 # ╟─55667950-4542-4505-9d21-e44ea8b6074d
 # ╟─cfb02910-fb2d-4de0-bc81-8ecea50e5cb5
-# ╠═105344de-8617-47fd-aeed-84102f19eaeb
-# ╠═344f9221-4213-4540-bb40-8a2de2d9b48c
+# ╟─105344de-8617-47fd-aeed-84102f19eaeb
+# ╟─344f9221-4213-4540-bb40-8a2de2d9b48c
 # ╠═27a7bcae-e50f-4225-bd7f-45934ec55be3
 # ╠═bf2c54f1-8110-4e25-b89c-7276cf55f42a
 # ╠═a5ea8226-ff14-432c-974e-68e1a79155cf
