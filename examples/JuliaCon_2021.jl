@@ -34,8 +34,8 @@ end;
 # ╔═╡ c39440fc-17e6-440c-9e10-7b2c9a7e9331
 md"### FourierTools.jl | Working with the Frequency Space
 
-* **Felix Wechsler**: Master student at the IPHT Jena, Germany
-* **Rainer Heintzmann**: Head of the biological nanoimaging research group at the IPHT and FSU Jena, Germany
+* **Felix Wechsler**: Leibniz Institute of Photonic Technology in Jena, Germany
+* **Rainer Heintzmann**: Leibniz Institute of Photonic Technology in Jena, Germany
 "
 
 # ╔═╡ 6e445cd5-6e51-4a8f-ad5c-2636b3da68f4
@@ -81,11 +81,11 @@ begin
 end;
 
 # ╔═╡ 850869e6-32da-48cf-b2a0-081cc9f8e524
-plot(x, data)
+plot(x, data, title="function to transform")
 
 # ╔═╡ d6f9bd7a-ddcb-40b5-8509-f4dac3f8bd5d
 begin
-	plot(real(fft(data)), title="FFT of the dataset", xlabel="frequency", label="real part")
+	plot(real(fft(data)), title="FFT of the function", xlabel="frequency", label="real part")
 	plot!(imag(fft(data)), label="imaginary part")
 end
 
@@ -93,7 +93,7 @@ end
 md"
 * Data: $[x_1, x_2, ..., x_N]$
 * FFT of Data: $[f_0, f_1, ..., f_{N/2}, f_{-N/2}, f_{-N/2+1}, ...,f_{-1}]$
-
+* (for real data negative and positive frequencies are the complex conjugate)
 "
 
 # ╔═╡ f0746bc6-f50a-49f1-96d2-0379498a0168
@@ -104,6 +104,9 @@ end
 
 # ╔═╡ 979d641e-83ad-4484-bc28-912947711936
 fftshift(fft(data)) == ffts(data)
+
+# ╔═╡ 0ba41c40-21a3-4e26-99fe-cacd76d47a67
+typeof(ffts(data))
 
 # ╔═╡ cc160200-5911-4c80-b651-a54e1608f186
 begin
@@ -117,6 +120,28 @@ begin
 	arr_low = f2.(xs_low)
 	arr_high = f2.(xs_high)
 end;
+
+# ╔═╡ 7acf4c37-397d-4c1f-8735-022888390cbe
+md"## Different FFT methods
+* `fft` interpretes the data as top-left centered
+
+"
+
+# ╔═╡ b15df267-6606-4583-8ce9-3dddf1ecf3f9
+fft([1.0,0,0,0,0])
+
+# ╔═╡ 76bb0c74-1a52-47ff-adf2-862cfea15da5
+fft([0,0, 1.0 ,0,0]) # single delta peak
+
+# ╔═╡ ec839c01-a62f-46eb-8e25-15d04a07a79f
+ft([0,0, 1.0 ,0,0]) 
+
+# which is equivalent to fftshift(fft(ifftshift([0,0, 1.0 ,0,0])))
+
+# ╔═╡ c7f0e20e-7c80-4a47-abdf-800f26ca999a
+ffts([0,0, 1.0 ,0,0])
+
+# which is equivalent to fftshift(fft([0,0, 1.0 ,0,0]))
 
 # ╔═╡ a725ae98-e2cc-439c-9cc1-692972ac98e7
 md"## Calculate sinc interpolation
@@ -140,11 +165,8 @@ begin
 	plot!(xs_high, arr_high, linestyle=:dashdotdot, label="High sampling")
 end
 
-# ╔═╡ eb1de74c-266e-4d7e-9bb2-b34f241b0c20
-md"## Downsampling
-32 samples in the downsampled signal should be sufficient for Nyquist sampling.
-And as we can see, the downsampled signal still matches the original one.
-"
+# ╔═╡ 551f179b-46ad-425f-9dd6-d8f6469a09cf
+[Gray.(img) Gray.(resample(img, (256, 712)))]
 
 # ╔═╡ a5977c5c-dbcd-402d-b7a3-56614968ccb7
 begin
@@ -152,13 +174,6 @@ begin
 	xs_ds = range(x_min, x_max, length=N_ds+1)[1:N_ds]
 	arr_ds = real(resample(arr_high, (N_ds,)))
 end;
-
-# ╔═╡ f411f944-f08a-4c69-a334-35780b6d7418
-begin
-	scatter(xs_low, arr_low, legend=:bottomleft, markersize=2, label="Low sampling")
-	plot!(xs_interp, arr_interp, label="FFT based sinc interpolation", linestyle=:dash)
-	plot!(xs_ds, arr_ds, label="downsampled array", linestyle=:dot)	
-end
 
 # ╔═╡ 7f3be670-cfe3-4e60-b38f-ebacb4eaf8d3
 md"## Fourier Shift Theorem
@@ -184,6 +199,9 @@ begin
 	y3 = shift(y2, tuple(offset))
 end;
 
+# ╔═╡ 8fc68dfc-0fb7-4a5a-bef1-ae0b33ddf4f6
+shift(y2, (offset,))
+
 # ╔═╡ cfb02910-fb2d-4de0-bc81-8ecea50e5cb5
 begin
 	plot(y1, label="Original signal")
@@ -204,6 +222,9 @@ end;
 
 # ╔═╡ 27a7bcae-e50f-4225-bd7f-45934ec55be3
 @bind ϕ Slider(-180:1:180, show_value=true)
+
+# ╔═╡ ac331005-48ca-4be8-b0a8-85f6f740f09a
+FourierTools.rotate(z, ϕ);
 
 # ╔═╡ bf2c54f1-8110-4e25-b89c-7276cf55f42a
 Gray.(FourierTools.rotate(z, ϕ))
@@ -238,10 +259,18 @@ img_blurry = conv_psf(img, kernel);
 # ╔═╡ 9d22e799-fe80-47ef-a326-1f5f1ccc07f8
 [Gray.(img) Gray.(img_blurry)]
 
+# ╔═╡ c530d7ea-60bd-4458-b3ca-80b509fb4f33
+md"# Conclusion
+
+* FourierTools.jl provides convenient wrappers to the FFTW library
+* offers efficient algorithms like sinc interpolation based on FFTs
+* deals with the intricacies of the correct handling of even/odd sized arrays in Fourier space
+"
+
 # ╔═╡ Cell order:
 # ╠═e6db292c-d2be-11eb-1c25-05ed50a9256c
 # ╠═4958079f-da85-4357-94df-b122cf01c958
-# ╠═2a47b7a9-7767-44a7-8dda-480ba1b41f57
+# ╟─2a47b7a9-7767-44a7-8dda-480ba1b41f57
 # ╟─b71a5e39-0805-4e3f-aa83-c3972f6c54af
 # ╟─c39440fc-17e6-440c-9e10-7b2c9a7e9331
 # ╟─6e445cd5-6e51-4a8f-ad5c-2636b3da68f4
@@ -253,26 +282,34 @@ img_blurry = conv_psf(img, kernel);
 # ╟─b4b57f32-e405-4463-b0fa-625e9d54df34
 # ╟─f0746bc6-f50a-49f1-96d2-0379498a0168
 # ╠═979d641e-83ad-4484-bc28-912947711936
+# ╠═0ba41c40-21a3-4e26-99fe-cacd76d47a67
 # ╟─cc160200-5911-4c80-b651-a54e1608f186
+# ╟─7acf4c37-397d-4c1f-8735-022888390cbe
+# ╠═b15df267-6606-4583-8ce9-3dddf1ecf3f9
+# ╠═76bb0c74-1a52-47ff-adf2-862cfea15da5
+# ╠═ec839c01-a62f-46eb-8e25-15d04a07a79f
+# ╠═c7f0e20e-7c80-4a47-abdf-800f26ca999a
 # ╟─a725ae98-e2cc-439c-9cc1-692972ac98e7
 # ╟─d5717c9c-2c16-47da-8533-a28acf189e55
 # ╟─3d8f11a3-4ebf-4d36-a227-b2cafa13e1d6
-# ╟─eb1de74c-266e-4d7e-9bb2-b34f241b0c20
+# ╠═551f179b-46ad-425f-9dd6-d8f6469a09cf
 # ╟─a5977c5c-dbcd-402d-b7a3-56614968ccb7
-# ╟─f411f944-f08a-4c69-a334-35780b6d7418
 # ╟─7f3be670-cfe3-4e60-b38f-ebacb4eaf8d3
 # ╟─1ab61f99-799f-4c34-b0d1-205c01c20dbc
+# ╠═8fc68dfc-0fb7-4a5a-bef1-ae0b33ddf4f6
 # ╟─55667950-4542-4505-9d21-e44ea8b6074d
 # ╟─cfb02910-fb2d-4de0-bc81-8ecea50e5cb5
 # ╟─105344de-8617-47fd-aeed-84102f19eaeb
 # ╟─344f9221-4213-4540-bb40-8a2de2d9b48c
-# ╠═27a7bcae-e50f-4225-bd7f-45934ec55be3
-# ╠═bf2c54f1-8110-4e25-b89c-7276cf55f42a
-# ╠═a5ea8226-ff14-432c-974e-68e1a79155cf
+# ╟─27a7bcae-e50f-4225-bd7f-45934ec55be3
+# ╠═ac331005-48ca-4be8-b0a8-85f6f740f09a
+# ╟─bf2c54f1-8110-4e25-b89c-7276cf55f42a
+# ╟─a5ea8226-ff14-432c-974e-68e1a79155cf
 # ╠═e1600b0a-b8ef-49b8-8ed0-f9c4ae0c436b
 # ╟─7ff8de2d-85fd-402a-88eb-16427e1e0b47
 # ╟─03effebd-e918-4847-b13a-7d41d4f159e7
 # ╟─e9862df6-8d1a-4c5e-88ab-1da28c2652af
 # ╠═f4870819-9db6-4bdc-8c8d-141c8fa67461
-# ╟─9d22e799-fe80-47ef-a326-1f5f1ccc07f8
+# ╠═9d22e799-fe80-47ef-a326-1f5f1ccc07f8
 # ╟─bf631ded-b54c-4768-9a8d-825ab7612695
+# ╟─c530d7ea-60bd-4458-b3ca-80b509fb4f33
