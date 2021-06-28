@@ -19,5 +19,6 @@ include("fourier_shear.jl")
 include("fftshift_alternatives.jl")
 include("fft_helpers.jl")
 include("convolutions.jl")
+include("damping.jl")
 
 end # module
