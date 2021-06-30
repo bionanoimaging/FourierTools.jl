@@ -42,12 +42,12 @@ julia> shift!(x, 0.5)
  0.5
 ```
 """
-function shift!(arr::AbstractArray{<:Complex, N}, shifts) where {N}
-    return shift_by_1D_FT!(arr, shifts)
+function shift!(arr::AbstractArray{<:Complex, N}, shifts; soft_fraction=0.0) where {N}
+    return shift_by_1D_FT!(arr, shifts; soft_fraction=soft_fraction)
 end
 
-function shift!(arr::AbstractArray{<:Real, N}, shifts) where {N}
-    return shift_by_1D_RFT!(arr, shifts)
+function shift!(arr::AbstractArray{<:Real, N}, shifts; soft_fraction=0.0) where {N}
+    return shift_by_1D_RFT!(arr, shifts; soft_fraction=soft_fraction)
 end
 
 """
@@ -56,18 +56,32 @@ end
 Returning a shifted array.
 See [`shift!`](@ref shift!) for more details
 """
-function shift(arr, shifts)
-    return shift!(copy(arr), shifts)
+function shift(arr, shifts; soft_fraction=0.0)
+    return shift!(copy(arr), shifts; soft_fraction=soft_fraction)
 end
 
-function shift_by_1D_FT!(arr::AbstractArray{<:Complex, N}, shifts) where {N}
-    for (d, shift) in pairs(shifts)
+function soft_shift(freqs, shift, fraction=0.1; corner=false)
+    rounded_shift = round.(shift);
+    if corner
+        w = window_half_cos(size(freqs),border_in=2.0-2*fraction, border_out=2.0, offset=CtrCorner)
+    else
+        w = ifftshift_view(window_half_cos(size(freqs),border_in=1.0-fraction, border_out=1.0))
+    end
+    return exp.(-1im .* freqs .* 2pi .* (w .* shift + (1.0 .-w).* rounded_shift))
+end
+
+function shift_by_1D_FT!(arr::AbstractArray{<:Complex, N}, shifts; soft_fraction=0.0) where {N}
+    for (d, shift) in pairs(shifts) # iterates of the dimension d using the corresponding shift
         if iszero(shift)
             continue
         end
-        freqs = reshape(fftfreq(size(arr, d)), ntuple(i -> 1, Val(d-1))..., size(arr,d)) 
+        freqs = reshape(fftfreq(size(arr, d)), ntuple(i -> 1, Val(d-1))..., size(arr,d)) # better use reorient from NDTools here?
         # allocates a 1D slice of exp values 
-        ϕ = exp.(-1im .* freqs .* 2pi .* shift)
+        if soft_fraction == 0
+            ϕ = exp.(-1im .* freqs .* 2pi .* shift) # use cispi ?
+        else
+            ϕ = soft_shift(freqs, shift, soft_fraction)
+        end
         # in even case, set one value to real
         if iseven(size(arr, d))
             s = size(arr, d) ÷ 2 + 1
@@ -94,7 +108,7 @@ end
 # the idea is the following:
 # rfft(x, 1) -> exp shift -> fft(x, 2) -> exp shift ->  fft(x, 3) -> exp shift -> ifft(x, [2,3]) -> irfft(x, 1)
 # So once we did a rft to shift something we can call the routine for complex arrays to shift
-function shift_by_1D_RFT!(arr::AbstractArray{<:Real, N}, shifts) where {T, N}
+function shift_by_1D_RFT!(arr::AbstractArray{<:Real, N}, shifts; soft_fraction=0.0) where {T, N}
     for (d, shift) in pairs(shifts)
         if iszero(shift)
             continue
@@ -102,7 +116,11 @@ function shift_by_1D_RFT!(arr::AbstractArray{<:Real, N}, shifts) where {T, N}
         
         s = size(arr, d) ÷ 2 + 1
         freqs = reshape(fftfreq(size(arr, d))[1:s], ntuple(i -> 1, d-1)..., s) 
-        ϕ = exp.(-1im .* freqs .* 2pi .* shift)
+        if soft_fraction == 0
+            ϕ = exp.(-1im .* freqs .* 2pi .* shift)
+        else
+            ϕ = soft_shift(freqs, shift, soft_fraction, corner=true)
+        end
         if iseven(size(arr, d))
             ϕ[s] = real(ϕ[s])
         end
@@ -112,7 +130,7 @@ function shift_by_1D_RFT!(arr::AbstractArray{<:Real, N}, shifts) where {T, N}
         arr_ft .*= ϕ
         # since we now did a single rfft dim, we can switch to the complex routine
         new_shifts = ntuple(i -> i ≤ d ? 0 : shifts[i], N)
-        shift_by_1D_FT!(arr_ft, new_shifts) 
+        shift_by_1D_FT!(arr_ft, new_shifts; soft_fraction=soft_fraction) 
         # go back to real space now and return because shift_by_1D_FT processed
         # the other dimensions already
         mul!(arr, inv(p), arr_ft)

@@ -44,8 +44,8 @@ function damp_edge_outside(img, border=0.1, mykernel=nothing, usepixels=2)
     nimg = NDTools.select_region(nimg,new_size=new_size);
     wimg = NDTools.select_region(wimg,new_size=new_size); # just mark every pixel
 
-    nimg2 = real(ift2d(ft2d(nimg) .* transfer));
-    wimg2 = real(ift2d(ft2d(wimg) .* transfer));
+    nimg2 = real(ift(ft(nimg) .* transfer)); # should this only work for 2D?
+    wimg2 = real(ift(ft(wimg) .* transfer));
 
     nimg = nimg2 ./ wimg2;
     if usepixels > 0
@@ -56,5 +56,5 @@ function damp_edge_outside(img, border=0.1, mykernel=nothing, usepixels=2)
 
     # ToDo: Phase subpixel peak determination
     # ToDo: DampEdge (with Gaussian filter)
-    # ToDo: 
+    # ToDo: make it work in ND 
 end
