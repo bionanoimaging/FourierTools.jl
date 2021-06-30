@@ -130,11 +130,11 @@ function shift_by_1D_RFT!(arr::AbstractArray{<:Real, N}, shifts; soft_fraction=0
         arr_ft .*= ϕ
         # since we now did a single rfft dim, we can switch to the complex routine
         new_shifts = ntuple(i -> i ≤ d ? 0 : shifts[i], N)
-        shift_by_1D_FT!(arr_ft, new_shifts; soft_fraction=soft_fraction) 
+        shift_by_1D_FT!(arr_ft, new_shifts; soft_fraction=soft_fraction) # workaround to mimic in-place rfft
         # go back to real space now and return because shift_by_1D_FT processed
         # the other dimensions already
         mul!(arr, inv(p), arr_ft)
-        return arr
+        return arr # this breaks the for loop and finishes the algorithm
     end
     return arr
 end

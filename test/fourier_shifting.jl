@@ -45,6 +45,12 @@ Random.seed!(42)
         @test sum(xc) ≈ sum(FourierTools.shift!(copy(xc), s))
     end
 
+    @testset "Check shifts with soft_fraction" begin
+        a = shift(delta((255,255)), (1.5,1.25),soft_fraction=0.1);
+        @test abs(sum(a[real(a).<0])) < 3.0
+        a = shift(delta((255,255)), (1.5,1.25),soft_fraction=0.0);
+        @test abs(sum(a[real(a).<0])) > 5.0
+    end
 
     @testset "Random shifts consistency between both methods" begin
         x = randn((11, 12, 13))
