@@ -72,4 +72,5 @@ The right image is the upsampled version of the left one.
 ## Function References
 ```@docs
 FourierTools.resample
+FourierTools.upsample2
 ```
