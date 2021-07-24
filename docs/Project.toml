@@ -1,7 +1,6 @@
 [deps]
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 FFTW = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
-FFTResampling = "c3173eba-33fe-4761-8a84-0ec65b39ba9a"
 
 [compat]
-Documenter = "0.26"
+Documenter = "0.27"
