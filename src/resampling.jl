@@ -104,7 +104,8 @@ end
 """
     upsample2(mat; dims=1:N)
 
-upsamples by a factor of two in all dimensions. The code is optimized for speed by using subpixelshifts rather than Fourier resizing.
+Upsamples by a factor of two in all dimensions. 
+The code is optimized for speed by using subpixelshifts rather than Fourier resizing.
 """
 function upsample2(mat::AbstractArray{T, N}; dims=1:N) where {T,N}
     res = mat
@@ -115,9 +116,9 @@ function upsample2(mat::AbstractArray{T, N}; dims=1:N) where {T,N}
 end
 
 """
-    upsample2_abs2(mat)
+    upsample2_abs2(mat::AbstractArray{T, N}; dims=1:N)
 
-upsamples by a factor of two and applies the abs2 operation. The code is optimized for speed.
+Upsamples by a factor of two and applies the abs2 operation. The code is optimized for speed.
 """
 function upsample2_abs2(mat::AbstractArray{T, N}; dims=1:N) where {T,N}
     return abs2.(upsample2(mat, dims=dims))

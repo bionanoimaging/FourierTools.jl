@@ -30,7 +30,7 @@ Result is semantically equivalent to `fftshift(fft(A, dims), dims)`
 However, the shift is done with `ShiftedArrays` and therefore doesn't allocate memory.
 
 See also: [`ft`](@ref ift), [`ift`](@ref ift), [`rft`](@ref rft), [`irft`](@ref irft),
-          [`ffts`](@ref ffts),  [`iffts`](@ref iffts),  [`ffts!`](@ref ffts!), [`rffts`](@ref rffts), [`irffts`](@ref irffts!), 
+          [`ffts`](@ref ffts),  [`iffts`](@ref iffts),  [`ffts!`](@ref ffts!), [`rffts`](@ref rffts), [`irffts`](@ref irffts), 
 """
 function ffts(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
     return fftshift_view(fft(mat, dims), dims)
@@ -45,7 +45,7 @@ Result is semantically equivalent to `fftshift(fft!(A, dims), dims)`.
 However, the shift is done with `ShiftedArrays` and therefore doesn't allocate memory.
 
 See also: [`ft`](@ref ift), [`ift`](@ref ift), [`rft`](@ref rft), [`irft`](@ref irft),
-          [`ffts`](@ref ffts),  [`iffts`](@ref iffts),  [`ffts!`](@ref ffts!), [`rffts`](@ref rffts), [`irffts`](@ref irffts!), 
+          [`ffts`](@ref ffts),  [`iffts`](@ref iffts),  [`ffts!`](@ref ffts!), [`rffts`](@ref rffts), [`irffts`](@ref irffts), 
 """
 function ffts!(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
     return fftshift_view(fft!(mat, dims), dims)
@@ -59,7 +59,7 @@ Result is semantically equivalent to `ifft(ifftshift(A, dims), dims)`.
 However, the shift is done with `ShiftedArrays` and therefore doesn't allocate memory.
 
 See also: [`ft`](@ref ift), [`ift`](@ref ift), [`rft`](@ref rft), [`irft`](@ref irft),
-          [`ffts`](@ref ffts),  [`iffts`](@ref iffts),  [`ffts!`](@ref ffts!), [`rffts`](@ref rffts), [`irffts`](@ref irffts!), 
+          [`ffts`](@ref ffts),  [`iffts`](@ref iffts),  [`ffts!`](@ref ffts!), [`rffts`](@ref rffts), [`irffts`](@ref irffts), 
 """
 function iffts(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
     return ifft(optional_collect(ifftshift_view(mat, dims)), dims)
@@ -74,7 +74,7 @@ Calculates a `rfft(A, dims)` and then shift the frequencies to the center.
 The shift is done with `ShiftedArrays` and therefore doesn't allocate memory.
 
 See also: [`ft`](@ref ift), [`ift`](@ref ift), [`rft`](@ref rft), [`irft`](@ref irft),
-          [`ffts`](@ref ffts),  [`iffts`](@ref iffts),  [`ffts!`](@ref ffts!), [`rffts`](@ref rffts), [`irffts`](@ref irffts!), 
+          [`ffts`](@ref ffts),  [`iffts`](@ref iffts),  [`ffts!`](@ref ffts!), [`rffts`](@ref rffts), [`irffts`](@ref irffts), 
 """
 function rffts(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
     rfftshift_view(rfft(mat, dims), dims);
@@ -88,7 +88,7 @@ Calculates a `irfft(A, d, dims)` and then shift the frequencies back to the corn
 The shift is done with `ShiftedArrays` and therefore doesn't allocate memory.
 
 See also: [`ft`](@ref ift), [`ift`](@ref ift), [`rft`](@ref rft), [`irft`](@ref irft),
-          [`ffts`](@ref ffts),  [`iffts`](@ref iffts),  [`ffts!`](@ref ffts!), [`rffts`](@ref rffts), [`irffts`](@ref irffts!), 
+          [`ffts`](@ref ffts),  [`iffts`](@ref iffts),  [`ffts!`](@ref ffts!), [`rffts`](@ref rffts), [`irffts`](@ref irffts), 
 """
 function irffts(mat::AbstractArray{T, N}, d::Int, dims=ntuple(identity, Val(N))) where {T, N}
     irfft(optional_collect(irfftshift_view(mat, dims)), d, dims)
@@ -117,7 +117,7 @@ true
 ```
 
 See also: [`ft`](@ref ift), [`ift`](@ref ift), [`rft`](@ref rft), [`irft`](@ref irft),
-          [`ffts`](@ref ffts),  [`iffts`](@ref iffts),  [`ffts!`](@ref ffts!), [`rffts`](@ref rffts), [`irffts`](@ref irffts!), 
+          [`ffts`](@ref ffts),  [`iffts`](@ref iffts),  [`ffts!`](@ref ffts!), [`rffts`](@ref rffts), [`irffts`](@ref irffts), 
 
 """
 function ft(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
@@ -148,7 +148,7 @@ true
 
 
 See also: [`ft`](@ref ift), [`ift`](@ref ift), [`rft`](@ref rft), [`irft`](@ref irft),
-          [`ffts`](@ref ffts),  [`iffts`](@ref iffts),  [`ffts!`](@ref ffts!), [`rffts`](@ref rffts), [`irffts`](@ref irffts!), 
+          [`ffts`](@ref ffts),  [`iffts`](@ref iffts),  [`ffts!`](@ref ffts!), [`rffts`](@ref rffts), [`irffts`](@ref irffts), 
     
 """
 function ift(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
@@ -174,7 +174,7 @@ true
 ```
 
 See also: [`ft`](@ref ift), [`ift`](@ref ift), [`rft`](@ref rft), [`irft`](@ref irft),
-          [`ffts`](@ref ffts),  [`iffts`](@ref iffts),  [`ffts!`](@ref ffts!), [`rffts`](@ref rffts), [`irffts`](@ref irffts!), 
+          [`ffts`](@ref ffts),  [`iffts`](@ref iffts),  [`ffts!`](@ref ffts!), [`rffts`](@ref rffts), [`irffts`](@ref irffts), 
 
 """
 function rft(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
@@ -200,7 +200,7 @@ true
 ```
 
 See also: [`ft`](@ref ift), [`ift`](@ref ift), [`rft`](@ref rft), [`irft`](@ref irft),
-          [`ffts`](@ref ffts),  [`iffts`](@ref iffts),  [`ffts!`](@ref ffts!), [`rffts`](@ref rffts), [`irffts`](@ref irffts!), 
+          [`ffts`](@ref ffts),  [`iffts`](@ref iffts),  [`ffts!`](@ref ffts!), [`rffts`](@ref rffts), [`irffts`](@ref irffts), 
 
 """
 function irft(mat::AbstractArray{T, N}, d::Int, dims=ntuple(identity, Val(N))) where {T, N}
