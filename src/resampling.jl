@@ -94,7 +94,7 @@ end
 
 function upsample2_1D(mat::AbstractArray{T, N}, dim=1) where {T,N}
     newsize = Tuple((d==dim) ? 2*size(mat,d) : size(mat,d) for d in 1:N)
-    res = zeros(newsize)
+    res = zeros(eltype(mat), newsize)
     selectdim(res,dim,1:2:size(res,dim)) .= mat  
     shifts = Tuple((d==dim) ? -0.5 : 0.0 for d in 1:N)
     selectdim(res,dim,2:2:size(res,dim)) .= shift(mat, shifts) # this is highly optimized and all fft of zero-shift directions are automatically avoided
@@ -102,13 +102,13 @@ function upsample2_1D(mat::AbstractArray{T, N}, dim=1) where {T,N}
 end
 
 """
-    upsample2(mat)
+    upsample2(mat; dims=1:N)
 
 upsamples by a factor of two in all dimensions. The code is optimized for speed by using subpixelshifts rather than Fourier resizing.
 """
-function upsample2(mat::AbstractArray{T, N}) where {T,N}
+function upsample2(mat::AbstractArray{T, N}; dims=1:N) where {T,N}
     res = mat
-    for d in 1:N
+    for d in dims
         res = upsample2_1D(res,d)
     end
     return res
@@ -119,6 +119,6 @@ end
 
 upsamples by a factor of two and applies the abs2 operation. The code is optimized for speed.
 """
-function upsample2_abs2(mat::AbstractArray{T, N}) where {T,N}
-    return abs2.(upsample2(mat))
+function upsample2_abs2(mat::AbstractArray{T, N}; dims=1:N) where {T,N}
+    return abs2.(upsample2(mat, dims=dims))
 end
