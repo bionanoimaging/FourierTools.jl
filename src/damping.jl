@@ -10,15 +10,16 @@ export damp_edge_outside
 + mykernel : A kernel can be provided. Default: 1/r^3 kernel of support norm(border size) * sqrt(2)
 + usepixels : number of border pixels in the image to use on each edge. Default: 2. Zero means use all pixels
 #Example:
-```jldoctest
-julia> using TestImages; img = permutedims(Float32.(testimage("fabio_gray_512.png")),[2 1]);
+```julia
+julia> using TestImages, FourierTools, Colors
 
-julia> using FourierTools; img_d = damp_edge_outside(img);
+julia> img = permutedims(Float32.(testimage("fabio_gray_512.png")),[2 1]);
 
-julia> using Images; Gray.(log.(1 .+abs.(ft(img)))) ./ 10
+julia> img_d = damp_edge_outside(img);
+
+julia> Gray.(log.(1 .+abs.(ft(img)))) ./ 10
 
 julia> Gray.(log.(1 .+abs.(ft(img_d)))) ./ 10
-
 ```
 """
 function damp_edge_outside(img, border=0.1, mykernel=nothing, usepixels=2)

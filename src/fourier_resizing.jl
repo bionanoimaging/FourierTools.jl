@@ -20,38 +20,46 @@ is always assumed to align before and after the padding operation.
 
  # Examples
 ```jldoctest
-julia> x = randn((3,3));
+julia> x = [1 20 3; 4 500 6; -7 821 923]
+3×3 Matrix{Int64}:
+  1   20    3
+  4  500    6
+ -7  821  923
 
 julia> ffts(x)
 3×3 ShiftedArrays.CircShiftedArray{ComplexF64, 2, Matrix{ComplexF64}}:
- -1.98594-1.90505im  -1.57264+0.38516im  -1.26658+2.55434im
- -2.28177-2.60433im   -3.7389+0.0im      -2.28177+2.60433im
- -1.26658-2.55434im  -1.57264-0.38516im  -1.98594+1.90505im
+   106.5+390.577im  -1099.5-1062.61im   1000.5+700.615im
+ -1138.5+354.204im   2271.0+0.0im      -1138.5-354.204im
+  1000.5-700.615im  -1099.5+1062.61im    106.5-390.577im
 
 julia> select_region_ft(ffts(x), (4,4))
 4×4 PaddedView(0.0 + 0.0im, OffsetArray(::ShiftedArrays.CircShiftedArray{ComplexF64, 2, Matrix{ComplexF64}}, 2:4, 2:4), (Base.OneTo(4), Base.OneTo(4))) with eltype ComplexF64:
- 0.0+0.0im       0.0+0.0im           0.0+0.0im           0.0+0.0im
- 0.0+0.0im  -1.98594-1.90505im  -1.57264+0.38516im  -1.26658+2.55434im
- 0.0+0.0im  -2.28177-2.60433im   -3.7389+0.0im      -2.28177+2.60433im
- 0.0+0.0im  -1.26658-2.55434im  -1.57264-0.38516im  -1.98594+1.90505im
+ 0.0+0.0im      0.0+0.0im          0.0+0.0im          0.0+0.0im
+ 0.0+0.0im    106.5+390.577im  -1099.5-1062.61im   1000.5+700.615im
+ 0.0+0.0im  -1138.5+354.204im   2271.0+0.0im      -1138.5-354.204im
+ 0.0+0.0im   1000.5-700.615im  -1099.5+1062.61im    106.5-390.577im
 
-julia> x = randn((4,4));
+julia> x = [1 20; 4 500; -7 821; -2 2]
+4×2 Matrix{Int64}:
+  1   20
+  4  500
+ -7  821
+ -2    2
 
 julia> ffts(x)
-4×4 ShiftedArrays.CircShiftedArray{ComplexF64, 2, Matrix{ComplexF64}}:
- 0.632808+0.0im        -1.75924-5.43787im  -2.66258+0.0im       -1.75924+5.43787im
- -1.88949+0.892686im    3.91001-2.0083im    3.31736-5.97955im  -0.181724-2.36071im
-  3.34282+0.0im        -1.90996+3.74402im  -2.03768+0.0im       -1.90996-3.74402im
- -1.88949-0.892686im  -0.181724+2.36071im   3.31736+5.97955im    3.91001+2.0083im
+4×2 ShiftedArrays.CircShiftedArray{ComplexF64, 2, Matrix{ComplexF64}}:
+  -347.0+0.0im     331.0+0.0im
+   809.0-492.0im  -793.0+504.0im
+ -1347.0+0.0im    1339.0+0.0im
+   809.0+492.0im  -793.0-504.0im
 
-julia> select_region_ft(ffts(x), (5,5))
-5×5 FourierTools.FourierSplit{ComplexF64, 2, FourierTools.FourierSplit{ComplexF64, 2, PaddedViews.PaddedView{ComplexF64, 2, Tuple{Base.OneTo{Int64}, Base.OneTo{Int64}}, OffsetArrays.OffsetMatrix{ComplexF64, ShiftedArrays.CircShiftedArray{ComplexF64, 2, Matrix{ComplexF64}}}}}}:
-  0.158202+0.0im       -0.879618-2.71894im  -1.33129+0.0im      -0.879618+2.71894im   0.158202+0.0im
- -0.944743+0.446343im    3.91001-2.0083im    3.31736-5.97955im  -0.181724-2.36071im  -0.944743+0.446343im
-   1.67141+0.0im        -1.90996+3.74402im  -2.03768+0.0im       -1.90996-3.74402im    1.67141+0.0im
- -0.944743-0.446343im  -0.181724+2.36071im   3.31736+5.97955im    3.91001+2.0083im   -0.944743-0.446343im
-  0.158202+0.0im       -0.879618-2.71894im  -1.33129+0.0im      -0.879618+2.71894im   0.158202+0.0im
-
+julia> select_region_ft(ffts(x), (5,3))
+5×3 FourierTools.FourierSplit{ComplexF64, 2, FourierTools.FourierSplit{ComplexF64, 2, PaddedViews.PaddedView{ComplexF64, 2, Tuple{Base.OneTo{Int64}, Base.OneTo{Int64}}, OffsetArrays.OffsetMatrix{ComplexF64, ShiftedArrays.CircShiftedArray{ComplexF64, 2, Matrix{ComplexF64}}}}}}:
+ -86.75+0.0im     165.5+0.0im    -86.75+0.0im
+  404.5-246.0im  -793.0+504.0im   404.5-246.0im
+ -673.5+0.0im    1339.0+0.0im    -673.5+0.0im
+  404.5+246.0im  -793.0-504.0im   404.5+246.0im
+ -86.75+0.0im     165.5+0.0im    -86.75+0.0im
 ```
 """
 function select_region_ft(mat,new_size)
