@@ -112,6 +112,12 @@
         a = rand(sz...)
         @test ≈(upsample2(a),resample(a,sz.*2))
         @test ≈(upsample2_abs2(a),abs2.(resample(a,sz.*2)))
+        a = rand(ComplexF32, sz...)
+        @test ≈(upsample2(a),resample(a,sz.*2))
+        @test ≈(upsample2_abs2(a),abs2.(resample(a,sz.*2)))
+        s2 = (d == 2 ? sz[d]*2 : sz[d] for d in 1:length(sz))
+        @test ≈(upsample2(a, dims=(2,)),resample(a,s2))
+        @test ≈(upsample2_abs2(a, dims=(2,)),abs2.(resample(a,s2)))
     end
     end
 
