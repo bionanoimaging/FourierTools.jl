@@ -121,9 +121,11 @@ julia> select_region(ones(3,3),new_size=(7,7),center=(1,3))
  0.0  0.0  0.0  0.0  0.0  0.0  0.0
 ```
 """
-function select_region(mat; new_size=size(mat), center=ft_center_diff(size(mat)).+1)
+function select_region(mat; new_size=size(mat), center=ft_center_diff(size(mat)).+1, pad_value=zero(eltype(mat)))
+    new_size = Tuple(expand_size(new_size, size(mat)))
+    center = Tuple(expand_size(center, ft_center_diff(size(mat)).+1))
     oldcenter = ft_center_diff(new_size).+1
-    PaddedView(0,mat,new_size, oldcenter .- center.+1);
+    PaddedView(pad_value, mat,new_size, oldcenter .- center.+1);
 end
 
 function ft_pad(mat, new_size)

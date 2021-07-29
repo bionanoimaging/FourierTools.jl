@@ -20,5 +20,6 @@ include("fftshift_alternatives.jl")
 include("fft_helpers.jl")
 include("convolutions.jl")
 include("damping.jl")
+include("czt.jl")
 
 end # module
