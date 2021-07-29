@@ -27,6 +27,17 @@ julia> ] add FourierTools
 Have a look in the [examples folder](examples/) for interactive examples. The [documentation](https://bionanoimaging.github.io/FourierTools.jl/dev/) offers a quick overview.
 
 
+## Cite
+If you use this package in an academic work, please cite us!
+See on the right side the *Cite this repository*:
+```
+@misc{Wechsler_FourierTools.jl__Efficient,
+author = {Wechsler, Felix and Heintzmann, Rainer},
+title = {FourierTools.jl - Efficient Working with Fourier Space},
+url = {https://github.com/bionanoimaging/FourierTools.jl}}
+```
+
+
 [docs-dev-img]: https://img.shields.io/badge/docs-dev-pink.svg
 [docs-dev-url]: https://bionanoimaging.github.io/FourierTools.jl/dev/
 
