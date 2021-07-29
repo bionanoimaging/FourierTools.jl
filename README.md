@@ -31,9 +31,9 @@ Have a look in the [examples folder](examples/) for interactive examples. The [d
 If you use this package in an academic work, please cite us!
 See on the right side the *Cite this repository*:
 ```
-@misc{Wechsler_FourierTools.jl__Efficient,
+@misc{Wechsler_FourierTools.jl__Efficiently,
 author = {Wechsler, Felix and Heintzmann, Rainer},
-title = {FourierTools.jl - Efficient Working with Fourier Space},
+title = {FourierTools.jl - Efficiently Working with Fourier Space},
 url = {https://github.com/bionanoimaging/FourierTools.jl}}
 ```
 
