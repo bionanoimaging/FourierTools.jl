@@ -17,6 +17,6 @@ keywords:
 license: MIT
 message: "If you use this software, please cite it using these metadata."
 repository-code: "https://github.com/bionanoimaging/FourierTools.jl"
-title: "FourierTools.jl - Efficient Working with Fourier Space"
+title: "FourierTools.jl - Efficiently Working with Fourier Space"
 version: "0.2.2"
 ...
