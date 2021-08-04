@@ -423,8 +423,6 @@ function realspace_pixelsize(fourier_pixelsize, mysize)
     1.0 ./ (fourier_pixelsize .* mysize) 
 end
 
-
-
 #= # This is the setindex function that used to be in PaddedViews
 # copied from commit https://github.com/JuliaArrays/PaddedViews.jl/commit/ff689b1f5d41545f3decf1f00b94c5ad7b1d5ac8
 Base.@propagate_inbounds function Base.setindex!(A::PaddedView{T, N}, v, i::Vararg{Int, N}) where {T, N}

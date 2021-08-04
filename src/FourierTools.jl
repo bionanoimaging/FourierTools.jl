@@ -7,6 +7,7 @@ using LinearAlgebra
 using IndexFunArrays
 using LazyArrays
 using ChainRulesCore
+using NDTools
 
 include("utils.jl")
 include("resampling.jl")

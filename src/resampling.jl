@@ -92,12 +92,18 @@ function resample_by_FFT(mat, new_size)
     return res    
 end
 
-function upsample2_1D(mat::AbstractArray{T, N}, dim=1) where {T,N}
+function upsample2_1D(mat::AbstractArray{T, N}, dim=1, fix_center=false) where {T,N}
     newsize = Tuple((d==dim) ? 2*size(mat,d) : size(mat,d) for d in 1:N)
     res = zeros(eltype(mat), newsize)
-    selectdim(res,dim,1:2:size(res,dim)) .= mat  
-    shifts = Tuple((d==dim) ? -0.5 : 0.0 for d in 1:N)
-    selectdim(res,dim,2:2:size(res,dim)) .= shift(mat, shifts) # this is highly optimized and all fft of zero-shift directions are automatically avoided
+    if fix_center && isodd(size(mat,dim))
+        selectdim(res,dim,2:2:size(res,dim)) .= mat  
+        shifts = Tuple((d==dim) ? 0.5 : 0.0 for d in 1:N)
+        selectdim(res,dim,1:2:size(res,dim)) .= shift(mat, shifts) # this is highly optimized and all fft of zero-shift directions are automatically avoided
+    else
+        selectdim(res,dim,1:2:size(res,dim)) .= mat  
+        shifts = Tuple((d==dim) ? -0.5 : 0.0 for d in 1:N)
+        selectdim(res,dim,2:2:size(res,dim)) .= shift(mat, shifts) # this is highly optimized and all fft of zero-shift directions are automatically avoided
+    end
     return res
 end
 
@@ -107,10 +113,10 @@ end
 Upsamples by a factor of two in all dimensions. 
 The code is optimized for speed by using subpixelshifts rather than Fourier resizing.
 """
-function upsample2(mat::AbstractArray{T, N}; dims=1:N) where {T,N}
+function upsample2(mat::AbstractArray{T, N}; dims=1:N, fix_center=false) where {T,N}
     res = mat
     for d in dims
-        res = upsample2_1D(res,d)
+        res = upsample2_1D(res,d, fix_center)
     end
     return res
 end
