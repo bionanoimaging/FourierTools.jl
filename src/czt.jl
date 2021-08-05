@@ -102,9 +102,7 @@ julia> zoomed = real.(ift(xft))
   0.0239759   -0.028264    0.0541186  -0.0116475   -0.261294   0.312719  -0.261294  -0.0116475    0.0541186  -0.028264
 ```
 """
-function czt( xin , scale, dims=1:length(size(xin)))
-    sz = size(xin)
-    
+function czt(xin::Array{T,N}, scale, dims=1:length(size(xin)))::Array{complex(T),N} where {T,N}
     xout = xin
     for d in dims
         xout = czt_1d(xout, scale[d], d)
