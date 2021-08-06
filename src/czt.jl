@@ -25,13 +25,13 @@ function czt_1d(xin, scaled, d)
     ww = w .^ kk2
     aa = a .^ (-nn)
     aa = aa .* ww[dsize .+ nn] # is a 1d list of factors. This defines the shift in Fourier space (centering of frequencies)
-    to_fft = NDTools.select_region!(1 ./ ww[1:(2*dsize-1)], new_size=2*dsize, center=dsize+1)
+    to_fft = NDTools.select_region(1 ./ ww[1:(2*dsize-1)], new_size=2*dsize, center=dsize+1)
     # return tofft
     fv = fft(to_fft) # is always 1d (small array)
 
     y = xin .* reorient(aa,d)
     nsz = sz .* NDTools.single_dim_size(d,2,length(sz)) # twice the size along direction d
-    to_fft = NDTools.select_region!(y, new_size=nsz, center=nsz.÷2 .+1)
+    to_fft = NDTools.select_region(y, new_size=nsz, center=nsz.÷2 .+1)
     g = ifft(fft(to_fft, d) .* reorient(fv,d), d) # convolve on a larger grid along one dimension
     # return g
     oldctr = sz[d]÷2 + 1
