@@ -207,7 +207,7 @@ function irft(mat::AbstractArray{T, N}, d::Int, dims=ntuple(identity, Val(N))) w
     fftshift_view(irfft(optional_collect(irfftshift_view(optional_collect(mat), dims)), d, dims), dims);
 end
 
-## Short-hand versions of the functions
+## Short-hand versions of the ft functions
 export ft2d,ift2d, rft2d, irft2d
 """
     ft2d(mat::AbstractArray{T, N}) where {T, N}
@@ -277,3 +277,41 @@ end
 function irffts2d(mat::AbstractArray{T, N}, d::Int) where {T, N}
     irffts(mat,d,(1,2))
 end
+
+
+## Short-hand versions of the fft functions
+export fft2d,ifft2d, rfft2d, irfft2d
+"""
+    fft2d(mat::AbstractArray{T, N}) where {T, N}
+    Short-hand for fft(mat, (1,2)) performing only a 2D ft.
+    See fft for details.
+"""
+function fft2d(mat::AbstractArray{T, N}) where {T, N}
+    fft(mat,(1,2))
+end
+"""
+    ifft2d(mat::AbstractArray{T, N}) where {T, N}
+    Short-hand for ift(mat, (1,2)) performing only a 2D inverse ft.
+    See ifft for details.
+"""
+function ifft2d(mat::AbstractArray{T, N}) where {T, N}
+    ifft(mat,(1,2))
+end
+"""
+    rfft2d(mat::AbstractArray{T, N}) where {T, N}
+    Short-hand for ft(mat, (1,2)) performing only a 2D real-valued ft.
+    See fft for details.
+"""
+function rfft2d(mat::AbstractArray{T, N}) where {T, N}
+    rfft(mat,(1,2))
+end
+
+"""
+    irfft2d(mat::AbstractArray{T, N}, d) where {T, N}
+    Short-hand for irft(mat, (1,2)) performing only a 2D inverse real-valued ft.
+    See rifft for details.
+"""
+function irfft2d(mat::AbstractArray{T, N}, d::Int) where {T, N}
+    irfft(mat,d,(1,2))
+end
+
