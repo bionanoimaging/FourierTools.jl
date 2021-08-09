@@ -17,8 +17,11 @@ julia> ] add FourierTools
 ```
 
 ## Features
-A quick introduction was given at the [JuliaCon 2021](https://www.youtube.com/watch?v=qYgJDb_Ko2E).
+A quick introduction was given at the JuliaCon 2021.
 
+<a href="https://www.youtube.com/watch?v=qYgJDb_Ko2E"><img src="docs/src/assets/julia_con.jpg"  width="300"></a>
+
+The main features are:
 * sinc interpolation allows to up and downsample a (bandlimited) signal
 * FFT based convolutions
 * array/image rotation 
