@@ -280,7 +280,7 @@ end
 
 
 ## Short-hand versions of the fft functions
-export fft2d,ifft2d, rfft2d, irfft2d
+export fft2d,ifft2d, rfft2d, irfft2d, fftshift2d, ifftshift2d, fftshift2d_view, ifftshift2d_view
 """
     fft2d(mat::AbstractArray{T, N}) where {T, N}
     Short-hand for fft(mat, (1,2)) performing only a 2D ft.
@@ -297,6 +297,44 @@ end
 function ifft2d(mat::AbstractArray{T, N}) where {T, N}
     ifft(mat,(1,2))
 end
+
+"""
+    fftshift2d(mat::AbstractArray{T, N}) where {T, N}
+    Short-hand for fftshift(mat, (1,2)) performing only a 2D ft.
+    See fft for details.
+"""
+function fftshift2d(mat::AbstractArray{T, N}) where {T, N}
+    fftshift(mat,(1,2))
+end
+
+"""
+    ifftshift2d(mat::AbstractArray{T, N}) where {T, N}
+    Short-hand for ifftshift(mat, (1,2)) performing only a 2D inverse ft.
+    See ifft for details.
+"""
+function ifftshift2d(mat::AbstractArray{T, N}) where {T, N}
+    ifftshift(mat,(1,2))
+end
+
+"""
+    fftshift2d_view(mat::AbstractArray{T, N}) where {T, N}
+    Short-hand for fftshift_view(mat, (1,2)) performing only a 2D ft.
+    See fft for details.
+"""
+function fftshift2d_view(mat::AbstractArray{T, N}) where {T, N}
+    fftshift_view(mat,(1,2))
+end
+
+"""
+    ifftshift2d_view(mat::AbstractArray{T, N}) where {T, N}
+    Short-hand for ifftshift_view(mat, (1,2)) performing only a 2D inverse ft.
+    See ifft for details.
+"""
+function ifftshift2d_view(mat::AbstractArray{T, N}) where {T, N}
+    ifftshift_view(mat,(1,2))
+end
+
+
 """
     rfft2d(mat::AbstractArray{T, N}) where {T, N}
     Short-hand for ft(mat, (1,2)) performing only a 2D real-valued ft.

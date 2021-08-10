@@ -45,6 +45,10 @@
         @test(fft2d(arr) == fft(arr, dims))
         @test(ifft2d(arr) == ifft(arr, dims))
         @test(rfft2d(arr) == rfft(arr, (1,2)))
+        @test(fftshift2d(arr) == fftshift(arr, (1,2)))
+        @test(ifftshift2d(arr) == ifftshift(arr, (1,2)))
+        @test(fftshift2d_view(arr) == fftshift_view(arr, (1,2)))
+        @test(ifftshift2d_view(arr) == ifftshift_view(arr, (1,2)))
 
         arr = randn(ComplexF32, (4,7,8))
         @test(irffts2d(arr, d) == irfft(ifftshift(arr, dims[2:2]), d, (1,2)))
