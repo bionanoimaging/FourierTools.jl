@@ -80,7 +80,7 @@ function ChainRulesCore.rrule(::typeof(conv), u::AbstractArray{T, N}, v::Abstrac
     Y = conv(u, v, dims)
     function conv_pullback(barx)
         z = zero(eltype(u))
-        return NO_FIELDS, conv(barx, conj(v), dims), z, z
+        return NoTangent(), conv(barx, conj(v), dims), z, z
     end 
     return Y, conv_pullback
 end
@@ -157,7 +157,7 @@ function ChainRulesCore.rrule(::typeof(p_conv_aux), P, P_inv, u, v)
     function conv_pullback(barx)
         z = zero(eltype(u))
         ∇ = p_conv_aux(P, P_inv, barx, conj(v))
-        return NO_FIELDS, z, z, ∇, z
+        return NoTangent(), z, z, ∇, z
     end 
     return Y, conv_pullback
 end
