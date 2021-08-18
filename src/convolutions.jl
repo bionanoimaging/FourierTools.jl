@@ -4,9 +4,9 @@ export conv, plan_conv, conv_psf, plan_conv_psf
 """
     conv(u, v[, dims])
 
-    Convolve `u` with `v` over `dims` dimensions with an FFT based method.
-    Note, that this method introduces wrap-around artifacts without
-    proper padding/windowing.
+Convolve `u` with `v` over `dims` dimensions with an FFT based method.
+Note, that this method introduces wrap-around artifacts without
+proper padding/windowing.
 
 # Arguments
 * `u` is an array in real space.
