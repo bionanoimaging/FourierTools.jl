@@ -5,7 +5,6 @@ using FFTW
 FFTW.set_num_threads(4)
 using LinearAlgebra
 using IndexFunArrays
-using LazyArrays
 using ChainRulesCore
 using NDTools
 

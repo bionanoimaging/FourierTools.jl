@@ -88,7 +88,7 @@ end
 
 
 """
-    plan_conv(u, v [, dims])
+    plan_conv(u, v [, dims]; kwargs...)
 
 Pre-plan an optimized convolution for arrays shaped like `u` and `v` (based on pre-plan FFT)
 along the given dimenions `dims`.
@@ -101,6 +101,8 @@ The second return is the convolution function `pconv`.
 `pconv` itself has two arguments. `pconv(u, v_ft=v_ft)` where `u` is the object and `v_ft` the v_ft.
 This function achieves faster convolution than `conv(u, u)`.
 Depending whether `u` is real or complex we do `fft`s or `rfft`s
+Additionally, it is possible to provide `flags=FFTW.MEASURE` as `kwargs` 
+to change the planning of the FFT.
 
 
 # Examples
@@ -124,10 +126,11 @@ julia> pconv(u)
  1.0  2.0  3.0  4.0  5.0
 ```
 """
-function plan_conv(u::AbstractArray{T, N}, v::AbstractArray{T, M}, dims=ntuple(+, N)) where {T, N, M}
+function plan_conv(u::AbstractArray{T, N}, v::AbstractArray{T, M}, dims=ntuple(+, N);
+                   kwargs...) where {T, N, M}
     plan = get_plan(T)
     # do the preplanning step
-    P = plan(u, dims)
+    P = plan(u, dims; kwargs...)
     u_ft = P * u
     P_inv = inv(P)
 
@@ -140,12 +143,13 @@ function plan_conv(u::AbstractArray{T, N}, v::AbstractArray{T, M}, dims=ntuple(+
 end
 
 """
-    plan_conv_psf(u, psf [, dims]) where {T, N}
+    plan_conv_psf(u, psf [, dims]; kwargs...) where {T, N}
 
 `plan_conv_psf` is a shorthand for `plan_conv(u, ifftshift(psf))`. For examples see `plan_conv`.
 """
-function plan_conv_psf(u::AbstractArray{T, N}, psf::AbstractArray{T, M}, dims=ntuple(+, N)) where {T, N, M}
-    return plan_conv(u, ifftshift(psf, dims), dims)
+function plan_conv_psf(u::AbstractArray{T, N}, psf::AbstractArray{T, M}, dims=ntuple(+, N);
+                       kwargs...) where {T, N, M}
+    return plan_conv(u, ifftshift(psf, dims), dims; kwargs...)
 end
 
 function p_conv_aux(P, P_inv, u, v_ft)
