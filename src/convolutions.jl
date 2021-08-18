@@ -130,8 +130,14 @@ function plan_conv(u::AbstractArray{T, N}, v::AbstractArray{T, M}, dims=ntuple(+
                    kwargs...) where {T, N, M}
     plan = get_plan(T)
     # do the preplanning step
-    P = plan(u, dims; kwargs...)
-    u_ft = P * u
+    P = let
+        # FFTW.MEASURE flag might overwrite input! Hence copy!
+        if :flags in keys(kwargs) && getindex(kwargs, :flags) == FFTW.MEASURE
+            P = plan(copy(u), dims; kwargs...)
+        else
+            P = plan(u, dims; kwargs...)
+        end
+    end
     P_inv = inv(P)
 
     v_ft = fft_or_rfft(T)(v, dims)
