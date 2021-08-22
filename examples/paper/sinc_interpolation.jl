@@ -20,8 +20,10 @@ arr_interp = resample(arr_low, N)
 
 plt1 = @pgf PGFPlotsX.Axis(
     { 
-        xmin=0, xmax=50, ymin=-3, ymax=3.5, 
+        xmin=0, xmax=50, ymin=-3, ymax=4.5, 
         legend_pos="north east", legend_entries={"low sampling", "sinc interpolated", "high sampling"},
+        width = "10cm",
+        height= "6cm",
     },
     
     Plot({mark="*", style="only marks", color="green",mark_options = {scale=0.3},
