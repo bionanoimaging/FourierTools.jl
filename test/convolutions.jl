@@ -9,17 +9,17 @@
         otf_p2, conv_p2 = plan_conv(img .+ 0.0im, 0.0im .+ psf, dims)
         otf_p3, conv_p3 = plan_conv_psf(img, fftshift(psf,dims), dims)
         otf_p3, conv_p3 = plan_conv_psf(img, fftshift(psf,dims), dims, flags=FFTW.MEASURE)
+        otf_p4, conv_p4 = plan_conv_psf_buffer(img, fftshift(psf,dims), dims, flags=FFTW.MEASURE)
         @testset "$s" begin
             @test img_out ≈ conv(0.0im .+ img, psf, dims)
             @test img_out ≈ conv(img, psf, dims)
             @test img_out ≈ conv_p(img, otf_p)
             @test img_out ≈ conv_p(img)
             @test img_out ≈ conv_p2(img, otf_p2)
-            @test img_out ≈ conv_p2(img, otf_p2)
             @test img_out ≈ conv_p2(img)
             @test img_out ≈ conv_psf(img, fftshift(psf, dims), dims)
-            @test img_out ≈ conv_psf(img, fftshift(psf, dims), dims)
             @test img_out ≈ conv_p3(img)
+            @test img_out ≈ conv_p4(img)
         end
     end
     
@@ -62,6 +62,13 @@
     img_out = conv_gen(img, psf, dims)
     conv_test(psf, img, img, dims, "Convolution with 5D delta peak and random 5D image over 4 Dimensions")
 
+
+    @testset "Check broadcasting convolution" begin
+        img = randn((5,6,7))
+        psf = randn((5,6,7, 2, 3))
+        _, p = plan_conv_buffer(img, psf)
+        @test conv(img, psf) ≈ p(img)
+    end
     
 
    @testset "Check types" begin
@@ -98,6 +105,5 @@
         @test ≈(exp(1im * 1.23) .+ conv(ones(eltype(y), size(x)), conj.(y)), exp(1im * 1.23) .+ Zygote.gradient(x -> sum(real(conv(x, y))), x)[1], rtol=1e-4)   
         @test ≈(exp(1im * 1.23) .+ conv(ones(ComplexF32, size(x)), conj.(y)), exp(1im * 1.23) .+ Zygote.gradient(x -> sum(real(p(x, y_ft))), x)[1], rtol=1e-4) 
     end
-
 
 end

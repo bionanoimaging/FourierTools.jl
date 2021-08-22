@@ -148,4 +148,8 @@
     end
 
 
+    @testset "Check eltype error" begin
+        @test_throws ArgumentError FourierTools.eltype_error(Float32, Float64)
+        @test isnothing(FourierTools.eltype_error(Int, Int))
+    end
 end

@@ -1,4 +1,5 @@
 export conv, plan_conv, conv_psf, plan_conv_psf
+export plan_conv_buffer, plan_conv_psf_buffer
 
 
 """
@@ -126,9 +127,10 @@ julia> pconv(u)
  1.0  2.0  3.0  4.0  5.0
 ```
 """
-function plan_conv(u::AbstractArray{T, N}, v::AbstractArray{T, M}, dims=ntuple(+, N);
-                   kwargs...) where {T, N, M}
-    plan = get_plan(T)
+function plan_conv(u::AbstractArray{T1, N}, v::AbstractArray{T2, M}, dims=ntuple(+, N);
+                   kwargs...) where {T1, T2, N, M}
+    eltype_error(T1, T2)
+    plan = get_plan(T1)
     # do the preplanning step
     P = let
         # FFTW.MEASURE flag might overwrite input! Hence copy!
@@ -141,13 +143,62 @@ function plan_conv(u::AbstractArray{T, N}, v::AbstractArray{T, M}, dims=ntuple(+
     end
     P_inv = inv(P)
 
-    v_ft = fft_or_rfft(T)(v, dims)
+    v_ft = fft_or_rfft(T1)(v, dims)
     # construct the efficient conv function
     # P and P_inv can be understood like matrices
     # but their computation is fast
     conv(u, v_ft=v_ft) = p_conv_aux(P, P_inv, u, v_ft)
     return v_ft, conv
 end
+
+"""
+    plan_conv_buffer(u, v [, dims]; kwargs...)
+
+Similar to [`plan_conv`](@ref) but instead uses buffers to prevent memory allocations.
+Not AD friendly!
+
+"""
+function plan_conv_buffer(u::AbstractArray{T1, N}, v::AbstractArray{T2, M}, dims=ntuple(+, N);
+                   kwargs...) where {T1, T2, N, M}
+    eltype_error(T1, T2)
+    plan = get_plan(T1)
+    # do the preplanning step
+    P_u = plan(u, dims; kwargs...)
+    P_v = plan(v, dims)
+
+    u_buff = P_u * u
+    v_ft = P_v * v
+    uv_buff = u_buff .* v_ft
+    
+    # for fourier space we need a new plan
+    P = plan(u .* v, dims; kwargs...)
+    P_inv = inv(P)
+    out_buff = P_inv * uv_buff
+
+    # construct the efficient conv function
+    # P and P_inv can be understood like matrices
+    # but their computation is fast
+    function conv(u, v_ft=v_ft)
+        mul!(u_buff, P_u, u)
+        uv_buff .= u_buff .* v_ft
+        mul!(out_buff, P_inv, uv_buff)
+        return out_buff
+    end
+
+    return v_ft, conv
+end
+
+"""
+    plan_conv_psf_buffer(u, psf [, dims]; kwargs...) where {T, N}
+
+`plan_conv_psf_buffer` is a shorthand for `plan_conv_buffer(u, ifftshift(psf))`. For examples see `plan_conv`.
+"""
+function plan_conv_psf_buffer(u::AbstractArray{T, N}, psf::AbstractArray{T, M}, dims=ntuple(+, N);
+                       kwargs...) where {T, N, M}
+    return plan_conv_buffer(u, ifftshift(psf, dims), dims; kwargs...)
+end
+
+
 
 """
     plan_conv_psf(u, psf [, dims]; kwargs...) where {T, N}
@@ -160,7 +211,9 @@ function plan_conv_psf(u::AbstractArray{T, N}, psf::AbstractArray{T, M}, dims=nt
 end
 
 function p_conv_aux(P, P_inv, u, v_ft)
-    return P_inv.scale .* (P_inv.p * ((P * u) .* v_ft))
+    tmp = (P_inv.p * ((P * u) .* v_ft))
+    tmp .*= P_inv.scale
+    return tmp
 end
 
 function ChainRulesCore.rrule(::typeof(p_conv_aux), P, P_inv, u, v)
@@ -201,3 +254,5 @@ end
 function get_plan(::Type{T}) where T
     return plan_fft
 end
+
+
