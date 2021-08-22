@@ -1,0 +1,6 @@
+[deps]
+BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+FFTW = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
+FourierTools = "b18b359b-aebc-45ac-a139-9c0ccbb2871e"
+IndexFunArrays = "613c443e-d742-454e-bfc6-1d7f8dd76566"
+PGFPlotsX = "8314cec4-20b6-5062-9cdb-752b83310925"
