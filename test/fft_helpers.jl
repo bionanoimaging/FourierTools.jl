@@ -70,4 +70,14 @@
             @test irft(delta(rft_size(sz),offset=CtrRFT),sz[1]) ≈ ones(sz) ./ prod(sz)
         end
     end
+
+
+    @testset "Test in place methods" begin
+        x = randn(ComplexF32, (5,3,10))
+        dims = (1,2)
+        @test fftshift(fft(x, dims), dims) ≈ ffts!(copy(x), dims)
+        @test ffts2d!(copy(x)) ≈ ffts!(copy(x), (1,2))
+    end
+
+
 end

@@ -1,8 +1,6 @@
 # FFT helpers
 ```@docs
 ffts
-ffts2D
-ffts!
 ffts!
 iffts
 rffts
@@ -37,14 +35,11 @@ FourierTools.fftshift2d
 FourierTools.ifftshift2d
 FourierTools.fftshift2d_view
 FourierTools.ifftshift2d_view
-FourierTools.rfftshiftd2_view
-FourierTools.irfftshiftd2_view
 fft2d
 ifft2d
 rfft2d
 irfft2d
 ffts2d
-ffts2d!
 ffts2d!
 iffts2d
 rffts2d

@@ -253,6 +253,17 @@ Only over `dims=(1,2)`.
 function ffts2d(mat::AbstractArray{T, N}) where {T, N}
     ffts(mat,(1,2))
 end
+
+"""
+    fft2ds!(mat::AbstractArray{T, N}) where {T, N}
+
+Only over `dims=(1,2)`.
+"""
+function ffts2d!(mat::AbstractArray{T, N}) where {T, N}
+    ffts!(mat,(1,2))
+end
+
+
 """
     iffts2d(mat::AbstractArray{T, N}) where {T, N}
 
