@@ -132,7 +132,8 @@ function plan_conv(u::AbstractArray{T, N}, v::AbstractArray{T, M}, dims=ntuple(+
     # do the preplanning step
     P = let
         # FFTW.MEASURE flag might overwrite input! Hence copy!
-        if :flags in keys(kwargs) && getindex(kwargs, :flags) == FFTW.MEASURE
+        if (:flags in keys(kwargs) && 
+            (getindex(kwargs, :flags) == FFTW.MEASURE || getindex(kwargs, :flags) == FFTW.PATIENT)) 
             P = plan(copy(u), dims; kwargs...)
         else
             P = plan(u, dims; kwargs...)
