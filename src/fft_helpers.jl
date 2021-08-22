@@ -213,24 +213,24 @@ end
 ## Short-hand versions of the ft functions
 """
     ft2d(mat::AbstractArray{T, N}) where {T, N}
-    Short-hand for ft(mat, (1,2)) performing only a 2D ft.
-    See ft for details.
+
+Only over `dims=(1,2)`.
 """
 function ft2d(mat::AbstractArray{T, N}) where {T, N}
     ft(mat,(1,2))
 end
 """
     ift2d(mat::AbstractArray{T, N}) where {T, N}
-    Short-hand for ift(mat, (1,2)) performing only a 2D inverse ft.
-    See ift for details.
+
+Only over `dims=(1,2)`.
 """
 function ift2d(mat::AbstractArray{T, N}) where {T, N}
     ift(mat,(1,2))
 end
 """
     rft2d(mat::AbstractArray{T, N}) where {T, N}
-    Short-hand for ft(mat, (1,2)) performing only a 2D real-valued ft.
-    See ft for details.
+
+Only over `dims=(1,2)`.
 """
 function rft2d(mat::AbstractArray{T, N}) where {T, N}
     rft(mat,(1,2))
@@ -238,8 +238,8 @@ end
 
 """
     irft2d(mat::AbstractArray{T, N}, d) where {T, N}
-    Short-hand for irft(mat, (1,2)) performing only a 2D inverse real-valued ft.
-    See rift for details.
+
+Only over `dims=(1,2)`.
 """
 function irft2d(mat::AbstractArray{T, N}, d::Int) where {T, N}
     irft(mat,d,(1,2))
@@ -247,24 +247,24 @@ end
 
 """
     ft2d(mat::AbstractArray{T, N}) where {T, N}
-    Short-hand for ffts(mat, (1,2)) performing only a 2D ffts.
-    See ffts for details.
+
+Only over `dims=(1,2)`.
 """
 function ffts2d(mat::AbstractArray{T, N}) where {T, N}
     ffts(mat,(1,2))
 end
 """
     iffts2d(mat::AbstractArray{T, N}) where {T, N}
-    Short-hand for iffts(mat, (1,2)) performing only a 2D inverse ffts.
-    See iffts for details.
+
+Only over `dims=(1,2)`.
 """
 function iffts2d(mat::AbstractArray{T, N}) where {T, N}
     iffts(mat,(1,2))
 end
 """
     rffts2d(mat::AbstractArray{T, N}) where {T, N}
-    Short-hand for rffts(mat, (1,2)) performing only a 2D real-valued ffts.
-    See ffts for details.
+
+Only over `dims=(1,2)`.
 """
 function rffts2d(mat::AbstractArray{T, N}) where {T, N}
     rffts(mat,(1,2))
@@ -272,8 +272,8 @@ end
 
 """
     riffts2d(mat::AbstractArray{T, N}, d) where {T, N}
-    Short-hand for irffts(mat, (1,2)) performing only a 2D inverse real-valued ffts.
-    See riffts for details.
+
+Only over `dims=(1,2)`.
 """
 function irffts2d(mat::AbstractArray{T, N}, d::Int) where {T, N}
     irffts(mat,d,(1,2))
@@ -283,16 +283,16 @@ end
 ## Short-hand versions of the fft functions
 """
     fft2d(mat::AbstractArray{T, N}) where {T, N}
-    Short-hand for fft(mat, (1,2)) performing only a 2D ft.
-    See fft for details.
+
+Only over `dims=(1,2)`.
 """
 function fft2d(mat::AbstractArray{T, N}) where {T, N}
     fft(mat,(1,2))
 end
 """
     ifft2d(mat::AbstractArray{T, N}) where {T, N}
-    Short-hand for ift(mat, (1,2)) performing only a 2D inverse ft.
-    See ifft for details.
+
+Only over `dims=(1,2)`.
 """
 function ifft2d(mat::AbstractArray{T, N}) where {T, N}
     ifft(mat,(1,2))
@@ -300,8 +300,8 @@ end
 
 """
     rfft2d(mat::AbstractArray{T, N}) where {T, N}
-    Short-hand for ft(mat, (1,2)) performing only a 2D real-valued ft.
-    See fft for details.
+
+Only over `dims=(1,2)`.
 """
 function rfft2d(mat::AbstractArray{T, N}) where {T, N}
     rfft(mat,(1,2))
@@ -309,8 +309,8 @@ end
 
 """
     irfft2d(mat::AbstractArray{T, N}, d) where {T, N}
-    Short-hand for irft(mat, (1,2)) performing only a 2D inverse real-valued ft.
-    See rifft for details.
+
+Only over `dims=(1,2)`.
 """
 function irfft2d(mat::AbstractArray{T, N}, d::Int) where {T, N}
     irfft(mat,d,(1,2))
