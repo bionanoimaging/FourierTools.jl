@@ -93,7 +93,9 @@ function shift_by_1D_FT!(arr::AbstractArray{<:Complex, N}, shifts; soft_fraction
         if iseven(size(arr, d))
             s = size(arr, d) ÷ 2 + 1
             ϕ[s] = take_real ? real(ϕ[s]) : ϕ[s]
-            ϕ[s] = fix_nyquist_frequency ? 1 / real(ϕ[s]) : ϕ[s]
+            invr = 1 / ϕ[s]
+            invr = isinf(invr) ? 0 : invr
+            ϕ[s] = fix_nyquist_frequency ? invr : ϕ[s]
         end
         # go to fourier space and apply ϕ
         fft!(arr, d)
@@ -132,7 +134,9 @@ function shift_by_1D_RFT!(arr::AbstractArray{<:Real, N}, shifts; soft_fraction=0
         if iseven(size(arr, d))
             # take real and maybe fix nyquist frequency
             ϕ[s] = take_real ? real(ϕ[s]) : ϕ[s]
-            ϕ[s] = fix_nyquist_frequency ? 1 / real(ϕ[s]) : real(ϕ[s])
+            invr = 1 / ϕ[s]
+            invr = isinf(invr) ? 0 : invr
+            ϕ[s] = fix_nyquist_frequency ? invr : ϕ[s]
         end
         p = plan_rfft(arr, d)
 
