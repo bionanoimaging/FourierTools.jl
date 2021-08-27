@@ -64,7 +64,17 @@ Random.seed!(42)
     end
 
 
-
-    
+    @testset "Check revertibility for complex and real data" begin
+        @testset "Complex data" begin
+            x = randn(ComplexF32, (11, 12, 13))
+            s = (-1.1, 12.123, 0.21)
+            @test x ≈ shift(shift(x, s), .- s, fix_nyquist_frequency=true) 
+        end
+        @testset "Real data" begin
+            x = randn(Float32, (11, 12, 13))
+            s = (-1.1, 12.123, 0.21)
+            @test x ≈ shift(shift(x, s), .- s, fix_nyquist_frequency=true) 
+        end
+    end
 
 end
