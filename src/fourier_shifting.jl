@@ -48,12 +48,12 @@ julia> shift!(x, 0.5)
  0.5
 ```
 """
-function shift!(arr::AbstractArray{<:Complex, N}, shifts; soft_fraction=0, fix_nyquist_frequency=false) where {N}
-    return shift_by_1D_FT!(arr, shifts; soft_fraction=soft_fraction, fix_nyquist_frequency=fix_nyquist_frequency)
+function shift!(arr::AbstractArray{<:Complex, N}, shifts; soft_fraction=0, fix_nyquist_frequency=false, take_real=true) where {N}
+    return shift_by_1D_FT!(arr, shifts; soft_fraction=soft_fraction, fix_nyquist_frequency=fix_nyquist_frequency, take_real=take_real)
 end
 
-function shift!(arr::AbstractArray{<:Real, N}, shifts; soft_fraction=0, fix_nyquist_frequency=false) where {N}
-    return shift_by_1D_RFT!(arr, shifts; soft_fraction=soft_fraction, fix_nyquist_frequency=fix_nyquist_frequency)
+function shift!(arr::AbstractArray{<:Real, N}, shifts; soft_fraction=0, fix_nyquist_frequency=false, take_real=true) where {N}
+    return shift_by_1D_RFT!(arr, shifts; soft_fraction=soft_fraction, fix_nyquist_frequency=fix_nyquist_frequency, take_real=take_real)
 end
 
 """
@@ -62,8 +62,8 @@ end
 Returning a shifted array.
 See [`shift!`](@ref shift!) for more details
 """
-function shift(arr, shifts; soft_fraction=0, fix_nyquist_frequency=false)
-    return shift!(copy(arr), shifts; soft_fraction=soft_fraction, fix_nyquist_frequency=fix_nyquist_frequency)
+function shift(arr, shifts; soft_fraction=0, fix_nyquist_frequency=false, take_real=true)
+    return shift!(copy(arr), shifts; soft_fraction=soft_fraction, fix_nyquist_frequency=fix_nyquist_frequency, take_real=take_real)
 end
 
 function soft_shift(freqs, shift, fraction=eltype(freqs)(0.1); corner=false)
@@ -73,10 +73,10 @@ function soft_shift(freqs, shift, fraction=eltype(freqs)(0.1); corner=false)
     else
         w = ifftshift_view(window_half_cos(size(freqs),border_in=1.0-fraction, border_out=1.0))
     end
-    return exp.(-1im .* freqs .* 2pi .* (w .* shift + (1.0 .-w).* rounded_shift))
+    return cispi.(-freqs .* 2 .* (w .* shift + (1.0 .-w).* rounded_shift))
 end
 
-function shift_by_1D_FT!(arr::AbstractArray{<:Complex, N}, shifts; soft_fraction=0, take_real=true, fix_nyquist_frequency=false) where {N}
+function shift_by_1D_FT!(arr::AbstractArray{<:Complex, N}, shifts; soft_fraction=0, take_real=false, fix_nyquist_frequency=false) where {N}
     for (d, shift) in pairs(shifts) # iterates of the dimension d using the corresponding shift
         if iszero(shift)
             continue
@@ -85,7 +85,7 @@ function shift_by_1D_FT!(arr::AbstractArray{<:Complex, N}, shifts; soft_fraction
         freqs = reshape(fftfreq(size(arr, d)), ntuple(i -> 1, Val(d-1))..., size(arr,d))
         # allocates a 1D slice of exp values 
         if iszero(soft_fraction)
-            ϕ = exp.(-1im .* freqs .* 2pi .* shift) # use cispi ?
+            ϕ = cispi.(- freqs .* 2 .* shift)
         else
             ϕ = soft_shift(freqs, shift, soft_fraction)
         end
@@ -116,7 +116,7 @@ end
 # the idea is the following:
 # rfft(x, 1) -> exp shift -> fft(x, 2) -> exp shift ->  fft(x, 3) -> exp shift -> ifft(x, [2,3]) -> irfft(x, 1)
 # So once we did a rft to shift something we can call the routine for complex arrays to shift
-function shift_by_1D_RFT!(arr::AbstractArray{<:Real, N}, shifts; soft_fraction=0, fix_nyquist_frequency=false) where {T, N}
+function shift_by_1D_RFT!(arr::AbstractArray{<:Real, N}, shifts; soft_fraction=0, fix_nyquist_frequency=false, take_real=true) where {T, N}
     for (d, shift) in pairs(shifts)
         if iszero(shift)
             continue
@@ -125,12 +125,13 @@ function shift_by_1D_RFT!(arr::AbstractArray{<:Real, N}, shifts; soft_fraction=0
         s = size(arr, d) ÷ 2 + 1
         freqs = reshape(fftfreq(size(arr, d))[1:s], ntuple(i -> 1, d-1)..., s) 
         if iszero(soft_fraction)
-            ϕ = exp.(-1im .* freqs .* 2pi .* shift)
+            ϕ = cispi.(-freqs .* 2 .* shift)
         else
             ϕ = soft_shift(freqs, shift, soft_fraction, corner=true)
         end
         if iseven(size(arr, d))
             # take real and maybe fix nyquist frequency
+            ϕ[s] = take_real ? real(ϕ[s]) : ϕ[s]
             ϕ[s] = fix_nyquist_frequency ? 1 / real(ϕ[s]) : real(ϕ[s])
         end
         p = plan_rfft(arr, d)
@@ -140,7 +141,7 @@ function shift_by_1D_RFT!(arr::AbstractArray{<:Real, N}, shifts; soft_fraction=0
         # since we now did a single rfft dim, we can switch to the complex routine
         new_shifts = ntuple(i -> i ≤ d ? 0 : shifts[i], N)
          # workaround to mimic in-place rfft
-        shift_by_1D_FT!(arr_ft, new_shifts; soft_fraction=soft_fraction, take_real=true, fix_nyquist_frequency=fix_nyquist_frequency)
+        shift_by_1D_FT!(arr_ft, new_shifts; soft_fraction=soft_fraction, take_real=take_real, fix_nyquist_frequency=fix_nyquist_frequency)
         # go back to real space now and return because shift_by_1D_FT processed
         # the other dimensions already
         mul!(arr, inv(p), arr_ft)

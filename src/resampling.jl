@@ -98,11 +98,11 @@ function upsample2_1D(mat::AbstractArray{T, N}, dim=1, fix_center=false) where {
     if fix_center && isodd(size(mat,dim))
         selectdim(res,dim,2:2:size(res,dim)) .= mat  
         shifts = Tuple((d==dim) ? 0.5 : 0.0 for d in 1:N)
-        selectdim(res,dim,1:2:size(res,dim)) .= shift(mat, shifts) # this is highly optimized and all fft of zero-shift directions are automatically avoided
+        selectdim(res,dim,1:2:size(res,dim)) .= shift(mat, shifts, take_real=true) # this is highly optimized and all fft of zero-shift directions are automatically avoided
     else
         selectdim(res,dim,1:2:size(res,dim)) .= mat  
         shifts = Tuple((d==dim) ? -0.5 : 0.0 for d in 1:N)
-        selectdim(res,dim,2:2:size(res,dim)) .= shift(mat, shifts) # this is highly optimized and all fft of zero-shift directions are automatically avoided
+        selectdim(res,dim,2:2:size(res,dim)) .= shift(mat, shifts, take_real=true) # this is highly optimized and all fft of zero-shift directions are automatically avoided
     end
     return res
 end
