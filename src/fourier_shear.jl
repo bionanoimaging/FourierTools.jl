@@ -29,7 +29,7 @@ function shear!(arr::AbstractArray{<:Complex, N}, Δ, shear_dir_dim=1, shear_dim
     # stores the maximum amount of shift
     shift = reshape(fftfreq(size(arr, shear_dir_dim)), IndexFunArrays.selectsizes(arr, shear_dir_dim))
     
-    apply_shift_strength!(arr, shift, shear_dir_dim, shear_dim, Δ)
+    apply_shift_strength!(arr, arr, shift, shear_dir_dim, shear_dim, Δ)
 
     # go back to real space
     ifft!(arr, shear_dir_dim)
@@ -43,14 +43,9 @@ function shear!(arr::AbstractArray{<:Real, N}, Δ, shear_dir_dim=1, shear_dim=2)
     # stores the maximum amount of shift
     shift = reshape(rfftfreq(size(arr, shear_dir_dim)), IndexFunArrays.selectsizes(arr_ft, shear_dir_dim))
     
-    apply_shift_strength!(arr_ft, shift, shear_dir_dim, shear_dim, Δ)
+    apply_shift_strength!(arr_ft, arr, shift, shear_dir_dim, shear_dim, Δ)
     # go back to real space
  
-    # for even arrays we need to fix real property of highest frequency
-    if iseven(size(arr, shear_dir_dim))
-        inds = slice_indices(axes(arr), shear_dir_dim, fft_center(size(arr, shear_dir_dim))) 
-        arr_ft[inds...] .= real.(view(arr_ft, inds...))
-    end
     
     # overwrites arr in-place
     ldiv!(arr, p, arr_ft)
@@ -58,11 +53,17 @@ function shear!(arr::AbstractArray{<:Real, N}, Δ, shear_dir_dim=1, shear_dim=2)
 end
 
 
-function apply_shift_strength!(arr, shift, shear_dir_dim, shear_dim, Δ)
+function apply_shift_strength!(arr, arr_orig, shift, shear_dir_dim, shear_dim, Δ)
     #applies the strength to each slice
     shift_strength = reshape(fftpos(1, size(arr, shear_dim)), IndexFunArrays.selectsizes(arr, shear_dim))
 
     # do the exp multiplication in place
-    arr .*= exp.(1im .* 2π .* Δ .* shift .* shift_strength)
+    e = cispi.(2 .* Δ .* shift .* shift_strength)
+    # for even arrays we need to fix real property of highest frequency
+    if iseven(size(e, shear_dir_dim))
+        inds = slice_indices(axes(e), shear_dir_dim, fft_center(size(arr_orig, shear_dir_dim))) 
+        e[inds...] .= real.(view(e, inds...))
+    end
+    arr .*= e 
     return arr
 end
