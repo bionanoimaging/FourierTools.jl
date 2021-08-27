@@ -36,12 +36,10 @@ Random.seed!(42)
         xc = ComplexF32.(x)
         
         s = [0.5]
-        @test FourierTools.shift!(copy(x), s) ≈ FourierTools.shift!(copy(xc), s)
-        @test FourierTools.shift!(copy(x), s) ≈ FourierTools.shift!(copy(xc), 0.5)
+        @test FourierTools.shift!(copy(x), s) ≈ real(FourierTools.shift!(copy(xc), s))
+        @test FourierTools.shift!(copy(x), s) ≈ real(FourierTools.shift!(copy(xc), 0.5))
         @test sum(x) ≈ sum(FourierTools.shift!(copy(x), s))
         
-        xc = [0.0, 1im, 0.0, 1im]
-        @test FourierTools.shift!(copy(xc), s) ≈ 1im .* 0.5 .* ones(4)
         @test sum(xc) ≈ sum(FourierTools.shift!(copy(xc), s))
     end
 
@@ -56,10 +54,10 @@ Random.seed!(42)
         x = randn((11, 12, 13))
         s = randn((3,)) .* 10
         @test sum(x) ≈ sum(FourierTools.shift!(copy(x), s))
-        @test FourierTools.shift!(copy(x), s) ≈ FourierTools.shift!(copy(x) .+ 0im, s)
+        @test FourierTools.shift!(copy(x), s) ≈ real(FourierTools.shift!(copy(x) .+ 0im, s))
         x = randn((11, 12, 13))
         s = randn((3,)) .* 10
-        @test FourierTools.shift!(copy(x), s) ≈ FourierTools.shift!(copy(x) .+ 0im, s)
+        @test FourierTools.shift!(copy(x), s) ≈ real(FourierTools.shift!(copy(x) .+ 0im, s))
         @test sum(x) ≈ sum(FourierTools.shift!(copy(x), s))
     end
 
