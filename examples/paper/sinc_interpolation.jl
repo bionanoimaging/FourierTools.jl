@@ -26,7 +26,7 @@ plt1 = @pgf PGFPlotsX.Axis(
         height= "6cm",
     },
     
-    Plot({mark="*", style="only marks", color="green",mark_options = {scale=0.3},
+    Plot({mark="x", style="only marks", color="green",mark_options = {scale=1.3},
         },
         Table([xs_low, arr_low])
     ),
