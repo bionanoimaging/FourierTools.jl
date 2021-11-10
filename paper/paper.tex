@@ -53,7 +53,7 @@ The fast Fourier transform (FFT) is a popular algorithm because it can evaluate 
 \end{equation}
 and the Inverse Discrete Fourier Transform (IDFT)
 \begin{equation}
-    x_n = \frac1{N}\sum_{n=0}^{N-1} X_k \exp\left(i2 \pi \frac{kn}{N} \right)
+    x_n = \frac1{N}\sum_{k=0}^{N-1} X_k \exp\left(i2 \pi \frac{kn}{N} \right)
     \label{eq:idft}
 \end{equation}
 in $\mathcal{O}(N \log N)$ operations, whereas the straightforward
