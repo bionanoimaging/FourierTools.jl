@@ -36,7 +36,7 @@ function czt_1d(xin, scaled, d)
     # return g
     oldctr = sz[d]÷2 + 1
     newctr = size(g) .÷ 2 .+1
-    ctr = Tuple((md == d) ? newctr[md] + oldctr - 2 : newctr[md] for md in 1:length(newctr))
+    ctr = ntuple(md -> (md == d) ? newctr[md] + oldctr - 2 : newctr[md], length(newctr))
 
     if isodd(dsize) # This is to deal with a strange phase shift appearing for odd-sized arrays
         extra_phase = (2*dsize-2)/(2*dsize) # 5: 12 / 15, 7: 12/14, 9: 16/18, 11: 20/22
