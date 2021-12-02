@@ -25,7 +25,7 @@ function czt_1d(xin, scaled, d)
     ww = w .^ kk2
     aa = a .^ (-nn)
     aa = aa .* ww[dsize .+ nn] # is a 1d list of factors. This defines the shift in Fourier space (centering of frequencies)
-    to_fft = NDTools.select_region(1 ./ ww[1:(2*dsize-1)], new_size=2*dsize, center=dsize+1)
+    to_fft = NDTools.select_region(1 ./ ww[1:(2*dsize-1)], new_size=(2*dsize,), center=(dsize+1,))
     # return tofft
     fv = fft(to_fft) # is always 1d (small array)
 
@@ -36,7 +36,7 @@ function czt_1d(xin, scaled, d)
     # return g
     oldctr = sz[d]÷2 + 1
     newctr = size(g) .÷ 2 .+1
-    ctr = collect((md == d) ? newctr[md] + oldctr - 2 : newctr[md] for md in 1:length(newctr))
+    ctr = Tuple((md == d) ? newctr[md] + oldctr - 2 : newctr[md] for md in 1:length(newctr))
 
     if isodd(dsize) # This is to deal with a strange phase shift appearing for odd-sized arrays
         extra_phase = (2*dsize-2)/(2*dsize) # 5: 12 / 15, 7: 12/14, 9: 16/18, 11: 20/22
