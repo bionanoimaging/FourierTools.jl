@@ -12,41 +12,54 @@ This code is based on a 2D Matlab version of the CZT, written by H. Gross et al.
 """
 function czt_1d(xin, scaled, d)
     sz=size(xin)
-    rtype = real(eltype(xin))  # returns the real datatype
+    # returns the real datatype
+    rtype = real(eltype(xin))  
     scaled = rtype(scaled)
     dsize = sz[d]
     nn = (0:dsize-1)
-    kk = ((-dsize+1):(dsize-1)) # 2N +1 new k-space positions
+    # 2N +1 new k-space positions
+    kk = ((-dsize+1):(dsize-1)) 
     kk2 = rtype.((kk .^ 2) ./ 2)
     
-    w = cispi(-2/(dsize*scaled)) # scalar factor  
-    half_pix_shift = (2*(dsize÷2))/dsize # this is needed to center the array according to the center pixel convention
-    a = cispi(-1/scaled * half_pix_shift) # scalar factor. The correction factor to the right was introduced to be centered correctly on the pixel as ft is.
+    # scalar factor  
+    w = cispi(-2/(dsize*scaled)) 
+    # this is needed to center the array according to the center pixel convention
+    half_pix_shift = (2*(dsize÷2))/dsize 
+    # scalar factor. The correction factor to the right was introduced to be centered correctly on the pixel as ft is.
+    a = cispi(-1/scaled * half_pix_shift) 
     ww = w .^ kk2
     aa = a .^ (-nn)
-    aa = aa .* ww[dsize .+ nn] # is a 1d list of factors. This defines the shift in Fourier space (centering of frequencies)
-    to_fft = NDTools.select_region(1 ./ ww[1:(2*dsize-1)], new_size=2*dsize, center=dsize+1)
+    # is a 1d list of factors. This defines the shift in Fourier space (centering of frequencies)
+    aa = aa .* ww[dsize .+ nn]
+    to_fft = NDTools.select_region(1 ./ ww[1:(2*dsize-1)], new_size=(2*dsize,), center=(dsize+1,))
     # return tofft
-    fv = fft(to_fft) # is always 1d (small array)
+    # is always 1d (small array)
+    fv = fft(to_fft)
 
     y = xin .* reorient(aa,d)
-    nsz = sz .* NDTools.single_dim_size(d,2,length(sz)) # twice the size along direction d
+    # twice the size along direction d
+    nsz = sz .* NDTools.single_dim_size(d,2,length(sz)) 
     to_fft = NDTools.select_region(y, new_size=nsz, center=nsz.÷2 .+1)
-    g = ifft(fft(to_fft, d) .* reorient(fv,d), d) # convolve on a larger grid along one dimension
+    # convolve on a larger grid along one dimension
+    g = ifft(fft(to_fft, d) .* reorient(fv,d), d) 
     # return g
     oldctr = sz[d]÷2 + 1
     newctr = size(g) .÷ 2 .+1
-    ctr = collect((md == d) ? newctr[md] + oldctr - 2 : newctr[md] for md in 1:length(newctr))
+    ctr = ntuple(md -> (md == d) ? newctr[md] + oldctr - 2 : newctr[md], length(newctr))
 
-    if isodd(dsize) # This is to deal with a strange phase shift appearing for odd-sized arrays
+    # This is to deal with a strange phase shift appearing for odd-sized arrays
+    if isodd(dsize) 
         extra_phase = (2*dsize-2)/(2*dsize) # 5: 12 / 15, 7: 12/14, 9: 16/18, 11: 20/22
     else
         extra_phase = 1
     end
-    fak =  ww[dsize:(2*dsize-1)] .* cispi.(ramp(rtype,1,dsize, scale=1/scaled * extra_phase)) # is a 1d list of factors
+    # is a 1d list of factors
+    fak =  ww[dsize:(2*dsize-1)] .* cispi.(ramp(rtype,1,dsize, scale=1/scaled * extra_phase))
     # return select_region(g, new_size=sz,center=ctr)
     xout = select_region(g, new_size=sz,center=ctr) .* reorient(fak,d)
-    if iseven(dsize) && (scaled>1.0) # this is a fix to deal with the problem that imaginary numbers are appearing for even-sized arrays, caused by the first entry
+
+    # this is a fix to deal with the problem that imaginary numbers are appearing for even-sized arrays, caused by the first entry
+    if iseven(dsize) && (scaled>1.0) 
         # a `scaled` of one meas this is an ordinary Fourier-transformation without zoom, which needs to keep the highes frequency value
         midp = dsize÷2+1
         for o in 1+mod(midp,2):2:dsize
