@@ -144,81 +144,6 @@ end
 
 
 
-
-"""
-    selectsizes(x, dism; keep_dims=true)
-
-Select the sizes of `x` for all `dims`
-If `keep_dims=true` the non-selected dimensions are
-returned as 1.
-
-# Examples
-```jldoctest
-julia> FourierTools.selectsizes(randn((4,3,2)), (2,3))
-(1, 3, 2)
-
-julia> FourierTools.selectsizes(randn((4,3,2)), (2,3), keep_dims=false)
-(3, 2)
-```
-
-"""
-function selectsizes(x::AbstractArray{T},dims::NTuple{N,Int};
-                    keep_dims=true) where{T,N}
-    if ~keep_dims
-        return map(n->size(x,n),dims)
-    end
-    sz = ones(Int, ndims(x))
-    for n in dims
-        sz[n] = size(x,n) 
-    end
-    return Tuple(sz)
-end 
-
-
-
-"""
-    slice(arr, dim, index)
-Return a `N` dimensional slice (where one dimensions has size 1) of the N-dimensional `arr` at the index position
-`index` in the `dim` dimension of the array.
-It holds `size(out)[dim] == 1`.
-# Examples
-```jldoctest
-julia> x = [1 2 3; 4 5 6; 7 8 9]
-3×3 Matrix{Int64}:
- 1  2  3
- 4  5  6
- 7  8  9
-
-julia> FourierTools.slice(x, 1, 1)
-1×3 view(::Matrix{Int64}, 1:1, 1:3) with eltype Int64:
- 1  2  3
-```
-"""
-function slice(arr::AbstractArray{T, N}, dim::Integer, index::Integer) where {T, N}
-    inds = slice_indices(axes(arr), dim, index)
-    return @view arr[inds...]
-end
-
-"""
-    slice_indices(a, dim, index)
-
-`a` should be the axes obtained by `axes(arr)` of an array.
-`dim` is the dimension to be selected and `index` the index of it.
-
-# Examples
-```jldoctest
-julia> FourierTools.slice_indices((1:10, 1:20, 1:12, 1:33), 1, 3)
-(3:3, 1:20, 1:12, 1:33)
-```
-"""
-function slice_indices(a::NTuple{N, T}, dim::Integer, index::Integer) where {T, N}
-    inds = ntuple(i -> i == dim ? (a[i][index]:a[i][index])
-                                : (first(a[i]):last(a[i])), 
-                  Val(N))
-    return inds
-end
-
-
 """
     rfft_size(size, dims)
 
@@ -244,49 +169,6 @@ end
 
 
 
-"""
-    expanddims(x, ::Val{N})
-    expanddims(x, N::Number)
-
-expands the dimensions of an array to a given number of dimensions.
-
-Try to prefer the `Val` version because this is type-stable.
-`Val(N)` encapsulates the number in a type from which the compiler
-can then infer the return type.
-
-# Examples
-The result is a 5D array with singleton dimensions at the end
-```jldoctest
-julia> expanddims(ones((1,2,3)), Val(5))
-1×2×3×1×1 Array{Float64, 5}:
-[:, :, 1, 1, 1] =
- 1.0  1.0
-
-[:, :, 2, 1, 1] =
- 1.0  1.0
-
-[:, :, 3, 1, 1] =
- 1.0  1.0
-
-julia> expanddims(ones((1,2,3)), 5)
-1×2×3×1×1 Array{Float64, 5}:
-[:, :, 1, 1, 1] =
- 1.0  1.0
-
-[:, :, 2, 1, 1] =
- 1.0  1.0
-
-[:, :, 3, 1, 1] =
- 1.0  1.0
-```
-"""
-function expanddims(x, N::Number)
-    return reshape(x, (size(x)..., ntuple(x -> 1, (N - ndims(x)))...))
-end
-
-function expanddims(x, ::Val{N}) where N
-    return reshape(x, (size(x)..., ntuple(x -> 1, (N - ndims(x)))...))
-end
 
 """
     get_indices_around_center(i_in, i_out)

@@ -26,9 +26,9 @@ function resample_by_1D_FT!(arr::AbstractArray{<:Complex, N}, new_size; normaliz
             # in the even case we need to fix hermitian property
             if iseven(s)
                 l, r = get_indices_around_center(ns, s)
-                inds_left = slice_indices(axes(out), d, l)
+                inds_left = NDTools.slice_indices(axes(out), d, l)
                 out[inds_left...] .*= 0.5 * correction_factor
-                inds_right = slice_indices(axes(out), d, r+1)
+                inds_right = NDTools.slice_indices(axes(out), d, r+1)
                 out[inds_right...] .= out[inds_left...]
             end
             arr = iffts(out, d)
@@ -38,8 +38,8 @@ function resample_by_1D_FT!(arr::AbstractArray{<:Complex, N}, new_size; normaliz
             # in the even case, we need to add the highest slice
             if iseven(ns)
                 l, r = get_indices_around_center(s, ns)
-                inds_left = slice_indices(axes(arr_v), d, 1)
-                inds_right = slice_indices(axes(arr), d, r+1)
+                inds_left = NDTools.slice_indices(axes(arr_v), d, 1)
+                inds_right = NDTools.slice_indices(axes(arr), d, r+1)
                 arr_v[inds_left...] += arr[inds_right...]
                 arr_v[inds_left...] ./= correction_factor
             end

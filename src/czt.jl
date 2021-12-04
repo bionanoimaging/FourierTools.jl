@@ -63,7 +63,7 @@ function czt_1d(xin, scaled, d)
         # a `scaled` of one meas this is an ordinary Fourier-transformation without zoom, which needs to keep the highes frequency value
         midp = dsize÷2+1
         for o in 1+mod(midp,2):2:dsize
-            slice(xout,d, o) .-= slice(xin,d, 1) .* (1im).^mod(o-midp,4)
+            NDTools.slice(xout,d, o) .-= NDTools.slice(xin,d, 1) .* (1im).^mod(o-midp,4)
         end
     end
     return xout

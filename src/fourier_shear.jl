@@ -61,7 +61,7 @@ function apply_shift_strength!(arr, arr_orig, shift, shear_dir_dim, shear_dim, Î
     e = cispi.(2 .* Î” .* shift .* shift_strength)
     # for even arrays we need to fix real property of highest frequency
     if iseven(size(arr_orig, shear_dir_dim))
-        inds = slice_indices(axes(e), shear_dir_dim, fft_center(size(arr_orig, shear_dir_dim))) 
+        inds = NDTools.slice_indices(axes(e), shear_dir_dim, fft_center(size(arr_orig, shear_dir_dim))) 
         r = real.(view(e, inds...))
         if fix_nyquist
             inv_r = 1 ./ r
