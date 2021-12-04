@@ -115,16 +115,9 @@
 
     @testset "Test fftpos" begin
         @test fftpos(1, 10) == -0.5:0.1:0.4
-
-        @test collect(fftpos(0.01, 3)) ≈ [-0.005, 0.0, 0.005]
-
-        @test fftpos(0.1, 20) ≈ -0.05:0.005:0.045
-
-        @test fftpos(0.1, 21) == -0.05:0.005:0.05
-
-        for N = 2:30
-            @test length(fftpos(123, N)) == N
-        end
+        @test fftpos(1, 11) ≈ -0.5:0.09090909090909091:0.4090909090909091 
+        @test fftpos(2, 10) ≈ 2 .*(-0.5:0.1:0.4)
+        @test fftpos(2, 11) ≈ 2 .* (-0.5:0.09090909090909091:0.4090909090909091) 
     end
 
 
