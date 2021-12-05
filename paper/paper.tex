@@ -126,7 +126,7 @@ All algorithms and examples are implemented using the Julia package \verb|Fourie
         \centering
         \begin{tikzpicture}
             \begin{axis}[xmin=-0.5, xmax=7, ymax=1.2, ymin=-1.2, width=8cm, height=5cm,
-                xtick = {0, 3.1415, 2 * 3.1414}, xticklabels={0, $L/2$, $L$}]
+                xtick = {0, 3.1415, 6.283}, xticklabels={0, $L/2$, $L$}]
                     \addplot[sharp plot, domain=-1:9, color=green, samples=400] {0.2 * cos(deg(x)};
                     \addplot[sharp plot, domain=-1:9, color=blue, samples=100] {0.5 * cos(deg(x) - 66.42};
                     \addplot[sharp plot, domain=-1:9, color=red, samples=100] {1 * cos(deg(x) - 78.46};
@@ -134,12 +134,12 @@ All algorithms and examples are implemented using the Julia package \verb|Fourie
                     \draw[] (axis cs:-1, 0) -- (axis cs:8, 0);
                     \draw[dashed] (axis cs:0, -2) -- (axis cs:0, 2);
                     \draw[dashed] (axis cs:3.1415, -2) -- (axis cs:3.1415, 2);
-                    \draw[dashed] (axis cs:3.1415*2, -2) -- (axis cs:3.1415*2, 2);
+                    \draw[dashed] (axis cs:6.283, -2) -- (axis cs:6.283, 2);
                     
                     
                    \draw (0,0.2) node[cross, thick] { };
                     \draw (3.1415,-0.2) node[cross, thick] { };
-                     \draw (2 * 3.1415,0.2) node[cross, thick] { };
+                     \draw (6.283,0.2) node[cross, thick] { };
 
             \end{axis}
         \end{tikzpicture}
