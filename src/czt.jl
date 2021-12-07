@@ -1,7 +1,7 @@
 export czt, iczt
 
 """
-    czt_1d(xin , scales , d)
+    czt_1d(xin , scaled , d)
 
 Chirp z transform along a single direction d of an ND array `xin` into the ND array 'xout'.
 Note that xin and xout can be the same array for inplace operations.
