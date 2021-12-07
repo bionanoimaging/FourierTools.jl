@@ -20,53 +20,6 @@
     end
 
 
-    @testset "selectsizes" begin
-        @test (1, 3, 2) == FourierTools.selectsizes(randn((4,3,2)), (2,3))
-        @test (3, 2) == FourierTools.selectsizes(randn((4,3,2)), (2,3), keep_dims=false)
-        @test (1, ) == FourierTools.selectsizes(randn((1,)), (1,), keep_dims=false)
-
-    end
-
-
-    @testset "slice" begin
-    
-        x = randn((1,2,3,4))
-        y = FourierTools.slice(x, 2, 2)
-        @test x[:, 2:2, :, :] == y
-
-        x = randn((5,2,3,4))
-        y = FourierTools.slice(x, 1, 4)
-        @test x[4:4, :, :, :] == y
-
-        x = randn((5))
-        y = FourierTools.slice(x, 1, 5)
-        @test x[5:5] == y
-
-    end
-    
-    
-    @testset "slice indices" begin
-        x = randn((1,2,3))
-        y = FourierTools.slice_indices(axes(x), 1, 1)
-        @test y == (1:1, 1:2, 1:3)
-    
-    
-        x = randn((20,4,20, 1, 2))
-        y = FourierTools.slice_indices(axes(x), 2, 3)
-        @test y == (1:20, 3:3, 1:20, 1:1, 1:2)
-    end
-
-
-    @testset "test expanddims" begin
-        function f(s, N)
-            @test FourierTools.expanddims(randn(s), N + length(s))|> size == (s..., ones(Int,N)...)
-            @test FourierTools.expanddims(randn(s), Val(N + length(s)))|> size == (s..., ones(Int,N)...)
-        end
-        f((1,2,3), 2)
-        f((1,2,3,4,5), 8)
-        f((1), 5)
-    end
-
 
     @testset "Test rfft_size" begin
         s = (11, 20, 10)
@@ -115,16 +68,9 @@
 
     @testset "Test fftpos" begin
         @test fftpos(1, 10) == -0.5:0.1:0.4
-
-        @test collect(fftpos(0.01, 3)) ≈ [-0.005, 0.0, 0.005]
-
-        @test fftpos(0.1, 20) ≈ -0.05:0.005:0.045
-
-        @test fftpos(0.1, 21) == -0.05:0.005:0.05
-
-        for N = 2:30
-            @test length(fftpos(123, N)) == N
-        end
+        @test fftpos(1, 11) ≈ -0.5:0.09090909090909091:0.4090909090909091 
+        @test fftpos(2, 10) ≈ 2 .*(-0.5:0.1:0.4)
+        @test fftpos(2, 11) ≈ 2 .* (-0.5:0.09090909090909091:0.4090909090909091) 
     end
 
 
