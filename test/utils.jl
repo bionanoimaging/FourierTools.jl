@@ -71,14 +71,14 @@
         @test fftpos(1, 4, CenterFT) ≈  -0.5833333333333333:0.29166666666666663:0.2916666666666667
         @test fftpos(1, 4, CenterLast) ≈ -0.875:0.2916666666666667:0.0 
         @test fftpos(1, 4, CenterFirst) ≈ 0.0:0.2916666666666667:0.875 
-        @test fftpos(1, 4, CenterMid) ≈ -0.4375:0.2916666666666667:0.4375 
+        @test fftpos(1, 4, CenterMiddle) ≈ -0.4375:0.2916666666666667:0.4375 
 
 
         function f(l, N)
             a = fftpos(l, N, CenterFT)
             b = fftpos(l, N, CenterFirst)
             c = fftpos(l, N, CenterLast)
-            d = fftpos(l, N, CenterMid)
+            d = fftpos(l, N, CenterMiddle)
             @test (a[end] - a[begin] ≈ b[end] - b[begin] ≈ c[end] - c[begin] ≈ d[end] -d[begin])
         end
 

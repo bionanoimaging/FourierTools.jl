@@ -91,7 +91,7 @@ julia> collect(fftpos(1,4, CenterFT))
   3.70074341541719e-17
   0.2916666666666667
 
-julia> collect(fftpos(1,4, CenterMid))
+julia> collect(fftpos(1,4, CenterMiddle))
 4-element Vector{Float64}:
  -0.4375
  -0.14583333333333334
@@ -116,7 +116,7 @@ function fftpos(l, N, around::Type{CenterFT})
     return fftpos(l, N, N ÷ 2 + 1) 
 end
 
-function fftpos(l, N, around::Type{CenterMid})
+function fftpos(l, N, around::Type{CenterMiddle})
     return fftpos(l, N, (N+1) / 2)
 end
 
