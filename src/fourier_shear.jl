@@ -27,7 +27,7 @@ function shear!(arr::AbstractArray{<:Complex, N}, Δ, shear_dir_dim=1, shear_dim
     fft!(arr, shear_dir_dim)
 
     # stores the maximum amount of shift
-    shift = reshape(fftfreq(size(arr, shear_dir_dim)), IndexFunArrays.selectsizes(arr, shear_dir_dim))
+    shift = reshape(fftfreq(size(arr, shear_dir_dim)), NDTools.select_sizes(arr, shear_dir_dim))
     
     apply_shift_strength!(arr, arr, shift, shear_dir_dim, shear_dim, Δ, fix_nyquist)
 
@@ -41,7 +41,7 @@ function shear!(arr::AbstractArray{<:Real, N}, Δ, shear_dir_dim=1, shear_dim=2;
     arr_ft = p * arr 
 
     # stores the maximum amount of shift
-    shift = reshape(rfftfreq(size(arr, shear_dir_dim)), IndexFunArrays.selectsizes(arr_ft, shear_dir_dim))
+    shift = reshape(rfftfreq(size(arr, shear_dir_dim)), NDTools.select_sizes(arr_ft, shear_dir_dim))
     
     apply_shift_strength!(arr_ft, arr, shift, shear_dir_dim, shear_dim, Δ, fix_nyquist)
     # go back to real space
@@ -55,7 +55,7 @@ end
 
 function apply_shift_strength!(arr, arr_orig, shift, shear_dir_dim, shear_dim, Δ, fix_nyquist=false)
     #applies the strength to each slice
-    shift_strength = reshape(fftpos(1, size(arr, shear_dim), CenterFirst) .- 0.5, IndexFunArrays.selectsizes(arr, shear_dim))
+    shift_strength = reshape(fftpos(1, size(arr, shear_dim), CenterFirst) .- 0.5, NDTools.select_sizes(arr, shear_dim))
 
     # do the exp multiplication in place
     e = cispi.(2 .* Δ .* shift .* shift_strength)
