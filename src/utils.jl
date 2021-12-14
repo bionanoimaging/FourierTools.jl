@@ -128,7 +128,7 @@ around `around`. `around` is here a number indicating
 the index position around the range is constructed
 """
 function fftpos(l, N, around::Number)
-    dx = l / N / 2
+    dx = l / N
     fraction = (around - 1) / (N - 1)
     return range(0 - (l-dx) * fraction, 
                  0 + (l-dx) * (1-fraction),

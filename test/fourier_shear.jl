@@ -33,5 +33,10 @@
     end
 
 
+    @testset "Fix Nyquist" begin
+        @test shear(shear([1 2; 3 4.0], 0.123), -0.123, fix_nyquist = true) == [1.0 2.0; 3.0 4.0]
+        @test shear(shear([1 2; 3 4.0], 0.123), -0.123, fix_nyquist = false) != [1.0 2.0; 3.0 4.0]
+
+    end
 
 end
