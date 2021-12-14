@@ -55,7 +55,7 @@ end
 
 function apply_shift_strength!(arr, arr_orig, shift, shear_dir_dim, shear_dim, Δ, fix_nyquist=false)
     #applies the strength to each slice
-    shift_strength = reshape(fftpos(1, size(arr, shear_dim)), IndexFunArrays.selectsizes(arr, shear_dim))
+    shift_strength = reshape(fftpos(1, size(arr, shear_dim), CenterFirst) .- 0.5, IndexFunArrays.selectsizes(arr, shear_dim))
 
     # do the exp multiplication in place
     e = cispi.(2 .* Δ .* shift .* shift_strength)
