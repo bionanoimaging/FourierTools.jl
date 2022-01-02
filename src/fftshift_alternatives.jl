@@ -64,8 +64,8 @@ end
 
 """
     ifftshift2d(mat::AbstractArray{T, N}) where {T, N}
-    Short-hand for ifftshift(mat, (1,2)) performing only a 2D inverse ft.
-    See ifft for details.
+    Short-hand for ifftshift(mat, (1,2)).
+    See ifftshift for details.
 """
 function ifftshift2d(mat::AbstractArray{T, N}) where {T, N}
     ifftshift(mat,(1,2))
@@ -73,8 +73,8 @@ end
 
 """
     fftshift2d_view(mat::AbstractArray{T, N}) where {T, N}
-    Short-hand for fftshift_view(mat, (1,2)) performing only a 2D ft.
-    See fft for details.
+    Short-hand for fftshift_view(mat, (1,2)).
+    See fftshift for details.
 """
 function fftshift2d_view(mat::AbstractArray{T, N}) where {T, N}
     fftshift_view(mat,(1,2))
