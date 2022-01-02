@@ -55,8 +55,8 @@ end
 
 """
     fftshift2d(mat::AbstractArray{T, N}) where {T, N}
-    Short-hand for fftshift(mat, (1,2)) performing only a 2D ft.
-    See fft for details.
+    Short-hand for fftshift(mat, (1,2)).
+    See fftshift for details.
 """
 function fftshift2d(mat::AbstractArray{T, N}) where {T, N}
     fftshift(mat,(1,2))
@@ -74,7 +74,7 @@ end
 """
     fftshift2d_view(mat::AbstractArray{T, N}) where {T, N}
     Short-hand for fftshift_view(mat, (1,2)).
-    See fftshift for details.
+    See fftshift_view for details.
 """
 function fftshift2d_view(mat::AbstractArray{T, N}) where {T, N}
     fftshift_view(mat,(1,2))
