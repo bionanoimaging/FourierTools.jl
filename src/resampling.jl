@@ -1,8 +1,18 @@
-export resample, resample_by_FFT, resample_by_RFFT, upsample2_abs2, upsample2, upsample2_1D, resample_var, resample_czt, barrel_pin
 using FastTransforms
 
+export resample
+export resample_by_FFT
+export resample_by_RFFT
+export upsample2_abs2
+export upsample2
+export upsample2_1D
+export resample_var
+export resample_czt
+export barrel_pin
+
+
 """
-    resample(arr, new_size [, normalize])
+    resample(arr, new_size [, normalize=true])
 
 Calculates the `sinc` interpolation of an `arr` on a new array size
 `new_size`.
