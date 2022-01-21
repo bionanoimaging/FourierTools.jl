@@ -19,7 +19,6 @@
                 @test x ≈ FourierTools.resample_by_1D(FourierTools.resample_by_1D(x, s_large), s_small)
             end
         end
-
     end
 
     @testset "Test that different resample methods are consistent" begin
@@ -198,8 +197,6 @@
     end
     
     
-    
-    
     @testset "FFT resample 2D for a complex signal" begin
     
         function test_2D(in_s, out_s)
@@ -230,7 +227,6 @@
     end
     
     
-    
     @testset "FFT resample in 2D for a purely imaginary signal" begin
         function test_2D(in_s, out_s)
         	x = range(-10.0, 10.0, length=in_s[1] + 1)[1:end-1]
@@ -255,10 +251,7 @@
         test_2D((128, 128), (151, 153))
         test_2D((129, 128), (150, 153))
         test_2D((129, 128), (129, 153))
-    
-    
     end
-
 
     @testset "test select_region_ft" begin
         x = [1,2,3,4]
@@ -267,13 +260,11 @@
         @test select_region_ft(ffts(x), (7, 7)) == ComplexF64[0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im; 0.0 + 0.0im 0.32043577156395486 + 0.0im 2.321469443190397 + 0.7890379226962572im 0.38521287113798636 + 0.0im 2.321469443190397 - 0.7890379226962572im 0.32043577156395486 + 0.0im 0.0 + 0.0im; 0.0 + 0.0im 1.3691035744780353 + 0.16703621316206385im 2.4110077589815555 - 0.16558718095884828im 2.2813159163314163 - 0.7520360306228049im 7.47614366018844 - 4.139633109911205im 1.3691035744780353 + 0.16703621316206385im 0.0 + 0.0im; 0.0 + 0.0im 0.4801675770812479 + 0.0im 3.3142445917764407 - 3.2082400832669373im 1.6529948781166373 + 0.0im 3.3142445917764407 + 3.2082400832669373im 0.4801675770812479 + 0.0im 0.0 + 0.0im; 0.0 + 0.0im 1.3691035744780353 - 0.16703621316206385im 7.47614366018844 + 4.139633109911205im 2.2813159163314163 + 0.7520360306228049im 2.4110077589815555 + 0.16558718095884828im 1.3691035744780353 - 0.16703621316206385im 0.0 + 0.0im; 0.0 + 0.0im 0.32043577156395486 + 0.0im 2.321469443190397 + 0.7890379226962572im 0.38521287113798636 + 0.0im 2.321469443190397 - 0.7890379226962572im 0.32043577156395486 + 0.0im 0.0 + 0.0im; 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im]
     end
 
-    using NDTools
     @testset "test resample_var" begin
         dim =2
         s_small = ntuple(_ -> rand(1:13), dim)
         s_large = ntuple(i -> max.(s_small[i], rand(10:16)), dim)
         dat = randn(Float32, (s_small))
-        # dat = delta(Float32, s_small)
         rs1 = FourierTools.resample(dat, s_large)
         rs1b = select_region(rs1,new_size=size(dat))
         rs2 = FourierTools.resample_czt(dat, s_large./s_small, do_damp=false)
@@ -281,6 +272,5 @@
         # @test rs1b ≈ rs2
         @test rs2 ≈ rs3
     end
-
 
 end

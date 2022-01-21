@@ -5,7 +5,6 @@ using IndexFunArrays
 using Zygote
 using NDTools
 
-
 Random.seed!(42)
 
 include("fft_helpers.jl")

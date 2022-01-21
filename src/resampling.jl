@@ -180,10 +180,7 @@ function resample_czt(arr::AbstractArray{T,N}, rel_zoom; shear=nothing, shear_di
             if !isnothing(shear)
                 myshear =  shear[d]
             end
-            # myshear -= 0 # IndexFunArrays.get_offset(size(arr,d),center) - IndexFunArrays.get_offset(size(arr,d),CtrFT)
             if myshear != 0
-                #@show myshear
-                #@show size(f_res)
                 shifts = ramp(real(eltype(f_res)),d, size(f_res,d), scale=ScaFT)
                 FourierTools.apply_shift_strength!(f_res, f_res, shifts, d, sd,myshear, fix_nyquist)
             end
@@ -196,7 +193,7 @@ function resample_czt(arr::AbstractArray{T,N}, rel_zoom; shear=nothing, shear_di
         # case of position dependent zoom functions
         elseif (isa(rel_zoom, Tuple) && isa(rel_zoom[1], Function))
             pos = 0
-            p=1
+            p = 1
             shifts = ramp(real(eltype(arr)),d, size(arr,d), scale=ScaFT)
             # note that the slicing removes the dimension opposed to the version above.
             for slice in eachslice(arr, dims=d)
@@ -212,11 +209,9 @@ function resample_czt(arr::AbstractArray{T,N}, rel_zoom; shear=nothing, shear_di
                         zero(RT)
                     end
                 end
-                # myshear += IndexFunArrays.get_offset(size(arr,d),center) - IndexFunArrays.get_offset(size(arr,d),CtrFT)
                 my_zoom = rel_zoom[d](pos)
                 # one-d since a slice was selected
                 f_res = ift(slice,1) 
-                #@show myshear
                 if myshear != 0
                     FourierTools.apply_shift_strength!(f_res, f_res, shifts[p], 1, 1, myshear, fix_nyquist)                
                 end
@@ -228,8 +223,8 @@ function resample_czt(arr::AbstractArray{T,N}, rel_zoom; shear=nothing, shear_di
                     end
                 end
                 select_region!(f_res, slice)
-                pos += 1/orig_size[d]
-                p+=1
+                pos += one(eltype(orig_size))/orig_size[d]
+                p += 1
             end
         else
             error("expected list of numbers or list of functions as argument `rel_zoom`")
@@ -322,7 +317,6 @@ function resample_var(img::AbstractArray{T,D} , rel_shift, myeps=eps(T))::Abstra
         k = k .- k[size(k,1)÷2+1]
         x0 = k ./ size(k,1)
         Fimg = ft(img,(d,)) # nufft3(Complex.(img), x0,k, eps(eltype(img)))
-        # p1 = plan_nufft3(x, -k, eps(eltype(img)));
         s_dim = mod(d,ndims(img))+1
         n = 0
         for s in eachslice(Fimg, dims=s_dim)
@@ -338,7 +332,6 @@ function resample_var(img::AbstractArray{T,D} , rel_shift, myeps=eps(T))::Abstra
                 # apply the local shifts of this line
                 x = x0 .- RT.(rs[:,n+1]./N)
             end
-            # s .= nufft3(s, x, .-k, myeps)
             # real space phase change to apply to emulate the centering of the Fourier coordinates
             x = .-x
             # the exponential below is needed to correct for the Fourier-space not being properly centered in nufft2.
@@ -346,9 +339,7 @@ function resample_var(img::AbstractArray{T,D} , rel_shift, myeps=eps(T))::Abstra
             s .= cispi.(2*(N÷2) .*x).*nufft2(s, x, myeps)./N  # is faster that nufft3
             n += 1
         end
-        # @show N
-        # Fimg ./= N
-        if T<:Real # isreal(img[1])
+        if T<:Real
             # return Fimg
             img = real.(Fimg)
         else

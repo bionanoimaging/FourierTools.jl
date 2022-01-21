@@ -110,7 +110,10 @@ function shift_by_1D_FT!(arr::AbstractArray{<:Complex, N}, shifts; soft_fraction
             push!(dims, i)
         end
     end
-    ifft!(arr, dims)
+
+    if !isempty(dims)
+        ifft!(arr, dims)
+    end
 
     return arr
 end
