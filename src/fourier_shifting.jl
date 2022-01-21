@@ -77,7 +77,8 @@ function soft_shift(freqs, shift, fraction=eltype(freqs)(0.1); corner=false)
 end
 
 function shift_by_1D_FT!(arr::AbstractArray{<:Complex, N}, shifts; soft_fraction=0, take_real=false, fix_nyquist_frequency=false) where {N}
-    for (d, shift) in pairs(shifts) # iterates of the dimension d using the corresponding shift
+    # iterates of the dimension d using the corresponding shift
+    for (d, shift) in pairs(shifts)
         if iszero(shift)
             continue
         end
@@ -114,7 +115,7 @@ function shift_by_1D_FT!(arr::AbstractArray{<:Complex, N}, shifts; soft_fraction
     if !isempty(dims)
         ifft!(arr, dims)
     end
-
+    
     return arr
 end
 
