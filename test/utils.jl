@@ -67,10 +67,27 @@
 
 
     @testset "Test fftpos" begin
-        @test fftpos(1, 10) == -0.5:0.1:0.4
-        @test fftpos(1, 11) ≈ -0.5:0.09090909090909091:0.4090909090909091 
-        @test fftpos(2, 10) ≈ 2 .*(-0.5:0.1:0.4)
-        @test fftpos(2, 11) ≈ 2 .* (-0.5:0.09090909090909091:0.4090909090909091) 
+
+        @test fftpos(1, 4, CenterFT) ≈  -0.5:0.25:0.25 
+        @test fftpos(1, 4, CenterLast) ≈ -0.75:0.25:0.0 
+        @test fftpos(1, 4, CenterMiddle) ≈ -0.375:0.25:0.375 
+        @test fftpos(1, 4, CenterFirst) ≈ 0.0:0.25:0.75 
+        @test fftpos(1, 4) ≈ 0.0:0.25:0.75 
+        @test fftpos(1, 4, 2) ≈ -0.25:0.25:0.5 
+
+
+        function f(l, N)
+            a = fftpos(l, N, CenterFT)
+            b = fftpos(l, N, CenterFirst)
+            c = fftpos(l, N, CenterLast)
+            d = fftpos(l, N, CenterMiddle)
+            @test (a[end] - a[begin] ≈ b[end] - b[begin] ≈ c[end] - c[begin] ≈ d[end] -d[begin])
+        end
+
+        f(1, 2)
+        f(1, 3)
+        f(42, 4)
+        f(42, 5)
     end
 
 

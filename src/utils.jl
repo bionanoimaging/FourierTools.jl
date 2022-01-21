@@ -46,44 +46,94 @@ end
 
 
 """
-    fftpos(L, N)
+    fftpos(L, N, around=CenterFirst::Center)
 
-Construct a range from -L/2 to L/2.
+Construct a range from -L/2 to L/2 around `around`
 
 However, we ensure that those positions are in a way
 which they are useful for FFT operations.
 This means, that depending on the center a small 
 offset is subtracted.
 
+See `NDTools.Center` for all center options.
+You need to load `using NDTools` to access all center options.
 
  # Examples
 ```jldoctest
-julia> collect(fftpos(1, 5))
-5-element Vector{Float64}:
- -0.5
- -0.3
- -0.1
-  0.1
-  0.3
-
-julia> collect(fftpos(1, 3))
-3-element Vector{Float64}:
- -0.5
- -0.16666666666666666
-  0.16666666666666666
-
-julia> collect(fftpos(1, 4))
+julia> collect(fftpos(1,4))
 4-element Vector{Float64}:
- -0.5
- -0.25
-  0.0
-  0.25
+ 0.0
+ 0.2916666666666667
+ 0.5833333333333334
+ 0.875
+
+julia> collect(fftpos(1,5))
+5-element Vector{Float64}:
+ 0.0
+ 0.225
+ 0.45
+ 0.675
+ 0.9
+
+julia> using NDTools
+
+julia> collect(fftpos(1,4, CenterFirst))
+4-element Vector{Float64}:
+ 0.0
+ 0.2916666666666667
+ 0.5833333333333334
+ 0.875
+
+julia> collect(fftpos(1,4, CenterFT))
+4-element Vector{Float64}:
+ -0.5833333333333333
+ -0.29166666666666663
+  3.70074341541719e-17
+  0.2916666666666667
+
+julia> collect(fftpos(1,4, CenterMiddle))
+4-element Vector{Float64}:
+ -0.4375
+ -0.14583333333333334
+  0.14583333333333334
+  0.4375
 ```
 """
 function fftpos(l, N)
-    return range(-l/2, l/2, length=N+1)[1:end-1]
+    # default
+    fftpos(l, N, CenterFirst)
 end
 
+function fftpos(l, N, around::Type{CenterFirst})
+    return fftpos(l, N, 1)
+end
+
+function fftpos(l, N, around::Type{CenterLast})
+    return fftpos(l, N, N) 
+end
+
+function fftpos(l, N, around::Type{CenterFT})
+    return fftpos(l, N, N ÷ 2 + 1) 
+end
+
+function fftpos(l, N, around::Type{CenterMiddle})
+    return fftpos(l, N, (N+1) / 2)
+end
+
+"""
+    fftpos(l, N, around)
+
+Another `fftpos` method where the range is constructed
+around `around`. `around` is here a number indicating
+the index position around the range is constructed
+"""
+function fftpos(l, N, around::Number)
+    dx = l / N
+    fraction = (around - 1) / (N - 1)
+    return range(0 - (l-dx) * fraction, 
+                 0 + (l-dx) * (1-fraction),
+                 length=N)
+end
 
 
 """
