@@ -1,5 +1,3 @@
-using FastTransforms
-
 export resample
 export resample_by_FFT
 export resample_by_RFFT
@@ -149,9 +147,6 @@ The data is first padded by a relative amount `rel_pad` which is needed to avoid
 As opposed to `resample()`, this routine allows for arbitrary non-integer zoom factors.
 It is reasonably fast but only allows a stretch (via `rel_zoom`) and a shift (via `shear` in pixels) per line or column
 
-normalize=true by default multiplies by an appropriate factor so that the array size is included in the scaling. 
-This results in an array having roughly the same mean intensity.
-
 
 # Examples
 ```jdoctest
@@ -246,9 +241,9 @@ end
 
 """
     barrel_pin(arr, rel=0.5)
-emulates a barrel (rel>0) or a pincushion (rel<0) distortion. The distortions are calculated using resample_czt() with separable quadratic zooms.
+emulates a barrel (`rel>0`) or a pincushion (`rel<0`) distortion. The distortions are calculated using `resample_czt()` with separable quadratic zooms.
 
-See also: resample_czt()
+See also: `resample_czt()`
 # Examples
 ```jdoctest
 julia> using TestImages, NDTools, View5D
@@ -265,12 +260,13 @@ julia> @ve a,b,c # visualize distortions
 function barrel_pin(arr::AbstractArray{T,N}, rel=0.5) where {T,N}
     RT = real(T)
     fk = x -> one(RT) + RT(rel) .* (x-RT(0.5))^2
-    fkts = Tuple(fk for n in 1:ndims(arr))
+    fkts = ntuple(n -> fk, ndims(arr))
     return resample_czt(arr, fkts)
 end
 
 """
     resample_var(img, rel_shift, dim=(2,))
+    
 applies a variable shift `rel_shift` measured in pixel to each pixel in the source `img`.
 `rel_shift` can be 
 + a collection (e.g. a tuple) of number specifying the zoom along each direction
