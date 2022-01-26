@@ -185,7 +185,7 @@ function resample_czt(arr::AbstractArray{T,N}, rel_zoom; shear=nothing, shear_di
             if !isnothing(shear)
                 myshear =  shear[d]
             end
-            if myshear != 0
+            if !iszero(myshear)
                 shifts = ramp(real(eltype(f_res)),d, size(f_res,d), scale=ScaFT)
                 FourierTools.apply_shift_strength!(f_res, f_res, shifts, d, sd,myshear, fix_nyquist)
             end
@@ -217,14 +217,14 @@ function resample_czt(arr::AbstractArray{T,N}, rel_zoom; shear=nothing, shear_di
                 my_zoom = rel_zoom[d](pos)
                 # one-d since a slice was selected
                 f_res = ift(slice,1) 
-                if myshear != 0
+                if !iszero(myshear)
                     FourierTools.apply_shift_strength!(f_res, f_res, shifts[p], 1, 1, myshear, fix_nyquist)                
                 end
                 f_res = let 
                     if T<:Real
                         real(FourierTools.czt_1d(f_res, my_zoom, 1))
                     else
-                        T.(FourierTools.czt_1d(f_res, my_zoom, 1))
+                        FourierTools.czt_1d(f_res, my_zoom, 1)
                     end
                 end
                 select_region!(f_res, slice)
