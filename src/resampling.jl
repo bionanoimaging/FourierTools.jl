@@ -267,28 +267,31 @@ end
 """
     resample_var(img, rel_shift, dim=(2,))
     
-applies a variable shift `rel_shift` measured in pixel to each pixel in the source `img`.
+Applies a variable shift `rel_shift` measured in pixel to each pixel in the source `img`.
 `rel_shift` can be 
 + a collection (e.g. a tuple) of number specifying the zoom along each direction
 + a collection (e.g. a tuple) of vectors (or tuples) each with the same length as the dimensions
 + a collection of functions projecting the ScaFT (approximately -0.5 .. 0.5) range to the local shift in pixels to apply.
 
-resample_var can perform a large range of possible resamplings. However care has to be taken when choosing the functions to apply.
-Each function in the tuple `rel_shift` corresponds to the direction to apply resampling to whereas the (cyclicly) next dimension is the one
-that is iterated over to extract slices to resample. Since these operations are looped over all tuple entries, the x positions are already changed
-when the resampling is performed over y. This possibly needs to be accounted for. See 2D rotation example below.
-The supplied functions need two arguments, where the first argument corrsponds to the current shift direction and the second argument to the 
-orthogonal direction over which the slices are extracted. In 2D this means that rel_shift should typically look like this: (x´(x,y),y(y,x´)).
+`resample_var` can perform a large range of possible resamplings. 
+However care has to be taken when choosing the functions to apply.
+Each function in the tuple `rel_shift` corresponds to the direction to apply resampling to 
+whereas the (cyclicly) next dimension is the onethat is iterated over to extract slices to resample. 
+Since these operations are looped over all tuple entries, the x positions are already changed when t
+he resampling is performed over y. This possibly needs to be accounted for. See 2D rotation example below.
+The supplied functions need two arguments, where the first argument corresponds to the current shift 
+direction and the second argument to the orthogonal direction over which the slices are extracted. 
+In 2D this means that `rel_shift` should typically look like this: (x´(x,y),y(y,x´)).
 See the rotation example below.
 
-See also: resample, resample_czt()
+See also: `resample`, `resample_czt`
 # Examples
-```jdoctest
+```julia-repl
 julia> using TestImages, NDTools, View5D, IndexFunArrays
 
 julia> a = Float32.(testimage("resolution"))
 
-julia> b =resample_var(a, ((x,y)-> 50 *x^2,))
+julia> b = resample_var(a, ((x,y)-> 50 *x^2,))
 
 julia> c = resample_var(a, (yy(size(a)).*xx(size(a),scale=ScaFT).^3,), 1e-2); # stretch along x using an array
 
@@ -310,7 +313,6 @@ julia> b = resample_var(img, ((x,y)->size(img,1)*fx(x,y,α),(x,y)->size(img,2)*f
 
 #display the result
 julia> @ve img, b
-
 ```
 """
 function resample_var(img::AbstractArray{T,D} , rel_shift, myeps=eps(T))::AbstractArray{T,D} where {T,D} # 

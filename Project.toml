@@ -10,6 +10,7 @@ FastTransforms = "057dd010-8810-581a-b7be-e3fc3b93f78c"
 IndexFunArrays = "613c443e-d742-454e-bfc6-1d7f8dd76566"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 NDTools = "98581153-e998-4eef-8d0d-5ec2c052313d"
+NFFT = "efe261a4-0d2b-5849-be55-fc731d526b0d"
 PaddedViews = "5432bcbf-9aad-5242-b902-cca2824c8663"
 ShiftedArrays = "1277b4bf-5013-50f5-be3d-901d8477a67a"
 
