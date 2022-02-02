@@ -1,5 +1,28 @@
 export fftshift_view, ifftshift_view
 export fftshift2d, ifftshift2d, fftshift2d_view, ifftshift2d_view
+export fftshift!, ifftshift!
+
+
+"""
+    fftshift!(dst, src)
+
+Equivalent to `dst = fftshift(src)` but uses internally
+`circshift!(dst, src, size(src) .÷ 2)`.
+"""
+function fftshift!(dst, src)
+    circshift!(dst, src, size(src) .÷ 2)
+end
+
+"""
+    ifftshift!(dst, src)
+
+Equivalent to `dst = ifftshift(src)` but uses internally
+`circshift!(dst, src, .- size(src) .÷ 2)`
+"""
+function ifftshift!(dst, src)
+    circshift!(dst, src, .- size(src) .÷ 2)
+end
+
 
 # add constructor here, might be merged to ShiftedArrays
 # this prevents that CircShiftedArrays get nested with twice application
