@@ -4,23 +4,31 @@ export fftshift!, ifftshift!
 
 
 """
-    fftshift!(dst, src)
+    fftshift!(dst, src, [dims])
 
 Equivalent to `dst = fftshift(src)` but uses internally
 `circshift!(dst, src, size(src) .÷ 2)`.
+
+If `dims` is not given then the signal is shifted along each dimension.
 """
-function fftshift!(dst, src)
-    circshift!(dst, src, size(src) .÷ 2)
+function fftshift!(dst::AbstractArray{T, N}, src::AbstractArray{T, N},
+                   dims=ntuple(i -> i, Val(N))) where {T, N}
+    Δ = ntuple(i -> i ∈ dims ? size(src, i) ÷ 2 : 0, Val(N))
+    circshift!(dst, src, Δ)
 end
 
 """
-    ifftshift!(dst, src)
+    ifftshift!(dst, src, [dims])
 
 Equivalent to `dst = ifftshift(src)` but uses internally
 `circshift!(dst, src, .- size(src) .÷ 2)`
+
+If `dims` is not given then the signal is shifted along each dimension.
 """
-function ifftshift!(dst, src)
-    circshift!(dst, src, .- size(src) .÷ 2)
+function ifftshift!(dst::AbstractArray{T, N}, src::AbstractArray{T, N},
+                   dims=ntuple(i -> i, Val(N))) where {T, N}
+    Δ = ntuple(i -> i ∈ dims ? - size(src, i) ÷ 2 : 0, Val(N))
+    circshift!(dst, src, Δ)
 end
 
 
