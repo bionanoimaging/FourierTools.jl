@@ -262,15 +262,16 @@
 
     @testset "test resample_var" begin
         dim =2
-        s_small = ntuple(_ -> rand(1:13), dim)
+        s_small = (10,12) # ntuple(_ -> rand(1:13), dim)
         s_large = ntuple(i -> max.(s_small[i], rand(10:16)), dim)
         dat = randn(Float32, (s_small))
         rs1 = FourierTools.resample(dat, s_large)
         rs1b = select_region(rs1,new_size=size(dat))
         rs2 = FourierTools.resample_czt(dat, s_large./s_small, do_damp=false)
-        rs3 = FourierTools.resample_var(dat, s_large./s_small)
+        mymap = (t) -> t.*s_small./s_large
+        rs3 = FourierTools.resample_var(dat, mymap)
         # @test rs1b ≈ rs2
-        @test rs2 ≈ rs3
+        @test isapprox(rs2, rs3, rtol=.05)
     end
 
 end

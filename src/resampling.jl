@@ -265,23 +265,23 @@ function barrel_pin(arr::AbstractArray{T,N}, rel=0.5) where {T,N}
 end
 
 """
-    resample_var(img, rel_shift, dim=(2,))
+    resample_var(img, new_pos, pixel_coords=false, is_deformation=false, reltol=1e-9)
     
 Applies a variable shift `rel_shift` measured in pixel to each pixel in the source `img`.
-`rel_shift` can be 
+`new_pos` can be 
 + a collection (e.g. a tuple) of number specifying the zoom along each direction
 + a collection (e.g. a tuple) of vectors (or tuples) each with the same length as the dimensions
 + a collection of functions projecting the ScaFT (approximately -0.5 .. 0.5) range to the local shift in pixels to apply.
 
 `resample_var` can perform a large range of possible resamplings. 
 However care has to be taken when choosing the functions to apply.
-Each function in the tuple `rel_shift` corresponds to the direction to apply resampling to 
+Each function in the tuple `new_pos` corresponds to the direction to apply resampling to 
 whereas the (cyclicly) next dimension is the onethat is iterated over to extract slices to resample. 
 Since these operations are looped over all tuple entries, the x positions are already changed when t
 he resampling is performed over y. This possibly needs to be accounted for. See 2D rotation example below.
 The supplied functions need two arguments, where the first argument corresponds to the current shift 
 direction and the second argument to the orthogonal direction over which the slices are extracted. 
-In 2D this means that `rel_shift` should typically look like this: (x´(x,y),y(y,x´)).
+In 2D this means that `new_pos` should typically look like this: (x´(x,y),y(y,x´)).
 See the rotation example below.
 
 See also: `resample`, `resample_czt`
@@ -291,68 +291,49 @@ julia> using TestImages, NDTools, View5D, IndexFunArrays
 
 julia> a = Float32.(testimage("resolution"))
 
-julia> b = resample_var(a, ((x,y)-> 50 *x^2,))
+julia> b = resample_var(a, t -> (1.5f0 *sign(t[1])*t[1]^2, t[2]*(1f0+t[1]))) # a complicated deformation
 
-julia> c = resample_var(a, (yy(size(a)).*xx(size(a),scale=ScaFT).^3,), 1e-2); # stretch along x using an array
+julia> sz = size(a)
+
+# stacking only the displacement along the last dimension:
+julia> new_pos = cat(0.5 .* xx(sz,scale=ScaFT).^3,zeros(sz), dims=3) 
+
+julia> c = resample_var(a, new_pos, is_deformation=true); # stretch along x using an array
 
 julia> @ve a,b,c # visualize distortions
 
 # Lets try a 2D rotation:
-julia> img = Float64.(testimage("resolution"));
+# define a rotation operation
+julia> rot_alpha(a, t) = (cosd(a)*t[1] - sind(a)*t[2], sind(a)*t[1]+cosd(a)*t[2])
 
-julia> fx(x,y,α) = x*cos(α)+y*sin(α)-x;
-
-# the function below needs some care: We need to change the order of the arguments and first compensate the x-shift that was previously applied 
-julia> fy(y,xp,α) = y*cos(α)-tan(α)*(xp-sin(α)*y)-y;
-
-# angle by which to rotate
-julia> α = 15*pi/180;
+# postions as an array of tuples
+julia> new_pos = rot_alpha.(10.0, idx(img, scale=ScaFT))
 
 # lets do the resampling
-julia> b = resample_var(img, ((x,y)->size(img,1)*fx(x,y,α),(x,y)->size(img,2)*fy(x,y,α)));
+julia> d = resample_var(a, new_pos);
 
 #display the result
-julia> @ve img, b
+julia> @ve a, d
 ```
 """
-function resample_var(img::AbstractArray{T,D} , rel_shift, myeps=eps(T))::AbstractArray{T,D} where {T,D} # 
-    dims = length(rel_shift)
+function resample_var(img::AbstractArray{T,D}, new_pos; pixel_coords=false, is_deformation=false, reltol=1e-9)::AbstractArray{T,D} where {T,D} # 
     RT = real(T)
-    myeps = RT(myeps)
-    for d in 1:dims
-        N = size(img,d)
-        k = (zero(RT):N-one(RT))
-        k = k .- k[size(k,1)÷2+1]
-        x0 = k ./ size(k,1)
-        Fimg = ft(img,(d,)) # nufft3(Complex.(img), x0,k, eps(eltype(img)))
-        s_dim = mod(d,ndims(img))+1
-        n = 0
-        for s in eachslice(Fimg, dims=s_dim)
-            rs = rel_shift[d]
-            x = x0
-            if isa(rs, Function)
-                y0 = RT((n - (size(img,s_dim)÷2))/size(img,s_dim))
-                rs = RT.(rs.(x0,y0)./N)
-                x = x0 .- rs
-            elseif isa(rs, Number)
-                x = x0 ./ RT.(rs)
-            else
-                # apply the local shifts of this line
-                x = x0 .- RT.(rs[:,n+1]./N)
-            end
-            # real space phase change to apply to emulate the centering of the Fourier coordinates
-            x = .-x
-            # the exponential below is needed to correct for the Fourier-space not being properly centered in nufft2.
-            # This cannot be remedied by fftshift due to the non-uniform sampling!
-            s .= cispi.(2*(N÷2) .*x).*nufft2(s, x, myeps)./N  # is faster that nufft3
-            n += 1
-        end
-        if T<:Real
-            # return Fimg
-            img = real.(Fimg)
-        else
-            img = Fimg
-        end
+
+    if T<:Real
+        img = Complex{RT}.(img)
+    end
+    if isa(new_pos, Function)
+        new_pos = new_pos.(idx(RT, size(img), scale=ScaFT))
+    end
+
+    p = plan_nfft_nd(img, new_pos; pixel_coords=pixel_coords, is_deformation=is_deformation, reltol=reltol)
+    Fimg = p * ift(img)
+
+    if T<:Real
+        # return Fimg
+        img = real.(Fimg)
+    else
+        img = Fimg
     end
     return img
 end
