@@ -45,23 +45,37 @@ julia> g = real.(p * f)
 julia> @ve img, g
 ```
 """
-function plan_nfft_nd(src, dst_coords; pixel_coords=false, is_deformation=false, reltol=1e-9)
-    # convert 2d coordinates to matrix form
-    src = let
-        if eltype(src) <: Complex
-            src
+function plan_nfft_nd(src::AbstractArray{T,D}, dst_coords; pixel_coords=false, is_deformation=false, reltol=1e-9) where {T,D}
+    RT = real(T)
+
+    src = let 
+        if T<:Real
+            Complex{RT}.(src)
         else
-            Complex.(src)
+            src
         end
     end
+
+    dst_coords = let
+        if isa(dst_coords, Function)
+            # evaluate the function to get the numerical destination coordinate positions
+            dst_coords.(idx(RT, size(src), scale=ScaFT))
+        else
+            dst_coords
+        end
+    end
+
+    # convert ND coordinates to 2D matrix form
 
     x, dsz = let 
         if eltype(dst_coords) <: Tuple
             x = reshape(reinterpret(reshape,eltype(dst_coords[1]), dst_coords), (ndims(dst_coords), prod(size(dst_coords))))
             x, size(dst_coords)
         else
-            x = reshape(dst_coords, (size(dst_coords)[end], prod(size(dst_coords)[1:end-1])))
-            x, size(dst_coords)[1:end-1]
+            sz = size(dst_coords)
+            dst_coords = PermutedDimsArray(dst_coords, (length(sz), (1:length(sz)-1)...))
+            x = reshape(dst_coords, (sz[end], prod(sz[1:end-1])))
+            x, sz[1:end-1]
         end
     end
     x = let
@@ -84,6 +98,13 @@ function plan_nfft_nd(src, dst_coords; pixel_coords=false, is_deformation=false,
             x
         end
     end
+    # deal with the out-of-range positions
+
+    maxfreq = floor.((dsz.-1)./2) ./ dsz
+    x = clamp.(x, .-maxfreq, maxfreq)
+
+    # mask = (x .< 0.5) || (x .> maxfreq) 
+    
     return NFFTPlan_ND(plan_nfft(x, dsz; reltol=reltol), dsz)
 end
 

@@ -260,18 +260,25 @@
         @test select_region_ft(ffts(x), (7, 7)) == ComplexF64[0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im; 0.0 + 0.0im 0.32043577156395486 + 0.0im 2.321469443190397 + 0.7890379226962572im 0.38521287113798636 + 0.0im 2.321469443190397 - 0.7890379226962572im 0.32043577156395486 + 0.0im 0.0 + 0.0im; 0.0 + 0.0im 1.3691035744780353 + 0.16703621316206385im 2.4110077589815555 - 0.16558718095884828im 2.2813159163314163 - 0.7520360306228049im 7.47614366018844 - 4.139633109911205im 1.3691035744780353 + 0.16703621316206385im 0.0 + 0.0im; 0.0 + 0.0im 0.4801675770812479 + 0.0im 3.3142445917764407 - 3.2082400832669373im 1.6529948781166373 + 0.0im 3.3142445917764407 + 3.2082400832669373im 0.4801675770812479 + 0.0im 0.0 + 0.0im; 0.0 + 0.0im 1.3691035744780353 - 0.16703621316206385im 7.47614366018844 + 4.139633109911205im 2.2813159163314163 + 0.7520360306228049im 2.4110077589815555 + 0.16558718095884828im 1.3691035744780353 - 0.16703621316206385im 0.0 + 0.0im; 0.0 + 0.0im 0.32043577156395486 + 0.0im 2.321469443190397 + 0.7890379226962572im 0.38521287113798636 + 0.0im 2.321469443190397 - 0.7890379226962572im 0.32043577156395486 + 0.0im 0.0 + 0.0im; 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im]
     end
 
-    @testset "test resample_var" begin
+    @testset "test resample_nfft" begin
         dim =2
         s_small = (10,12) # ntuple(_ -> rand(1:13), dim)
-        s_large = ntuple(i -> max.(s_small[i], rand(10:16)), dim)
-        dat = randn(Float32, (s_small))
+        s_large = (20,18) # ntuple(i -> max.(s_small[i], rand(10:16)), dim)
+        dat = select_region(randn(Float32, (5,6)), new_size= s_small)
         rs1 = FourierTools.resample(dat, s_large)
-        rs1b = select_region(rs1,new_size=size(dat))
+        rs1b = select_region(rs1, new_size=size(dat))
         rs2 = FourierTools.resample_czt(dat, s_large./s_small, do_damp=false)
-        mymap = (t) -> t.*s_small./s_large
-        rs3 = FourierTools.resample_var(dat, mymap)
-        # @test rs1b ≈ rs2
-        @test isapprox(rs2, rs3, rtol=.05)
+        @test rs1b ≈ rs2
+        mymap = (t) -> t .* s_small./s_large
+        rs3 = FourierTools.resample_nfft(dat, mymap)
+        @test isapprox(rs1b, rs3, rtol=0.1)
+        new_pos = mymap.(idx(size(dat), scale=ScaFT))
+        rs4 = FourierTools.resample_nfft(dat, new_pos)
+        @test rs4 ≈ rs3
+        new_pos = cat(s_small[1]./s_large[1] .* xx(size(dat), scale=ScaFT), s_small[2]./s_large[2] .* yy(size(dat), scale=ScaFT),dims=3)
+        rs5 = FourierTools.resample_nfft(dat, new_pos)
+        @test rs5 ≈ rs3
+        # @test rs1b ≈ rs3
     end
 
 end

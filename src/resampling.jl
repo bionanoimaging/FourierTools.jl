@@ -4,7 +4,7 @@ export resample_by_RFFT
 export upsample2_abs2
 export upsample2
 export upsample2_1D
-export resample_var
+export resample_nfft
 export resample_czt
 export barrel_pin
 
@@ -265,15 +265,15 @@ function barrel_pin(arr::AbstractArray{T,N}, rel=0.5) where {T,N}
 end
 
 """
-    resample_var(img, new_pos, pixel_coords=false, is_deformation=false, reltol=1e-9)
+    resample_nfft(img, new_pos, pixel_coords=false, is_deformation=false, reltol=1e-9)
     
-Applies a variable shift `rel_shift` measured in pixel to each pixel in the source `img`.
+resamples an ND-array to a set of new positions `new_pos` measured in either in pixels (`pixel_coords=true`) or relative (Fourier-) image coordinates (`pixel_coords=false`).
 `new_pos` can be 
-+ a collection (e.g. a tuple) of number specifying the zoom along each direction
-+ a collection (e.g. a tuple) of vectors (or tuples) each with the same length as the dimensions
-+ a collection of functions projecting the ScaFT (approximately -0.5 .. 0.5) range to the local shift in pixels to apply.
++ an array of `Tuples` specifying the zoom along each direction
++ an `N+1` dimensional array (for `N`-dimensional imput data `img`) of destination postions, the last dimension enumerating the respective destination corrdinate dimension.
++ a function accepting a coordinate `Tuple` and yielding a destination position `Tuple`.
 
-`resample_var` can perform a large range of possible resamplings. 
+`resample_nfft` can perform a large range of possible resamplings. 
 However care has to be taken when choosing the functions to apply.
 Each function in the tuple `new_pos` corresponds to the direction to apply resampling to 
 whereas the (cyclicly) next dimension is the onethat is iterated over to extract slices to resample. 
@@ -291,14 +291,14 @@ julia> using TestImages, NDTools, View5D, IndexFunArrays
 
 julia> a = Float32.(testimage("resolution"))
 
-julia> b = resample_var(a, t -> (1.5f0 *sign(t[1])*t[1]^2, t[2]*(1f0+t[1]))) # a complicated deformation
+julia> b = resample_nfft(a, t -> (1.5f0 *sign(t[1])*t[1]^2, t[2]*(1f0+t[1]))) # a complicated deformation
 
 julia> sz = size(a)
 
 # stacking only the displacement along the last dimension:
 julia> new_pos = cat(0.5 .* xx(sz,scale=ScaFT).^3,zeros(sz), dims=3) 
 
-julia> c = resample_var(a, new_pos, is_deformation=true); # stretch along x using an array
+julia> c = resample_nfft(a, new_pos, is_deformation=true); # stretch along x using an array
 
 julia> @ve a,b,c # visualize distortions
 
@@ -310,27 +310,18 @@ julia> rot_alpha(a, t) = (cosd(a)*t[1] - sind(a)*t[2], sind(a)*t[1]+cosd(a)*t[2]
 julia> new_pos = rot_alpha.(10.0, idx(img, scale=ScaFT))
 
 # lets do the resampling
-julia> d = resample_var(a, new_pos);
+julia> d = resample_nfft(a, new_pos);
 
 #display the result
 julia> @ve a, d
 ```
 """
-function resample_var(img::AbstractArray{T,D}, new_pos; pixel_coords=false, is_deformation=false, reltol=1e-9)::AbstractArray{T,D} where {T,D} # 
-    RT = real(T)
-
-    if T<:Real
-        img = Complex{RT}.(img)
-    end
-    if isa(new_pos, Function)
-        new_pos = new_pos.(idx(RT, size(img), scale=ScaFT))
-    end
+function resample_nfft(img::AbstractArray{T,D}, new_pos; pixel_coords=false, is_deformation=false, reltol=1e-9)::AbstractArray{T,D} where {T,D} # 
 
     p = plan_nfft_nd(img, new_pos; pixel_coords=pixel_coords, is_deformation=is_deformation, reltol=reltol)
     Fimg = p * ift(img)
 
     if T<:Real
-        # return Fimg
         img = real.(Fimg)
     else
         img = Fimg
