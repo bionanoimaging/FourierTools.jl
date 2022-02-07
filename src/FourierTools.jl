@@ -7,7 +7,6 @@ using LinearAlgebra
 using IndexFunArrays
 using ChainRulesCore
 using NDTools
-using FastTransforms
 using NFFT
 
 include("utils.jl")
