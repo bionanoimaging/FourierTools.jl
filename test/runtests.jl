@@ -18,5 +18,6 @@ include("convolutions.jl")
 include("custom_fourier_types.jl")
 include("damping.jl")
 include("czt.jl")
+include("nfft_tests.jl")
 
 return

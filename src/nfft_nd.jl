@@ -2,10 +2,13 @@ export *, Mul!
 export plan_nfft_nd
 export nfft_nd
 
-struct NFFTPlan_ND
+struct NFFTPlan_ND{CT, D, NT}  <: Any where {CT, D, NT <: Union{Array{Bool,1}, Nothing}}
     p::NFFTPlan
     # destination size
-    dsz::NTuple
+    dsz::NTuple{D, Int}
+    pad_value::CT
+    # could be ::Array{Bool, D}, but is not specified to allow nothing as an entry
+    pad_mask::NT
 end
 
 """
@@ -45,16 +48,9 @@ julia> g = real.(p * f)
 julia> @ve img, g
 ```
 """
-function plan_nfft_nd(src::AbstractArray{T,D}, dst_coords; pixel_coords=false, is_deformation=false, reltol=1e-9) where {T,D}
+function plan_nfft_nd(src::AbstractArray{T,D}, dst_coords; pixel_coords=false, is_deformation=false, pad_value=nothing, reltol=1e-9) where {T,D}
     RT = real(T)
-
-    src = let 
-        if T<:Real
-            Complex{RT}.(src)
-        else
-            src
-        end
-    end
+    CT = complex(T)
 
     dst_coords = let
         if isa(dst_coords, Function)
@@ -101,11 +97,18 @@ function plan_nfft_nd(src::AbstractArray{T,D}, dst_coords; pixel_coords=false, i
     # deal with the out-of-range positions
 
     maxfreq = floor.((dsz.-1)./2) ./ dsz
-    x = clamp.(x, .-maxfreq, maxfreq)
 
-    # mask = (x .< 0.5) || (x .> maxfreq) 
-    
-    return NFFTPlan_ND(plan_nfft(x, dsz; reltol=reltol), dsz)
+    pad_mask, pad_value = let
+        if isnothing(pad_value)
+            nothing, zero(CT)
+        else
+            any((x .< -0.5) .|| (x .> maxfreq), dims=1)[:], zero(CT)
+        end
+    end
+
+    x = clamp.(x, .-0.5, maxfreq)
+
+    return NFFTPlan_ND(plan_nfft(x, dsz; reltol=reltol), dsz, pad_value, pad_mask)
 end
 
 """
@@ -114,25 +117,47 @@ end
 performs an n-dimensional non-uniform FFT on grids with a regular topology. In comparison to the `nfft()` routine, which this computed
 is based on, this version does not require any reshape operations.
 See `plan_nfft_nd` for details on the arguments and usage examples.
+Note that the input can be `Real` valued and will be automatically converted to `Complex`.
+
+```julia-repl
+# A Zoomed transform in 3D
+julia> nfft_nd(rand(10,12,12), (t)-> (0.8*t[1], 0.7*t[2], 0.6*t[3]))
+```
 """
-function nfft_nd(src, dst_coords; pixel_coords=false, is_deformation=false, reltol=1e-9)
-    p = plan_nfft_nd(src, dst_coords; pixel_coords=pixel_coords, is_deformation=is_deformation, reltol=reltol)
+function nfft_nd(src, dst_coords; pixel_coords=false, is_deformation=false, pad_value=nothing, reltol=1e-9)
+    p = plan_nfft_nd(src, dst_coords; pixel_coords=pixel_coords, is_deformation=is_deformation, pad_value=pad_value, reltol=reltol)
     return p * src
 end
 
+# out of place multiplication to the fHat result. fHat can have ND-shape and will be reshaped as a view internally
 function LinearAlgebra.mul!(fHat::StridedArray, p::NFFTPlan_ND, f::AbstractArray; verbose=false, timing::Union{Nothing,TimingStats} = nothing)
-    mul!(fHat, p.p, f; verbose=verbose, timing=timing)
+    # not that the reshape is just a different view, not copying the data
+    rHat = reshape(fHat, size_out(p.p)[1])
+    mul!(rHat, p.p, f; verbose=verbose, timing=timing)
+    if !isnothing(p.pad_mask)
+        rHat[p.pad_mask] .= p.pad_value
+    end
     return fHat
 end
 
+# out of place multiplication to the fHat result. fHat can have ND-shape and will be reshaped as a view internally
 function LinearAlgebra.mul!(fHat::AbstractArray{Tg}, p::NFFTPlan_ND, f::AbstractArray{T}) where {Tg, T}
-    mul!(fHat, p.p, f)
+    # not that the reshape is just a different view, not copying the data
+    rHat = reshape(fHat, size_out(p.p)[1])
+    mul!(rHat, p.p, f)
+    if !isnothing(p.pad_mask)
+        rHat[p.pad_mask] .= p.pad_value
+    end
     return fHat
 end
 
 function Base.:*(p::NFFTPlan_ND, f::AbstractArray{Complex{U},D}; kargs...) where {U,D}
-    fHat = similar(f, eltype(f), size_out(p.p))
+    fHat = similar(f, eltype(f), p.dsz) # size_out(p.p)
     mul!(fHat, p, f; kargs...)
-    fHat = reshape(fHat, p.dsz)
     return fHat
+end
+
+# for being called with the less stringent (real) datatype
+function Base.:*(p::NFFTPlan_ND, f::AbstractArray{RT,D}; kargs...) where {RT <: Real, D}
+        return p * complex.(f)
 end
