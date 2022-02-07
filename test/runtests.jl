@@ -4,6 +4,7 @@ using ImageTransformations
 using IndexFunArrays
 using Zygote
 using NDTools
+using LinearAlgebra # for the assigned nfft function LinearAlgebra.mul!
 
 Random.seed!(42)
 
