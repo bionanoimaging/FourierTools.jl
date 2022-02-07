@@ -12,7 +12,7 @@ struct NFFTPlan_ND{CT, D, NT}  <: Any where {CT, D, NT <: Union{Array{Bool,1}, N
 end
 
 """
-    plan_nfft_nd(src, dst_coords; pixel_coords=false, is_deformation=false)
+    plan_nfft_nd(src, dst_coords; pixel_coords=false, is_deformation=false, pad_value=nothing, reltol=1e-9)
 
 Plans an n-dimensional non-uniform FFT on grids with a regular topology. In comparison to the `nfft()` routine, which this computed
 is based on, this version does not require any reshape operations.
@@ -25,7 +25,9 @@ is based on, this version does not require any reshape operations.
   In the recommended mode, the indices are normalized to to Fouier frequency range (roughly speaking from -0.5:0.5).
 + `pixels_coords`: A `Boolean` flag indicating whether dst_coords refers to coordinates in pixels or (default) in relative frequency positions.
   If `pixel_coords=True` is selected, destination coordinates (1-based indexing) as typical for array indexing is assumed and internally converted to relative positions.
-  - is_deformation: A `Boolean` controlling wether `dst_coords` refers to the destination coordinates or the relative distance from standard grid coordinates (size determind from `dst_coordinates`).  
++ is_deformation: A `Boolean` controlling wether `dst_coords` refers to the destination coordinates or the relative distance from standard grid coordinates (size determind from `dst_coordinates`).  
++ `pad_value`: if supplied, values outside the valid pixel range (roughly -0.5:0.5) are replaced by this complex-valued pad value.
++ `reltol`: The numerical precision to which the results are computed. This is passed to the `nfft` routine. Worse precision is faster.
 
 ```julia-repl
 # Lets try a 2D rotation:
