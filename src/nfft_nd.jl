@@ -2,14 +2,21 @@ export *, Mul!
 export plan_nfft_nd
 export nfft_nd
 
-struct NFFTPlan_ND{CT, D, NT}  <: Any where {CT, D, NT <: Union{Array{Bool,1}, Nothing}}
-    p::NFFTPlan
+# PT <: Union{NFFTPlan, LinearAlgebra.Adjoint{CT, NFFT.NFFTPlan{Real, D, R}}
+struct NFFTPlan_ND{CT, D, NT, PT}  <: Any where {CT, D, NT <: Union{Array{Bool,1}, Nothing}, PT}
+    p :: PT 
     # destination size
     dsz::NTuple{D, Int}
     pad_value::CT
     # could be ::Array{Bool, D}, but is not specified to allow nothing as an entry
     pad_mask::NT
+    is_adjoint::Bool
 end
+
+# Any_NFFTPlan_ND = Union{
+#     NFFTPlan_ND, 
+#     LinearAlgebra.Adjoint{CT, NFFTPlan_ND{CT, D, NT, PT}}  where {CT, D, NT, PT}
+#     }
 
 """
     plan_nfft_nd(src, dst_coords; pixel_coords=false, is_deformation=false, pad_value=nothing, reltol=1e-9)
@@ -27,6 +34,7 @@ is based on, this version does not require any reshape operations.
   If `pixel_coords=True` is selected, destination coordinates (1-based indexing) as typical for array indexing is assumed and internally converted to relative positions.
 + is_deformation: A `Boolean` controlling wether `dst_coords` refers to the destination coordinates or the relative distance from standard grid coordinates (size determind from `dst_coordinates`).  
 + `pad_value`: if supplied, values outside the valid pixel range (roughly -0.5:0.5) are replaced by this complex-valued pad value.
++  `is_adjoint`: if `true` this plan is based on the adjoint rather than the ordinary plan
 + `reltol`: The numerical precision to which the results are computed. This is passed to the `nfft` routine. Worse precision is faster.
 
 ```julia-repl
@@ -50,7 +58,7 @@ julia> g = real.(p * f)
 julia> @ve img, g
 ```
 """
-function plan_nfft_nd(src::AbstractArray{T,D}, dst_coords; pixel_coords=false, is_deformation=false, pad_value=nothing, reltol=1e-9) where {T,D}
+function plan_nfft_nd(src::AbstractArray{T,D}, dst_coords; pixel_coords=false, is_deformation=false, pad_value=nothing, is_adjoint=false, reltol=1e-9) where {T,D}
     RT = real(T)
     CT = complex(T)
 
@@ -81,7 +89,7 @@ function plan_nfft_nd(src::AbstractArray{T,D}, dst_coords; pixel_coords=false, i
                 if is_deformation
                     x./ dsz 
                 else
-                    (x.-1) ./ dsz .- 0.5
+                    (x .- one(RT)) ./ dsz .- RT(0.5)
                 end
             else
                 x
@@ -91,26 +99,27 @@ function plan_nfft_nd(src::AbstractArray{T,D}, dst_coords; pixel_coords=false, i
     x = let
         if is_deformation
             xy = Tuple.(CartesianIndices(dsz))  
-            ((reshape(reinterpret(reshape,eltype(xy[1]), xy), (length(dsz), prod(dsz))) .-1) ./ dsz .- 0.5) .+ x
+            ((reshape(reinterpret(reshape,eltype(xy[1]), xy), (length(dsz), prod(dsz))) .- one(RT)) ./ dsz .- RT(0.5)) .+ x
         else
             x
         end
     end
     # deal with the out-of-range positions
 
-    maxfreq = floor.((dsz.-1)./2) ./ dsz
+    maxfreq = RT.(floor.((dsz.-1)./2) ./ dsz)
 
     pad_mask, pad_value = let
         if isnothing(pad_value)
             nothing, zero(CT)
         else
-            any((x .< -0.5) .|| (x .> maxfreq), dims=1)[:], zero(CT)
+            any((x .< -RT(0.5)) .|| (x .> maxfreq), dims=1)[:], zero(CT)
         end
     end
 
-    x = clamp.(x, .-0.5, maxfreq)
+    x = clamp.(x, .- RT(0.5), maxfreq)
 
-    return NFFTPlan_ND(plan_nfft(x, dsz; reltol=reltol), dsz, pad_value, pad_mask)
+    p = plan_nfft(x, dsz; reltol=reltol)
+    return NFFTPlan_ND((p), dsz, pad_value, pad_mask, is_adjoint)
 end
 
 """
@@ -126,16 +135,24 @@ Note that the input can be `Real` valued and will be automatically converted to 
 julia> nfft_nd(rand(10,12,12), (t)-> (0.8*t[1], 0.7*t[2], 0.6*t[3]))
 ```
 """
-function nfft_nd(src, dst_coords; pixel_coords=false, is_deformation=false, pad_value=nothing, reltol=1e-9)
-    p = plan_nfft_nd(src, dst_coords; pixel_coords=pixel_coords, is_deformation=is_deformation, pad_value=pad_value, reltol=reltol)
+function nfft_nd(src, dst_coords; pixel_coords=false, is_deformation=false, pad_value=nothing, is_adjoint=false, reltol=1e-9)
+    p = plan_nfft_nd(src, dst_coords; pixel_coords=pixel_coords, is_deformation=is_deformation, pad_value=pad_value, is_adjoint=false, reltol=reltol)
     return p * src
 end
 
 # out of place multiplication to the fHat result. fHat can have ND-shape and will be reshaped as a view internally
 function LinearAlgebra.mul!(fHat::StridedArray, p::NFFTPlan_ND, f::AbstractArray; verbose=false, timing::Union{Nothing,TimingStats} = nothing)
     # not that the reshape is just a different view, not copying the data
-    rHat = reshape(fHat, size_out(p.p)[1])
-    mul!(rHat, p.p, f; verbose=verbose, timing=timing)
+    if p.is_adjoint
+        # rHat = reshape(fHat, size_in(p.p))
+        f = reshape(f, size_out(p.p))
+        pa = LinearAlgebra.adjoint(p.p)
+        mul!(fHat, pa, f; verbose=verbose, timing=timing)
+    else
+        rHat = reshape(fHat, size_out(p.p))
+        # f = reshape(f, size_in(p.p))
+        mul!(rHat, p.p, f; verbose=verbose, timing=timing)
+    end
     if !isnothing(p.pad_mask)
         rHat[p.pad_mask] .= p.pad_value
     end
@@ -145,13 +162,44 @@ end
 # out of place multiplication to the fHat result. fHat can have ND-shape and will be reshaped as a view internally
 function LinearAlgebra.mul!(fHat::AbstractArray{Tg}, p::NFFTPlan_ND, f::AbstractArray{T}) where {Tg, T}
     # not that the reshape is just a different view, not copying the data
-    rHat = reshape(fHat, size_out(p.p)[1])
-    mul!(rHat, p.p, f)
+    sz = let 
+        if p.is_adjoint
+            size_in(p.p)
+        else
+            size_out(p.p)
+        end
+    end
+    rHat = reshape(fHat, sz)
+    if p.is_adjoint
+        pa = LinearAlgebra.adjoint(p.p)
+        mul!(rHat, pa, f)
+    else
+        mul!(rHat, p.p, f)
+    end
     if !isnothing(p.pad_mask)
         rHat[p.pad_mask] .= p.pad_value
     end
     return fHat
 end
+
+# function adjoint(p::NFFTPlan_ND{T, D, T3, P}) where {T, D, T3, P} 
+#     return LinearAlgebra.Adjoint{T, typeof(p)}(p)
+# end
+
+# function Base.show(io::IO, p::LinearAlgebra.Adjoint{CT, NFFTPlan_ND{CT, D, NT, PT}}  where {CT, D, NT, PT})  
+#     print(io, "Adjoint NFFTPlan_ND with ", p.parent.p.M, " sampling points for an input array of size", 
+#            p.parent.p.N, " and an output array of size", p.parent.p.NOut, " with dims ", p.parent.p.dims)
+# end
+
+# function LinearAlgebra.mul!(g::StridedArray, p::LinearAlgebra.Adjoint{Complex{Tp},<:NFFTPlan_ND}, fHat::AbstractVector{T}) where {Tp,T}
+#     @show "Hello"    
+#     g = reshape(g, size_in(p.p))
+#     mul!(g, adjoint(p.p), fHat)
+#     if !isnothing(p.pad_mask)
+#         g[p.pad_mask] .= p.pad_value
+#     end
+#     return g
+# end
 
 function Base.:*(p::NFFTPlan_ND, f::AbstractArray{Complex{U},D}; kargs...) where {U,D}
     fHat = similar(f, eltype(f), p.dsz) # size_out(p.p)
@@ -163,3 +211,4 @@ end
 function Base.:*(p::NFFTPlan_ND, f::AbstractArray{RT,D}; kargs...) where {RT <: Real, D}
         return p * complex.(f)
 end
+

@@ -316,10 +316,17 @@ julia> d = resample_nfft(a, new_pos);
 julia> @ve a, d
 ```
 """
-function resample_nfft(img::AbstractArray{T,D}, new_pos; pixel_coords=false, is_deformation=false, reltol=1e-9)::AbstractArray{T,D} where {T,D} # 
+function resample_nfft(img::AbstractArray{T,D}, new_pos; pixel_coords=false, is_deformation=false, is_src_coords=true, reltol=1e-9)::AbstractArray{T,D} where {T,D} # 
 
-    p = plan_nfft_nd(img, new_pos; pixel_coords=pixel_coords, is_deformation=is_deformation, reltol=reltol)
-    Fimg = p * ift(img)
+    Fimg = let
+        if is_src_coords
+            p = plan_nfft_nd(img, new_pos; pixel_coords=pixel_coords, is_deformation=is_deformation, is_adjoint=true, reltol=reltol)
+            ft(p * img) ./ prod(size(img))
+        else
+            p = plan_nfft_nd(img, new_pos; pixel_coords=pixel_coords, is_deformation=is_deformation, is_adjoint=false, reltol=reltol)
+            p * ift(img)
+        end
+    end
 
     if T<:Real
         img = real.(Fimg)
