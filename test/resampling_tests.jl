@@ -262,7 +262,7 @@
 
     @testset "test resample_nfft" begin
         dim =2
-        s_small = (10,12) # ntuple(_ -> rand(1:13), dim)
+        s_small = (12,16) # ntuple(_ -> rand(1:13), dim)
         s_large = (20,18) # ntuple(i -> max.(s_small[i], rand(10:16)), dim)
         dat = select_region(randn(Float32, (5,6)), new_size= s_small)
         rs1 = FourierTools.resample(dat, s_large)
@@ -282,7 +282,17 @@
         # test both modes: src and destination but only for a 1-pixel shift
         rs6 = FourierTools.resample_nfft(dat, t->t .+ 1.0, is_src_coords=false, is_in_pixels=true)
         rs7 = FourierTools.resample_nfft(dat, t->t .- 1.0, is_src_coords=true, is_in_pixels=true)
-        @test rs6 ≈ rs7    
+        @test rs6 ≈ rs7
+        # test shrinking by a factor of two
+        new_pos = cat(xx(s_small.÷2, scale=ScaFT),yy(s_small.÷2, scale=ScaFT), dims=3)
+        rs8 = FourierTools.resample_nfft(dat, t->t, dst_size=s_small.÷2, is_src_coords=true)
+        rs9 = FourierTools.resample_nfft(dat, new_pos,  is_src_coords=true)
+        rss = FourierTools.resample(dat, s_small.÷2)
+        @test rs8 ≈ rs9
+        rs10 = FourierTools.resample_nfft(dat, t->t, dst_size=s_small.÷2, is_src_coords=false, is_in_pixels=true)
+        new_pos = cat(xx(s_small, offset=(0,0)),yy(s_small,offset=(0,0)), dims=3)
+        rs11 = FourierTools.resample_nfft(dat, new_pos, dst_size=s_small.÷2, is_src_coords=false, is_in_pixels=true)
+        @test rs10 ≈ rs11    
     end
 
 end

@@ -265,7 +265,7 @@ function barrel_pin(arr::AbstractArray{T,N}, rel=0.5) where {T,N}
 end
 
 """
-    resample_nfft(img, new_pos, pixel_coords=false, is_local_shift=false, is_src_coords=true, reltol=1e-9)
+    resample_nfft(img, new_pos; dst_size=size(img), pixel_coords=false, is_local_shift=false, is_src_coords=true, reltol=1e-9)
     
 resamples an ND-array to a set of new positions `new_pos` measured in either in pixels (`pixel_coords=true`) or relative (Fourier-) image coordinates (`pixel_coords=false`).
 `new_pos` can be 
@@ -279,6 +279,8 @@ position have to be specified. This has the advantage that the result has usuall
 # Arguements
 + `img`: the image to apply resampling to
 + `new_pos``: specifies the resampling. See description above.
++ `dst_size`: this argument is only used for functions. If you require a different result size for `new_pos` being a function, state it here. By defaul (`dst_size=nothing`) the 
+              destination size will be inferred form the argument `new_pos` or assumed to be `size(img)`.
 + `is_local_shift`: specifies, whether the resampling coordinates refer to a relative shift or absoluter coordinates
 + `is_in_pixels`: specifies whether the coordinates (or relative distances) are given in pixel pitch units (`is_in_pixels=true`) or in units relative to the array sizes (Fourier convention) 
 + `is_src_coords`: specifies, whether the resampling positions refer to sampling at source (`is_src_coords=true`) or destination coordinates 
@@ -331,14 +333,14 @@ julia> f = resample_nfft(a, new_pos, is_src_coords=false);
 julia> @ve a e f
 ```
 """
-function resample_nfft(img::AbstractArray{T,D}, new_pos; is_in_pixels=false, is_local_shift=false, is_src_coords=true, reltol=1e-9)::AbstractArray{T,D} where {T,D} # 
+function resample_nfft(img::AbstractArray{T,D}, new_pos; dst_size=nothing,  is_in_pixels=false, is_local_shift=false, is_src_coords=true, reltol=1e-9)::AbstractArray{T,D} where {T,D} # 
 
     Fimg = let
         if is_src_coords
-            p = plan_nfft_nd(img, new_pos; is_in_pixels=is_in_pixels, is_local_shift=is_local_shift, is_adjoint=false, reltol=reltol)
+            p = plan_nfft_nd(img, new_pos; dst_size=dst_size, is_in_pixels=is_in_pixels, is_local_shift=is_local_shift, is_adjoint=false, reltol=reltol)
             p * ift(img)
         else
-            p = plan_nfft_nd(img, new_pos; is_in_pixels=is_in_pixels, is_local_shift=is_local_shift, is_adjoint=true, reltol=reltol)
+            p = plan_nfft_nd(img, new_pos; dst_size=dst_size, is_in_pixels=is_in_pixels, is_local_shift=is_local_shift, is_adjoint=true, reltol=reltol)
             ft(p * img) ./ prod(size(img))
         end
     end
