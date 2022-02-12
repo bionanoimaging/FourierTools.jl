@@ -5,6 +5,7 @@ using IndexFunArrays
 using Zygote
 using NDTools
 using LinearAlgebra # for the assigned nfft function LinearAlgebra.mul!
+using PermutedDimsArray
 
 Random.seed!(42)
 

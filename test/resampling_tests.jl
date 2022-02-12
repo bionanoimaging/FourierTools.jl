@@ -293,6 +293,10 @@
         new_pos = cat(xx(s_small, offset=(0,0)),yy(s_small,offset=(0,0)), dims=3)
         rs11 = FourierTools.resample_nfft(dat, new_pos, dst_size=s_small.÷2, is_src_coords=false, is_in_pixels=true)
         @test rs10 ≈ rs11    
+        # test the non-strided array
+        rs6 = FourierTools.resample_nfft(PermutedDimsArray(dat,(2,1)), t->t .+ 1.0, is_src_coords=false, is_in_pixels=true)
+        rs7 = FourierTools.resample_nfft(PermutedDimsArray(dat,(2,1)), t->t .- 1.0, is_src_coords=true, is_in_pixels=true)
+        @test rs6 ≈ rs7
     end
 
 end

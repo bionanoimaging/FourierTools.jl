@@ -210,19 +210,16 @@ end
 # out of place multiplication to the fHat result. fHat can have ND-shape and will be reshaped as a view internally
 function LinearAlgebra.mul!(fHat::AbstractArray{Tg}, p::NFFTPlan_ND, f::AbstractArray{T}) where {Tg, T}
     # not that the reshape is just a different view, not copying the data
-    sz = let 
-        if p.is_adjoint
-            size_in(p.p)
-        else
-            size_out(p.p)
-        end
-    end
-    rHat = reshape(fHat, sz)
     if p.is_adjoint
+        # rHat = reshape(fHat, size_in(p.p))
         pa = LinearAlgebra.adjoint(p.p)
-        mul!(rHat, pa, f)
+        f = reshape(f, size_in(pa))
+        # rHat = reshape(fHat, size_out(p.p)) # need to match to f in size
+        mul!(fHat, pa, f; verbose=verbose, timing=timing)
     else
-        mul!(rHat, p.p, f)
+        rHat = reshape(fHat, size_out(p.p)) # need to match to f in size
+        # f = reshape(f, size_in(p.p))
+        mul!(rHat, p.p, f; verbose=verbose, timing=timing)
     end
     if !isnothing(p.pad_mask)
         rHat[p.pad_mask] .= p.pad_value
