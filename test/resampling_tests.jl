@@ -278,10 +278,11 @@
         new_pos = cat(s_small[1]./s_large[1] .* xx(size(dat), scale=ScaFT), s_small[2]./s_large[2] .* yy(size(dat), scale=ScaFT),dims=3)
         rs5 = FourierTools.resample_nfft(dat, new_pos)
         @test rs5 ≈ rs3
+        # @test rs1b ≈ rs3
         # test both modes: src and destination but only for a 1-pixel shift
         rs6 = FourierTools.resample_nfft(dat, t->t .+ 1.0, is_src_coords=false, is_in_pixels=true)
         rs7 = FourierTools.resample_nfft(dat, t->t .- 1.0, is_src_coords=true, is_in_pixels=true)
-        @test rs6 ≈ rs7
+        @test rs6 ≈ rs7    
     end
 
 end

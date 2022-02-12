@@ -19,7 +19,7 @@ end
 #     }
 
 """
-    plan_nfft_nd(src, dst_coords; pixel_coords=false, is_deformation=false, pad_value=nothing, reltol=1e-9)
+    plan_nfft_nd(src, dst_coords; is_in_pixels=false, is_local_shift=false, pad_value=nothing, reltol=1e-9)
 
 Plans an n-dimensional non-uniform FFT on grids with a regular topology. In comparison to the `nfft()` routine, which this computed
 is based on, this version does not require any reshape operations.
@@ -31,8 +31,8 @@ is based on, this version does not require any reshape operations.
   Alternatively also a function mapping a tuple (of source index positions) to a tuple (of destination index positions).
   In the recommended mode, the indices are normalized to to Fouier frequency range (roughly speaking from -0.5:0.5).
 + `pixels_coords`: A `Boolean` flag indicating whether dst_coords refers to coordinates in pixels or (default) in relative frequency positions.
-  If `pixel_coords=True` is selected, destination coordinates (1-based indexing) as typical for array indexing is assumed and internally converted to relative positions.
-+ is_deformation: A `Boolean` controlling wether `dst_coords` refers to the destination coordinates or the relative distance from standard grid coordinates (size determind from `dst_coordinates`).  
+  If `is_in_pixels=true` is selected, destination coordinates (1-based indexing) as typical for array indexing is assumed and internally converted to relative positions.
++ `is_local_shift`: A `Boolean` controlling wether `dst_coords` refers to the destination coordinates or the relative distance from standard grid coordinates (size determind from `dst_coordinates`).  
 + `pad_value`: if supplied, values outside the valid pixel range (roughly -0.5:0.5) are replaced by this complex-valued pad value.
 +  `is_adjoint`: if `true` this plan is based on the adjoint rather than the ordinary plan
 + `reltol`: The numerical precision to which the results are computed. This is passed to the `nfft` routine. Worse precision is faster.
@@ -50,7 +50,7 @@ julia> new_pos = rot_alpha.(10.0, idx(img, scale=ScaFT))
 
 julia> f = ift(img)
 
-julia> p = plan_nfft_nd(f, new_pos; is_deformation=false, pixel_coords=false)
+julia> p = plan_nfft_nd(f, new_pos; is_local_shift=false, is_in_pixels=false)
 
 julia> g = real.(p * f)
 
@@ -58,14 +58,18 @@ julia> g = real.(p * f)
 julia> @ve img, g
 ```
 """
-function plan_nfft_nd(src::AbstractArray{T,D}, dst_coords; pixel_coords=false, is_deformation=false, pad_value=nothing, is_adjoint=false, reltol=1e-9) where {T,D}
+function plan_nfft_nd(src::AbstractArray{T,D}, dst_coords; is_in_pixels=false, is_local_shift=false, pad_value=nothing, is_adjoint=false, reltol=1e-9) where {T,D}
     RT = real(T)
     CT = complex(T)
 
     dst_coords = let
         if isa(dst_coords, Function)
             # evaluate the function to get the numerical destination coordinate positions
-            dst_coords.(idx(RT, size(src), scale=ScaFT))
+            if is_in_pixels
+                dst_coords.(idx(RT, size(src), offset=Tuple(zeros(Int, ndims(src)))))
+            else
+                dst_coords.(idx(RT, size(src), scale=ScaFT))
+            end
         else
             dst_coords
         end
@@ -85,8 +89,8 @@ function plan_nfft_nd(src::AbstractArray{T,D}, dst_coords; pixel_coords=false, i
         end
     end
     x = let
-            if pixel_coords
-                if is_deformation
+            if is_in_pixels
+                if is_local_shift
                     x./ dsz 
                 else
                     (x .- one(RT)) ./ dsz .- RT(0.5)
@@ -97,7 +101,7 @@ function plan_nfft_nd(src::AbstractArray{T,D}, dst_coords; pixel_coords=false, i
         end
 
     x = let
-        if is_deformation
+        if is_local_shift
             xy = Tuple.(CartesianIndices(dsz))  
             ((reshape(reinterpret(reshape,eltype(xy[1]), xy), (length(dsz), prod(dsz))) .- one(RT)) ./ dsz .- RT(0.5)) .+ x
         else
@@ -123,7 +127,7 @@ function plan_nfft_nd(src::AbstractArray{T,D}, dst_coords; pixel_coords=false, i
 end
 
 """
-    nfft_nd(src, dst_coords; pixel_coords=false, is_deformation=false)
+    nfft_nd(src, dst_coords; is_in_pixels=false, is_local_shift=false)
 
 performs an n-dimensional non-uniform FFT on grids with a regular topology. In comparison to the `nfft()` routine, which this computed
 is based on, this version does not require any reshape operations.
@@ -135,8 +139,8 @@ Note that the input can be `Real` valued and will be automatically converted to 
 julia> nfft_nd(rand(10,12,12), (t)-> (0.8*t[1], 0.7*t[2], 0.6*t[3]))
 ```
 """
-function nfft_nd(src, dst_coords; pixel_coords=false, is_deformation=false, pad_value=nothing, is_adjoint=false, reltol=1e-9)
-    p = plan_nfft_nd(src, dst_coords; pixel_coords=pixel_coords, is_deformation=is_deformation, pad_value=pad_value, is_adjoint=false, reltol=reltol)
+function nfft_nd(src, dst_coords; is_in_pixels=false, is_local_shift=false, pad_value=nothing, is_adjoint=false, reltol=1e-9)
+    p = plan_nfft_nd(src, dst_coords; is_in_pixels=is_in_pixels, is_local_shift=is_local_shift, pad_value=pad_value, is_adjoint=is_adjoint, reltol=reltol)
     return p * src
 end
 
