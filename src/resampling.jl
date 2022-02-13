@@ -147,6 +147,8 @@ The data is first padded by a relative amount `rel_pad` which is needed to avoid
 As opposed to `resample()`, this routine allows for arbitrary non-integer zoom factors.
 It is reasonably fast but only allows a stretch (via `rel_zoom`) and a shift (via `shear` in pixels) per line or column
 
+Note that each entry of the tuple in `rel_zoom` or `shear` describes the zoom or shear to apply to all other dimensions individually
+per entry along this dimension number. 
 
 # Examples
 ```jdoctest
@@ -187,7 +189,7 @@ function resample_czt(arr::AbstractArray{T,N}, rel_zoom; shear=nothing, shear_di
             end
             if !iszero(myshear)
                 shifts = ramp(real(eltype(f_res)),d, size(f_res,d), scale=ScaFT)
-                FourierTools.apply_shift_strength!(f_res, f_res, shifts, d, sd,myshear, fix_nyquist)
+                FourierTools.apply_shift_strength!(f_res, f_res, shifts, d, sd, -myshear, fix_nyquist)
             end
             if T<:Real
                 f_res = real(FourierTools.czt_1d(f_res, my_zoom, d))
@@ -218,7 +220,7 @@ function resample_czt(arr::AbstractArray{T,N}, rel_zoom; shear=nothing, shear_di
                 # one-d since a slice was selected
                 f_res = ift(slice,1) 
                 if !iszero(myshear)
-                    FourierTools.apply_shift_strength!(f_res, f_res, shifts[p], 1, 1, myshear, fix_nyquist)                
+                    FourierTools.apply_shift_strength!(f_res, f_res, shifts[p], 1, 1, -myshear, fix_nyquist)                
                 end
                 f_res = let 
                     if T<:Real
@@ -333,14 +335,14 @@ julia> f = resample_nfft(a, new_pos, is_src_coords=false);
 julia> @ve a e f
 ```
 """
-function resample_nfft(img::AbstractArray{T,D}, new_pos::AbstractArray{T2,D2}, dst_size=nothing;  is_in_pixels=false, is_local_shift=false, is_src_coords=true, reltol=1e-9)::AbstractArray{T,D} where {T,D,T2,D2} # 
+function resample_nfft(img::AbstractArray{T,D}, new_pos::AbstractArray{T2,D2}, dst_size=nothing; pad_value=nothing, is_in_pixels=false, is_local_shift=false, is_src_coords=true, reltol=1e-9)::AbstractArray{T,D} where {T,D,T2,D2} # 
 
     Fimg = let
         if is_src_coords
-            p = plan_nfft_nd(img, new_pos, dst_size; is_in_pixels=is_in_pixels, is_local_shift=is_local_shift, is_adjoint=false, reltol=reltol)
+            p = plan_nfft_nd(img, new_pos, dst_size; pad_value=pad_value, is_in_pixels=is_in_pixels, is_local_shift=is_local_shift, is_adjoint=false, reltol=reltol)
             p * ift(img)
         else
-            p = plan_nfft_nd(img, new_pos, dst_size; is_in_pixels=is_in_pixels, is_local_shift=is_local_shift, is_adjoint=true, reltol=reltol)
+            p = plan_nfft_nd(img, new_pos, dst_size; pad_value=pad_value, is_in_pixels=is_in_pixels, is_local_shift=is_local_shift, is_adjoint=true, reltol=reltol)
             ft(p * img) ./ prod(size(img))
         end
     end
@@ -353,13 +355,13 @@ function resample_nfft(img::AbstractArray{T,D}, new_pos::AbstractArray{T2,D2}, d
     return img
 end
 
-function resample_nfft(img::AbstractArray{T,D}, new_pos_fkt::Function, dst_size=nothing;  is_in_pixels=false, is_local_shift=false, is_src_coords=true, reltol=1e-9)::AbstractArray{T,D} where {T,D} # 
+function resample_nfft(img::AbstractArray{T,D}, new_pos_fkt::Function, dst_size=nothing; pad_value=nothing,  is_in_pixels=false, is_local_shift=false, is_src_coords=true, reltol=1e-9)::AbstractArray{T,D} where {T,D} # 
     Fimg = let
         if is_src_coords
-            p = plan_nfft_nd(img, new_pos_fkt, dst_size; is_in_pixels=is_in_pixels, is_local_shift=is_local_shift, is_adjoint=false, reltol=reltol)
+            p = plan_nfft_nd(img, new_pos_fkt, dst_size; pad_value=pad_value, is_in_pixels=is_in_pixels, is_local_shift=is_local_shift, is_adjoint=false, reltol=reltol)
             p * ift(img)
         else
-            p = plan_nfft_nd(img, new_pos_fkt, dst_size; is_in_pixels=is_in_pixels, is_local_shift=is_local_shift, is_adjoint=true, reltol=reltol)
+            p = plan_nfft_nd(img, new_pos_fkt, dst_size; pad_value=pad_value, is_in_pixels=is_in_pixels, is_local_shift=is_local_shift, is_adjoint=true, reltol=reltol)
             ft(p * img) ./ prod(size(img))
         end
     end

@@ -128,17 +128,31 @@ function plan_nfft_nd(src::AbstractArray{T,D}, dst_coords::AbstractArray{T2,D2},
     end
     # deal with the out-of-range positions
 
-    maxfreq = RT.(floor.((dsz.-1)./2) ./ dsz)
+    # the eps is necessary due to round-off errors, which makes the comparisone with ift otherwise fail
+    maxfreq = RT.(floor.((dsz.-1)./2) ./ dsz) .+ eps(RT)
 
-    pad_mask, pad_value = let
+    pad_mask = any((x .< -RT(0.5)) .|| (x .> maxfreq), dims=1)[:]
+
+    pad_value = let
         if isnothing(pad_value)
-            nothing, zero(CT)
+            nothing
         else
-            any((x .< -RT(0.5)) .|| (x .> maxfreq), dims=1)[:], zero(CT)
+            CT(pad_value)
         end
     end
 
-    x = clamp.(x, .- RT(0.5), maxfreq)
+    # x = clamp.(x, .- RT(0.5), maxfreq)
+    # ignore invalid positions in coordinates
+    x = let
+        if is_adjoint
+            nd = size(x,1)
+            x = x[repeat(.! reshape(pad_mask,(1,length(pad_mask))), nd,1)]
+            reshape(x, (nd,size(x,1) ÷ nd))
+        else
+            clamp.(x, .- RT(0.5), maxfreq)
+        end
+    end
+
     src_sz = let 
         if is_adjoint
             dst_size
@@ -211,7 +225,7 @@ Note that the input can be `Real` valued and will be automatically converted to 
 julia> nfft_nd(rand(10,12,12), (t)-> (0.8*t[1], 0.7*t[2], 0.6*t[3]))
 ```
 """
-function nfft_nd(src, dst_coords, dst_size=nothing; kwargs...)
+function nfft_nd(src, dst_coords::AbstractArray, dst_size=nothing; kwargs...)
     p = plan_nfft_nd(src, dst_coords, dst_size; kwargs...)
     return p * src
 end
@@ -227,16 +241,18 @@ function LinearAlgebra.mul!(fHat::StridedArray, p::NFFTPlan_ND, f::AbstractArray
     if p.is_adjoint
         # rHat = reshape(fHat, size_in(p.p))
         pa = LinearAlgebra.adjoint(p.p)
-        f = reshape(f, size_in(pa))
+        # f = reshape(f, size_in(pa))
+        f = f[.! p.pad_mask]    
+        
         # rHat = reshape(fHat, size_out(p.p)) # need to match to f in size
         mul!(fHat, pa, f; verbose=verbose, timing=timing)
     else
         rHat = reshape(fHat, size_out(p.p)) # need to match to f in size
         # f = reshape(f, size_in(p.p))
         mul!(rHat, p.p, f; verbose=verbose, timing=timing)
-    end
-    if !isnothing(p.pad_mask)
-        rHat[p.pad_mask] .= p.pad_value
+        if !isnothing(p.pad_value)
+           rHat[p.pad_mask] .= p.pad_value
+        end
     end
     return fHat
 end
@@ -247,16 +263,17 @@ function LinearAlgebra.mul!(fHat::AbstractArray{Tg}, p::NFFTPlan_ND, f::Abstract
     if p.is_adjoint
         # rHat = reshape(fHat, size_in(p.p))
         pa = LinearAlgebra.adjoint(p.p)
-        f = reshape(f, size_in(pa))
+        # f = reshape(f, size_in(pa))
+        f = f[.! p.pad_mask]    
         # rHat = reshape(fHat, size_out(p.p)) # need to match to f in size
         mul!(fHat, pa, f; verbose=verbose, timing=timing)
     else
         rHat = reshape(fHat, size_out(p.p)) # need to match to f in size
         # f = reshape(f, size_in(p.p))
         mul!(rHat, p.p, f; verbose=verbose, timing=timing)
-    end
-    if !isnothing(p.pad_mask)
-        rHat[p.pad_mask] .= p.pad_value
+        if !isnothing(p.pad_value)
+            rHat[p.pad_mask] .= p.pad_value
+        end
     end
     return fHat
 end

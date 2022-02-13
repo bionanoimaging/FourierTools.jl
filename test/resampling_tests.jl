@@ -260,7 +260,7 @@
         @test select_region_ft(ffts(x), (7, 7)) == ComplexF64[0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im; 0.0 + 0.0im 0.32043577156395486 + 0.0im 2.321469443190397 + 0.7890379226962572im 0.38521287113798636 + 0.0im 2.321469443190397 - 0.7890379226962572im 0.32043577156395486 + 0.0im 0.0 + 0.0im; 0.0 + 0.0im 1.3691035744780353 + 0.16703621316206385im 2.4110077589815555 - 0.16558718095884828im 2.2813159163314163 - 0.7520360306228049im 7.47614366018844 - 4.139633109911205im 1.3691035744780353 + 0.16703621316206385im 0.0 + 0.0im; 0.0 + 0.0im 0.4801675770812479 + 0.0im 3.3142445917764407 - 3.2082400832669373im 1.6529948781166373 + 0.0im 3.3142445917764407 + 3.2082400832669373im 0.4801675770812479 + 0.0im 0.0 + 0.0im; 0.0 + 0.0im 1.3691035744780353 - 0.16703621316206385im 7.47614366018844 + 4.139633109911205im 2.2813159163314163 + 0.7520360306228049im 2.4110077589815555 + 0.16558718095884828im 1.3691035744780353 - 0.16703621316206385im 0.0 + 0.0im; 0.0 + 0.0im 0.32043577156395486 + 0.0im 2.321469443190397 + 0.7890379226962572im 0.38521287113798636 + 0.0im 2.321469443190397 - 0.7890379226962572im 0.32043577156395486 + 0.0im 0.0 + 0.0im; 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im]
     end
 
-    @testset "test resample_nfft" begin
+    @testset "test resample_czt" begin
         dim =2
         s_small = (12,16) # ntuple(_ -> rand(1:13), dim)
         s_large = (20,18) # ntuple(i -> max.(s_small[i], rand(10:16)), dim)
@@ -269,6 +269,24 @@
         rs1b = select_region(rs1, new_size=size(dat))
         rs2 = FourierTools.resample_czt(dat, s_large./s_small, do_damp=false)
         @test rs1b ≈ rs2
+        rs2 = FourierTools.resample_czt(dat, (x->s_large[2]./s_small[2], y->s_large[1]./s_small[1]), do_damp=false)
+        @test rs1b ≈ rs2
+        rs2 = FourierTools.resample_czt(dat, (x->1.0, y->1.0), shear=(x->10.0,y->0.0),do_damp=false)
+        @test shear(dat,10) ≈ rs2
+        rs2 = FourierTools.resample_czt(dat, (x->1.0, y->1.0), shear=(10.0,0.0),do_damp=false)
+        @test shear(dat,10) ≈ rs2
+        rs2 = barrel_pin(dat, 0.5)
+        rs2b = FourierTools.resample_czt(dat, (x -> 1.0 + 0.5 .* (x-0.5)^2,x -> 1.0 + 0.5 .* (x-0.5)^2))
+        @test rs2b ≈ rs2
+    end
+
+    @testset "test resample_nfft" begin
+        dim =2
+        s_small = (12,16) # ntuple(_ -> rand(1:13), dim)
+        s_large = (20,18) # ntuple(i -> max.(s_small[i], rand(10:16)), dim)
+        dat = select_region(randn(Float32, (5,6)), new_size= s_small)
+        rs1 = FourierTools.resample(dat, s_large)
+        rs1b = select_region(rs1, new_size=size(dat))
         mymap = (t) -> t .* s_small ./ s_large  
         rs3 = FourierTools.resample_nfft(dat, mymap)
         @test isapprox(rs1b, rs3, rtol=0.1)
@@ -297,6 +315,9 @@
         rs6 = FourierTools.resample_nfft(Base.PermutedDimsArray(dat,(2,1)), t->t .+ 1.0, is_src_coords=false, is_in_pixels=true)
         rs7 = FourierTools.resample_nfft(Base.PermutedDimsArray(dat,(2,1)), t->t .- 1.0, is_src_coords=true, is_in_pixels=true)
         @test rs6 ≈ rs7
+        rs6 = FourierTools.resample_nfft(dat, t->t .* 2.0, s_small.÷2, is_src_coords=false, is_in_pixels=false, pad_value=0.0)
+        rs7 = FourierTools.resample_nfft(dat, t->t .* 0.5, s_small.÷2, is_src_coords=true, is_in_pixels=false, pad_value=0.0)
+        @test rs6.*4 ≈ rs7
     end
 
 end
