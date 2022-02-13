@@ -18,8 +18,9 @@ end
 #     LinearAlgebra.Adjoint{CT, NFFTPlan_ND{CT, D, NT, PT}}  where {CT, D, NT, PT}
 #     }
 
+
 """
-    plan_nfft_nd(src, dst_coords; dst_size=nothing, is_in_pixels=false, is_local_shift=false, pad_value=nothing, reltol=1e-9)
+    plan_nfft_nd(src, dst_coords; is_in_pixels=false, is_local_shift=false, pad_value=nothing, reltol=1e-9)
 
 Plans an n-dimensional non-uniform FFT on grids with a regular topology. In comparison to the `nfft()` routine, which this computed
 is based on, this version does not require any reshape operations.
@@ -30,10 +31,7 @@ is based on, this version does not require any reshape operations.
   referring to the destination coordinates where the FFT needs to be computed. 
   Alternatively also a function mapping a tuple (of source index positions) to a tuple (of destination index positions).
   In the recommended mode, the indices are normalized to to Fouier frequency range (roughly speaking from -0.5:0.5).
-+ `dst_size`: this argument is only used for functions. If you require a different result size for `dst_coords` being a function, state it here.By defaul (`dst_size=nothing`) the 
-              destination size will be inferred form the argument `new_pos` or assumed to be `size(src)`.
-
-+ `pixels_coords`: A `Boolean` flag indicating whether dst_coords refers to coordinates in pixels or (default) in relative frequency positions.
++ `is_in_pixels`: A `Boolean` flag indicating whether dst_coords refers to coordinates in pixels or (default) in relative frequency positions.
   If `is_in_pixels=true` is selected, destination coordinates (1-based indexing) as typical for array indexing is assumed and internally converted to relative positions.
 + `is_local_shift`: A `Boolean` controlling wether `dst_coords` refers to the destination coordinates or the relative distance from standard grid coordinates (size determind from `dst_coordinates`).  
 + `pad_value`: if supplied, values outside the valid pixel range (roughly -0.5:0.5) are replaced by this complex-valued pad value.
@@ -61,53 +59,11 @@ julia> g = real.(p * f)
 julia> @ve img, g
 ```
 """
-function plan_nfft_nd(src::AbstractArray{T,D}, dst_coords; dst_size=nothing, is_in_pixels=false, is_local_shift=false, pad_value=nothing, is_adjoint=false, reltol=1e-9) where {T,D}
+function plan_nfft_nd(src::AbstractArray{T,D}, dst_coords::AbstractArray{T2,D2}, dst_size=nothing; is_in_pixels=false, is_local_shift=false, pad_value=nothing, is_adjoint=false, reltol=1e-9) where {T,D,T2,D2}
     RT = real(T)
     CT = complex(T)
 
-    dst_size = let
-        if isnothing(dst_size)
-            if isa(dst_coords, Function)
-                size(src)
-            else
-                if eltype(dst_coords) <: Tuple
-                    size(dst_coords)
-                else
-                    size(dst_coords)[1:end-1]
-                end
-            end
-        else
-            dst_size
-        end
-    end
-
-    coord_sz = let 
-        if is_adjoint
-            # has to match the src size for the adjoint
-            size(src)
-        else
-            # has to match the dst size for the adjoint
-            dst_size
-        end
-    end
-    
-
-    dst_coords = let
-        if isa(dst_coords, Function)
-            # evaluate the function to get the numerical destination coordinate positions
-            if is_in_pixels
-                dst_coords.(idx(RT, coord_sz, offset=Tuple(zeros(Int, length(coord_sz)))))
-            else
-                dst_coords.(idx(RT, coord_sz, scale=ScaFT))
-            end
-        else
-            dst_coords
-        end
-    end
-
-
     # convert ND coordinates to 2D matrix form
-
     x, dsz = let 
         if eltype(dst_coords) <: Tuple
             x = reshape(reinterpret(reshape,eltype(dst_coords[1]), dst_coords), (ndims(dst_coords), prod(size(dst_coords))))
@@ -119,6 +75,32 @@ function plan_nfft_nd(src::AbstractArray{T,D}, dst_coords; dst_size=nothing, is_
             x, sz[1:end-1]
         end
     end
+
+    dst_size = let 
+        if isnothing(dst_size)
+            if is_adjoint
+                    # has to match the src size for the adjoint
+                size(src)
+            else
+                # has to match the dst size for the adjoint
+                dsz
+            end
+        else
+            dst_size
+        end            
+    end
+
+
+    coord_sz = let 
+        if is_adjoint
+            # has to match the src size for the adjoint
+            size(src)
+        else
+            # has to match the dst size for the adjoint
+            dst_size
+        end
+    end
+    
 
     if is_adjoint && size(src) != dsz
         error("For the adjoint plan_nfft_nd, the source size $(size(src)) has to agree to the given coordinates referring to $(dsz).")
@@ -170,7 +152,54 @@ function plan_nfft_nd(src::AbstractArray{T,D}, dst_coords; dst_size=nothing, is_
 end
 
 """
-    nfft_nd(src, dst_coords; is_in_pixels=false, is_local_shift=false)
+    plan_nfft_nd(src::AbstractArray{T,D}, dst_fkt::Function, dst_size=size(src); is_in_pixels=false, is_adjoint=false, kwargs...)
+Plans an n-dimensional non-uniform FFT on grids with a regular topology defined via the function `dst_fkt`.
+
+# Arguments
++ `src`: source array
++ `dst_fkt`: a function mapping a tuple (of source index positions) to a tuple (of destination index positions).
+    In the recommended mode, the indices are normalized to to Fouier frequency range (roughly speaking from -0.5:0.5). If the named argument `is_in_pixels` is provided,
+    the function is expected to act on one-index based pixel coordinates. This option is particularly interesting in combination with the argument `is_loca_shift`.
++ `dst_size`: this argument is only used for functions. If you require a different result size for `dst_coords` being a function, state it here.By defaul (`dst_size=nothing`) the 
+    destination size will be inferred form the argument `new_pos` or assumed to be `size(src)`.
++ `is_in_pixels`: A `Boolean` flag indicating whether dst_coords refers to coordinates in pixels or (default) in relative frequency positions.
+    If `is_in_pixels=true` is selected, destination coordinates (1-based indexing) as typical for array indexing is assumed and internally converted to relative positions.
++  `is_adjoint`: if `true` this plan is based on the adjoint rather than the ordinary plan
+
+For other arguments and examples see the array-version of `plan_nfft` above.
+
+"""
+function plan_nfft_nd(src::AbstractArray{T,D}, dst_fkt::Function, dst_size=nothing; is_in_pixels=false, is_adjoint=false, kwargs...) where {T,D}
+    RT = real(T)
+    dst_size = let 
+        if isnothing(dst_size)
+            size(src)
+        else
+            dst_size
+        end            
+    end
+    coord_sz = let 
+        if is_adjoint
+            # has to match the src size for the adjoint
+            size(src)
+        else
+            # has to match the dst size for the adjoint
+            dst_size
+        end
+    end
+    dst_coords = let
+        # evaluate the function to get the numerical destination coordinate positions
+        if is_in_pixels
+            dst_fkt.(idx(RT, coord_sz, offset=Tuple(zeros(Int, length(coord_sz)))))
+        else
+            dst_fkt.(idx(RT, coord_sz, scale=ScaFT))
+        end
+    end
+    return plan_nfft_nd(src, dst_coords, dst_size; is_in_pixels=is_in_pixels, is_adjoint=is_adjoint, kwargs...)
+end
+
+"""
+    nfft_nd(src, dst_coords, dst_size=nothing; is_in_pixels=false, is_local_shift=false)
 
 performs an n-dimensional non-uniform FFT on grids with a regular topology. In comparison to the `nfft()` routine, which this computed
 is based on, this version does not require any reshape operations.
@@ -182,8 +211,13 @@ Note that the input can be `Real` valued and will be automatically converted to 
 julia> nfft_nd(rand(10,12,12), (t)-> (0.8*t[1], 0.7*t[2], 0.6*t[3]))
 ```
 """
-function nfft_nd(src, dst_coords; dst_size=nothing, is_in_pixels=false, is_local_shift=false, pad_value=nothing, is_adjoint=false, reltol=1e-9)
-    p = plan_nfft_nd(src, dst_coords; dst_size=dst_size, is_in_pixels=is_in_pixels, is_local_shift=is_local_shift, pad_value=pad_value, is_adjoint=is_adjoint, reltol=reltol)
+function nfft_nd(src, dst_coords, dst_size=nothing; kwargs...)
+    p = plan_nfft_nd(src, dst_coords, dst_size; kwargs...)
+    return p * src
+end
+
+function nfft_nd(src, dst_fkt::Function, dst_size=nothing; kwargs...)
+    p = plan_nfft_nd(src, dst_fkt, dst_size; kwargs...)
     return p * src
 end
 

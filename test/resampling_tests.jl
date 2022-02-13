@@ -285,13 +285,13 @@
         @test rs6 ≈ rs7
         # test shrinking by a factor of two
         new_pos = cat(xx(s_small.÷2, scale=ScaFT),yy(s_small.÷2, scale=ScaFT), dims=3)
-        rs8 = FourierTools.resample_nfft(dat, t->t, dst_size=s_small.÷2, is_src_coords=true)
+        rs8 = FourierTools.resample_nfft(dat, t->t, s_small.÷2, is_src_coords=true)
         rs9 = FourierTools.resample_nfft(dat, new_pos,  is_src_coords=true)
         rss = FourierTools.resample(dat, s_small.÷2)
         @test rs8 ≈ rs9
-        rs10 = FourierTools.resample_nfft(dat, t->t, dst_size=s_small.÷2, is_src_coords=false, is_in_pixels=true)
+        rs10 = FourierTools.resample_nfft(dat, t->t, s_small.÷2; is_src_coords=false, is_in_pixels=true)
         new_pos = cat(xx(s_small, offset=(0,0)),yy(s_small,offset=(0,0)), dims=3)
-        rs11 = FourierTools.resample_nfft(dat, new_pos, dst_size=s_small.÷2, is_src_coords=false, is_in_pixels=true)
+        rs11 = FourierTools.resample_nfft(dat, new_pos, s_small.÷2; is_src_coords=false, is_in_pixels=true)
         @test rs10 ≈ rs11    
         # test the non-strided array
         rs6 = FourierTools.resample_nfft(Base.PermutedDimsArray(dat,(2,1)), t->t .+ 1.0, is_src_coords=false, is_in_pixels=true)
