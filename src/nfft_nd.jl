@@ -236,7 +236,7 @@ function nfft_nd(src, dst_fkt::Function, dst_size=nothing; kwargs...)
 end
 
 # out of place multiplication to the fHat result. fHat can have ND-shape and will be reshaped as a view internally
-function LinearAlgebra.mul!(fHat::StridedArray, p::NFFTPlan_ND, f::AbstractArray; verbose=false, timing::Union{Nothing,TimingStats} = nothing)
+function LinearAlgebra.mul!(fHat::AbstractArray, p::NFFTPlan_ND, f::AbstractArray; verbose=false, timing::Union{Nothing,TimingStats} = nothing)
     # not that the reshape is just a different view, not copying the data
     if p.is_adjoint
         # rHat = reshape(fHat, size_in(p.p))
@@ -252,27 +252,6 @@ function LinearAlgebra.mul!(fHat::StridedArray, p::NFFTPlan_ND, f::AbstractArray
         mul!(rHat, p.p, f; verbose=verbose, timing=timing)
         if !isnothing(p.pad_value)
            rHat[p.pad_mask] .= p.pad_value
-        end
-    end
-    return fHat
-end
-
-# out of place multiplication to the fHat result. fHat can have ND-shape and will be reshaped as a view internally
-function LinearAlgebra.mul!(fHat::AbstractArray{Tg}, p::NFFTPlan_ND, f::AbstractArray{T}) where {Tg, T}
-    # not that the reshape is just a different view, not copying the data
-    if p.is_adjoint
-        # rHat = reshape(fHat, size_in(p.p))
-        pa = LinearAlgebra.adjoint(p.p)
-        # f = reshape(f, size_in(pa))
-        f = f[.! p.pad_mask]    
-        # rHat = reshape(fHat, size_out(p.p)) # need to match to f in size
-        mul!(fHat, pa, f; verbose=verbose, timing=timing)
-    else
-        rHat = reshape(fHat, size_out(p.p)) # need to match to f in size
-        # f = reshape(f, size_in(p.p))
-        mul!(rHat, p.p, f; verbose=verbose, timing=timing)
-        if !isnothing(p.pad_value)
-            rHat[p.pad_mask] .= p.pad_value
         end
     end
     return fHat
