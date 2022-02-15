@@ -17,13 +17,13 @@
             z = ones(Float32, size(img_1))
             z .*= m
             FourierTools.center_set!(z, img)
-            img_2 = FourierTools.rotate(z, θ)
-            img_3 = real(FourierTools.rotate(z .+ 0im, θ))
+            img_2 = FourierTools.rotate(z, θ, adapt_size=false)
+            img_3 = real(FourierTools.rotate(z .+ 0im, θ, pad_value=img_1[1,1]))
             img_4 = FourierTools.rotate!(z, θ)
    
             @test all(.≈(img_1, img_2, rtol=0.6))
             @test ≈(img_1, img_2, rtol=0.03)
-            @test ≈(img_3, img_2, rtol=0.01)
+            @test ≈(img_3, img_2, rtol=0.03)
             @test ==(img_4, z)
 
             img_1c = FourierTools.center_extract(img_1, (100, 100))

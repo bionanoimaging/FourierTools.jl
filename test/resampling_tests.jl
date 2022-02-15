@@ -315,8 +315,8 @@
         rs6 = FourierTools.resample_nfft(Base.PermutedDimsArray(dat,(2,1)), t->t .+ 1.0, is_src_coords=false, is_in_pixels=true)
         rs7 = FourierTools.resample_nfft(Base.PermutedDimsArray(dat,(2,1)), t->t .- 1.0, is_src_coords=true, is_in_pixels=true)
         @test rs6 ≈ rs7
-        rs6 = FourierTools.resample_nfft(dat .+ 0im, t->t .* 2.0, s_small.÷2, is_src_coords=false, is_in_pixels=false, pad_value=0.0)
-        rs7 = FourierTools.resample_nfft(dat .+ 0im, t->t .* 0.5, s_small.÷2, is_src_coords=true, is_in_pixels=false, pad_value=0.0)
+        rs6 = FourierTools.resample_nfft(1im .* dat , t->t .* 2.0, s_small.÷2, is_src_coords=false, is_in_pixels=false, pad_value=0.0)
+        rs7 = FourierTools.resample_nfft(1im .* dat, t->t .* 0.5, s_small.÷2, is_src_coords=true, is_in_pixels=false, pad_value=0.0)
         @test rs6.*4 ≈ rs7
     end
 

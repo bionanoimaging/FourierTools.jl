@@ -1,7 +1,7 @@
 export shear, shear!
 
 """
-    shear(arr, Δ, shear_dir_dim=1, shear_dim=2)
+    shear(arr, Δ, shear_dir_dim=1, shear_dim=2; fix_nyquist=false, adapt_size=false::Bool, pad_value=zero(eltype(arr)))
 
 Shears an array by the amount of `Δ` pixels via an FFT approach. `Δ` is the relative shift between the
 top and bottom row shifted with respect to each other.
@@ -9,10 +9,24 @@ top and bottom row shifted with respect to each other.
 second dimension where the shear happens.
 There is also `shear!` available.
 
+#Arguments
++ `arr`: array to shear 
++ `shear_dir_dim`: dimension of the shift during shear
++ `shear_dim`: dimension along which to progress and apply variing shears along `shear_dir_dim`
++ `fix_nyquist`: apply a fix to the highest frequency during the Fourier-space application of the exponential factor
++ `adapt_size`: if true, pad the data prior to the shear. The result array will be larger
++ `pad_value`: the value to pad with (only applies if `adapt_size=true`)
+
 For complex arrays we use `fft`, for real array we use `rfft`.
 """
-function shear(arr::AbstractArray, Δ, shear_dir_dim=1, shear_dim=2; fix_nyquist=false)
-    return shear!(copy(arr), Δ, shear_dir_dim, shear_dim, fix_nyquist=fix_nyquist)
+function shear(arr::AbstractArray, Δ, shear_dir_dim=1, shear_dim=2; fix_nyquist=false, adapt_size=false::Bool, pad_value=zero(eltype(arr)))
+    if adapt_size
+        ns = Tuple(d == shear_dir_dim ? size(arr,d)+ceil(Int,abs.(Δ)) : size(arr,d) for d in 1:ndims(arr))
+        arr2 = collect(select_region(arr, new_size=ns, pad_value=pad_value))
+        return shear!(arr2, Δ, shear_dir_dim, shear_dim, fix_nyquist=fix_nyquist)
+    else
+        return shear!(copy(arr), Δ, shear_dir_dim, shear_dim, fix_nyquist=fix_nyquist)
+    end
 end
 
 """
@@ -55,7 +69,7 @@ end
 
 function apply_shift_strength!(arr, arr_orig, shift, shear_dir_dim, shear_dim, Δ, fix_nyquist=false)
     #applies the strength to each slice
-    shift_strength = reshape(fftpos(1, size(arr, shear_dim), CenterFirst) .- 0.5, NDTools.select_sizes(arr, shear_dim))
+    shift_strength = reshape(fftpos(1, size(arr, shear_dim), CenterFT), NDTools.select_sizes(arr, shear_dim))
 
     # do the exp multiplication in place
     e = cispi.(2 .* Δ .* shift .* shift_strength)
