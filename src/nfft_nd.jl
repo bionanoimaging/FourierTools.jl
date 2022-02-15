@@ -204,7 +204,7 @@ function plan_nfft_nd(src::AbstractArray{T,D}, dst_fkt::Function, dst_size=nothi
     dst_coords = let
         # evaluate the function to get the numerical destination coordinate positions
         if is_in_pixels
-            dst_fkt.(idx(RT, coord_sz, offset=Tuple(zeros(Int, length(coord_sz)))))
+            dst_fkt.(idx(RT, coord_sz, offset=ntuple(i->0, length(coord_sz))))
         else
             dst_fkt.(idx(RT, coord_sz, scale=ScaFT))
         end
