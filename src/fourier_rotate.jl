@@ -1,18 +1,5 @@
 export rotate, rotate!
 
-# should be removed, if NDTools has this function
-function reverse_view(A::AbstractArray{T, N}; dims=ntuple(identity, Val(N))) where {T, N}
-    # loop over all dimensions and put reversed or normal range
-    out_inds = ntuple(Val(N)) do i
-        if i in dims
-        lastindex(A, i):-1:firstindex(A, i)
-        else
-        firstindex(A, i):lastindex(A, i)
-        end
-    end
-    return view(A, out_inds...)
-end
-
 """
     rotate(arr, θ, rotation_plane=(1,2), adapt_size=true, keep_new_size=true)
 
