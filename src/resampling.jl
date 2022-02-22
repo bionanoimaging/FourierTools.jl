@@ -1,7 +1,16 @@
-export resample, resample_by_FFT, resample_by_RFFT, upsample2_abs2, upsample2, upsample2_1D
+export resample
+export resample_by_FFT
+export resample_by_RFFT
+export upsample2_abs2
+export upsample2
+export upsample2_1D
+export resample_nfft
+export resample_czt
+export barrel_pin
+
 
 """
-    resample(arr, new_size [, normalize])
+    resample(arr, new_size [, normalize=true])
 
 Calculates the `sinc` interpolation of an `arr` on a new array size
 `new_size`.
@@ -128,4 +137,239 @@ Upsamples by a factor of two and applies the abs2 operation. The code is optimiz
 """
 function upsample2_abs2(mat::AbstractArray{T, N}; dims=1:N) where {T,N}
     return abs2.(upsample2(mat, dims=dims))
+end
+
+"""
+    resample_czt(arr, rel_zoom; shear=nothing, shear_dim=nothing, fix_nyquist=false, new_size = size(arr), rel_pad=0.2)
+
+resamples the image with fixed factors or a list of separable functions using the chirp z transform algorithm.
+The data is first padded by a relative amount `rel_pad` which is needed to avoid wrap-around problems.
+As opposed to `resample()`, this routine allows for arbitrary non-integer zoom factors.
+It is reasonably fast but only allows a stretch (via `rel_zoom`) and a shift (via `shear` in pixels) per line or column
+
+Note that each entry of the tuple in `rel_zoom` or `shear` describes the zoom or shear to apply to all other dimensions individually
+per entry along this dimension number. 
+
+# Examples
+```jdoctest
+julia> using TestImages, NDTools, View5D
+
+julia> a = Float32.(testimage("resolution"));
+
+julia> b = resample_czt(a, (0.99,1.3)); # just zooming and shrinking
+
+julia> c = resample_czt(a, (x->0.8+x^2/3,x->1.0+0.2*x)); # a more complicated distortion
+
+julia> d = resample_czt(a, (x->1.0,x->1.0), shear=(x->50*x^2,0.0)); # a more complicated distortion
+
+julia> @ve a,b,c,d # visualize distortions
+```
+"""
+function resample_czt(arr::AbstractArray{T,N}, rel_zoom; shear=nothing, shear_dim=nothing, fix_nyquist=false, new_size = size(arr), rel_pad=0.2, do_damp=false, center=CtrMid) where {T,N}
+    RT = real(T)
+    orig_size = size(arr)
+    if do_damp
+        arr = damp_edge_outside(arr, rel_pad)
+    else
+        arr = copy(arr)
+    end
+    for d in 1:length(rel_zoom)
+        sd = mod(d,ndims(arr))+1
+        if !isnothing(shear_dim)
+            sd = shear_dim[d]
+        end
+        my_zoom = 1.0
+        # case of a list of zoom numbers
+        if (isa(rel_zoom, Tuple) && isa(rel_zoom[1], Number)) || isa(rel_zoom, Number)
+            my_zoom = rel_zoom[d]
+            f_res = ift(arr, d)
+            myshear = 0
+            if !isnothing(shear)
+                myshear =  shear[d]
+            end
+            if !iszero(myshear)
+                shifts = ramp(real(eltype(f_res)),d, size(f_res,d), scale=ScaFT)
+                FourierTools.apply_shift_strength!(f_res, f_res, shifts, d, sd, -myshear, fix_nyquist)
+            end
+            if T<:Real
+                f_res = real(FourierTools.czt_1d(f_res, my_zoom, d))
+            else
+                f_res = T.(FourierTools.czt_1d(f_res, my_zoom, d))
+            end
+            select_region!(f_res, arr) 
+        # case of position dependent zoom functions
+        elseif (isa(rel_zoom, Tuple) && isa(rel_zoom[1], Function))
+            pos = 0
+            p = 1
+            shifts = ramp(real(eltype(arr)),d, size(arr,d), scale=ScaFT)
+            # note that the slicing removes the dimension opposed to the version above.
+            for slice in eachslice(arr, dims=d)
+                myshear = let 
+                    if !isnothing(shear)
+                        if isa(shear[sd], Function)
+                            # position-dependent shear
+                            shear[sd](pos) 
+                        else
+                            shear[sd]
+                        end
+                    else
+                        zero(RT)
+                    end
+                end
+                my_zoom = rel_zoom[d](pos)
+                # one-d since a slice was selected
+                f_res = ift(slice,1) 
+                if !iszero(myshear)
+                    FourierTools.apply_shift_strength!(f_res, f_res, shifts[p], 1, 1, -myshear, fix_nyquist)                
+                end
+                f_res = let 
+                    if T<:Real
+                        real(FourierTools.czt_1d(f_res, my_zoom, 1))
+                    else
+                        FourierTools.czt_1d(f_res, my_zoom, 1)
+                    end
+                end
+                select_region!(f_res, slice)
+                pos += one(eltype(orig_size))/orig_size[d]
+                p += 1
+            end
+        else
+            error("expected list of numbers or list of functions as argument `rel_zoom`")
+        end
+    end
+    res = select_region(arr, new_size=new_size)
+    return res
+end
+
+"""
+    barrel_pin(arr, rel=0.5)
+emulates a barrel (`rel>0`) or a pincushion (`rel<0`) distortion. The distortions are calculated using `resample_czt()` with separable quadratic zooms.
+
+See also: `resample_czt()`
+# Examples
+```jdoctest
+julia> using TestImages, NDTools, View5D
+
+julia> a = Float32.(testimage("resolution"))
+
+julia> b = barrel_pin(a,0.5) # strong barrel distortion
+
+julia> c = barrel_pin(a,-0.5) # strong pin-cushion distortion
+
+julia> @ve a,b,c # visualize distortions
+```
+"""
+function barrel_pin(arr::AbstractArray{T,N}, rel=0.5) where {T,N}
+    RT = real(T)
+    fk = x -> one(RT) + RT(rel) .* (x-RT(0.5))^2
+    fkts = ntuple(n -> fk, ndims(arr))
+    return resample_czt(arr, fkts)
+end
+
+"""
+    resample_nfft(img, new_pos, dst_size=nothing; pixel_coords=false, is_local_shift=false, is_src_coords=true, reltol=1e-9)
+    
+resamples an ND-array to a set of new positions `new_pos` measured in either in pixels (`pixel_coords=true`) or relative (Fourier-) image coordinates (`pixel_coords=false`).
+`new_pos` can be 
++ an array of `Tuples` specifying the zoom along each direction
++ an `N+1` dimensional array (for `N`-dimensional imput data `img`) of destination postions, the last dimension enumerating the respective destination corrdinate dimension.
++ a function accepting a coordinate `Tuple` and yielding a destination position `Tuple`.
+
+`resample_nfft` can perform a large range of possible resamplings. Note that the default setting is `is_src_coords=true` which means that the source coordinates of each destination
+position have to be specified. This has the advantage that the result has usually less artefacts, but the positions may be more less convenient to specify.
+
+# Arguements
++ `img`: the image to apply resampling to
++ `new_pos``: specifies the resampling. See description above.
++ `dst_size`: this argument optionally defines the output size. If you require a different result size for `new_pos` being a function or with `is_src_coords=true`, state it here. By defaul (`dst_size=nothing`) the 
+              destination size will be inferred form the argument `new_pos` or assumed to be `size(img)`.
++ `is_local_shift`: specifies, whether the resampling coordinates refer to a relative shift or absoluter coordinates
++ `is_in_pixels`: specifies whether the coordinates (or relative distances) are given in pixel pitch units (`is_in_pixels=true`) or in units relative to the array sizes (Fourier convention) 
++ `is_src_coords`: specifies, whether the resampling positions refer to sampling at source (`is_src_coords=true`) or destination coordinates 
++ `reltol`: will be used as an argument to the `nfft` function spedifying the relative precision to calculate to
+
+See also: `resample`, `resample_czt`
+# Examples
+```julia-repl
+julia> using FourierTools, TestImages, NDTools, View5D, IndexFunArrays
+
+julia> a = Float32.(testimage("resolution"));
+
+julia> b = resample_nfft(a, t -> (2.5f0 *sign(t[1])*t[1]^2, t[2]*(0.5f0+t[1]))); # a complicated deformation
+
+julia> sz = size(a);
+
+# stacking only the displacement along the last dimension:
+julia> new_pos = cat(xx(sz,scale=ScaFT), zeros(sz), dims=3);
+
+julia> c = resample_nfft(a, new_pos, is_local_shift=true); # stretch along x using an array
+
+julia> new_pos = cat(.-xx(sz,scale=ScaFT)./2, zeros(sz), dims=3);
+
+julia> c2 = resample_nfft(a, new_pos, is_local_shift=true, is_src_coords=false); # stretch along x using an array
+
+# Notice the difference in brightness between c and c2
+julia> @ve a b c c2 # visualize distortion and x-shrinks. 
+
+# Lets try a 2D rotation:
+# define a rotation operation
+julia> rot_alpha(a, t) = (cosd(a)*t[1] + sind(a)*t[2], -sind(a)*t[1]+cosd(a)*t[2])
+
+# postions as an array of tuples
+julia> new_pos = rot_alpha.(10.0, idx(a, scale=ScaFT))
+
+# lets do the resampling, this time by specifying the destination coordinates:
+julia> d = resample_nfft(a, new_pos, is_src_coords=false);
+
+#display the result
+julia> @ve a d
+
+#how about a spiral deformation?
+julia> new_pos = rot_alpha.(rr(a), idx(a, scale=ScaFT))
+
+julia> e = resample_nfft(a, new_pos);
+
+julia> f = resample_nfft(a, new_pos, is_src_coords=false);
+
+# observe the artefacts generated by undersampling in the destination grid
+julia> @ve a e f
+```
+"""
+function resample_nfft(img::AbstractArray{T,D}, new_pos::AbstractArray{T2,D2}, dst_size=nothing; pad_value=nothing, is_in_pixels=false, is_local_shift=false, is_src_coords=true, reltol=1e-9)::AbstractArray{T,D} where {T,D,T2,D2} # 
+
+    Fimg = let
+        if is_src_coords
+            p = plan_nfft_nd(img, new_pos, dst_size; pad_value=pad_value, is_in_pixels=is_in_pixels, is_local_shift=is_local_shift, is_adjoint=false, reltol=reltol)
+            p * ift(img)
+        else
+            p = plan_nfft_nd(img, new_pos, dst_size; pad_value=pad_value, is_in_pixels=is_in_pixels, is_local_shift=is_local_shift, is_adjoint=true, reltol=reltol)
+            ft(p * img) ./ prod(size(img))
+        end
+    end
+
+    if T<:Real
+        img = real.(Fimg)
+    else
+        img = Fimg
+    end
+    return img
+end
+
+function resample_nfft(img::AbstractArray{T,D}, new_pos_fkt::Function, dst_size=nothing; pad_value=nothing,  is_in_pixels=false, is_local_shift=false, is_src_coords=true, reltol=1e-9)::AbstractArray{T,D} where {T,D} # 
+    Fimg = let
+        if is_src_coords
+            p = plan_nfft_nd(img, new_pos_fkt, dst_size; pad_value=pad_value, is_in_pixels=is_in_pixels, is_local_shift=is_local_shift, is_adjoint=false, reltol=reltol)
+            p * ift(img)
+        else
+            p = plan_nfft_nd(img, new_pos_fkt, dst_size; pad_value=pad_value, is_in_pixels=is_in_pixels, is_local_shift=is_local_shift, is_adjoint=true, reltol=reltol)
+            ft(p * img) ./ prod(size(img))
+        end
+    end
+
+    if T<:Real
+        img = real.(Fimg)
+    else
+        img = Fimg
+    end
+    return img
 end

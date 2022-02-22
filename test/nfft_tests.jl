@@ -1,0 +1,25 @@
+@testset "Test nfft_nd  methods" begin
+    @testset "nfft_nd" begin
+        sz = (6,8, 10)
+        dat = rand(sz...)
+        nft = fftshift(fft(ifftshift(dat)))
+        @test isapprox(nfft_nd(dat, t->(0.0,0.0,0.0), is_in_pixels=true, is_local_shift=true), nft, rtol=1e-6)
+        @test isapprox(nfft_nd(dat, t->(0.0,0.0,0.0), is_in_pixels=false, is_local_shift=true), nft, rtol=1e-6)
+        nift = fftshift(ifft(ifftshift(dat)))
+        mynfft = nfft_nd(dat, t->(0.0,0.0,0.0), is_in_pixels=false, is_local_shift=true, is_adjoint=true) ./ prod(size(nift))
+        @test isapprox(mynfft, nift, rtol=1e-6)
+        @test isapprox(nfft_nd(dat, t->t, pad_value=nothing), nft, rtol=1e-6)
+        p =plan_nfft_nd(dat, t->t, pad_value=0.0)
+        @test isapprox(p*dat, nft, rtol=1e-6)
+        @test isapprox(nfft_nd(dat, t->(10.0,10.0,10.0), pad_value=0.0), zeros(sz), rtol=1e-6)
+        p = plan_nfft_nd(dat, t->t)
+        @test isapprox(p*dat, nft, rtol=1e-6)
+        b = nfft_nd(dat, t->t)
+        @test isapprox(b, nft, rtol=1e-6)
+        b = nfft_nd(dat .+ 0im, idx(size(dat), scale=ScaFT))
+        @test isapprox(b, nft .+ 0im, rtol=1e-6)
+        res = zeros(complex(eltype(dat)), sz)
+        LinearAlgebra.mul!(res, p, dat)
+        @test isapprox(res, nft, rtol=1e-6)
+    end
+end

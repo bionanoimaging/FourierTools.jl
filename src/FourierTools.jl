@@ -7,8 +7,10 @@ using LinearAlgebra
 using IndexFunArrays
 using ChainRulesCore
 using NDTools
+using NFFT
 
 include("utils.jl")
+include("nfft_nd.jl")
 include("resampling.jl")
 include("custom_fourier_types.jl")
 include("fourier_resizing.jl")

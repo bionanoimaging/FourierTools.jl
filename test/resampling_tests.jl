@@ -19,7 +19,6 @@
                 @test x ≈ FourierTools.resample_by_1D(FourierTools.resample_by_1D(x, s_large), s_small)
             end
         end
-
     end
 
     @testset "Test that different resample methods are consistent" begin
@@ -198,8 +197,6 @@
     end
     
     
-    
-    
     @testset "FFT resample 2D for a complex signal" begin
     
         function test_2D(in_s, out_s)
@@ -230,7 +227,6 @@
     end
     
     
-    
     @testset "FFT resample in 2D for a purely imaginary signal" begin
         function test_2D(in_s, out_s)
         	x = range(-10.0, 10.0, length=in_s[1] + 1)[1:end-1]
@@ -255,16 +251,73 @@
         test_2D((128, 128), (151, 153))
         test_2D((129, 128), (150, 153))
         test_2D((129, 128), (129, 153))
-    
-    
     end
-
 
     @testset "test select_region_ft" begin
         x = [1,2,3,4]
         @test select_region_ft(ffts(x), (5,)) == ComplexF64[-1.0 + 0.0im, -2.0 - 2.0im, 10.0 + 0.0im, -2.0 + 2.0im, -1.0 + 0.0im]
         x = [3.1495759241275225 0.24720770605505335 -1.311507800204285 -0.3387627167144301; -0.7214121984874265 -0.02566249380406308 0.687066447881175 -0.09536748694092163; -0.577092696986848 -0.6320809680268722 -0.09460071173365793 0.7689715736798227; 0.4593837753047561 -1.0204193548690512 -0.28474772376166907 1.442443602597533]
         @test select_region_ft(ffts(x), (7, 7)) == ComplexF64[0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im; 0.0 + 0.0im 0.32043577156395486 + 0.0im 2.321469443190397 + 0.7890379226962572im 0.38521287113798636 + 0.0im 2.321469443190397 - 0.7890379226962572im 0.32043577156395486 + 0.0im 0.0 + 0.0im; 0.0 + 0.0im 1.3691035744780353 + 0.16703621316206385im 2.4110077589815555 - 0.16558718095884828im 2.2813159163314163 - 0.7520360306228049im 7.47614366018844 - 4.139633109911205im 1.3691035744780353 + 0.16703621316206385im 0.0 + 0.0im; 0.0 + 0.0im 0.4801675770812479 + 0.0im 3.3142445917764407 - 3.2082400832669373im 1.6529948781166373 + 0.0im 3.3142445917764407 + 3.2082400832669373im 0.4801675770812479 + 0.0im 0.0 + 0.0im; 0.0 + 0.0im 1.3691035744780353 - 0.16703621316206385im 7.47614366018844 + 4.139633109911205im 2.2813159163314163 + 0.7520360306228049im 2.4110077589815555 + 0.16558718095884828im 1.3691035744780353 - 0.16703621316206385im 0.0 + 0.0im; 0.0 + 0.0im 0.32043577156395486 + 0.0im 2.321469443190397 + 0.7890379226962572im 0.38521287113798636 + 0.0im 2.321469443190397 - 0.7890379226962572im 0.32043577156395486 + 0.0im 0.0 + 0.0im; 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im]
+    end
+
+    @testset "test resample_czt" begin
+        dim =2
+        s_small = (12,16) # ntuple(_ -> rand(1:13), dim)
+        s_large = (20,18) # ntuple(i -> max.(s_small[i], rand(10:16)), dim)
+        dat = select_region(randn(Float32, (5,6)), new_size= s_small)
+        rs1 = FourierTools.resample(dat, s_large)
+        rs1b = select_region(rs1, new_size=size(dat))
+        rs2 = FourierTools.resample_czt(dat, s_large./s_small, do_damp=false)
+        @test rs1b ≈ rs2
+        rs2 = FourierTools.resample_czt(dat, (x->s_large[2]./s_small[2], y->s_large[1]./s_small[1]), do_damp=false)
+        @test rs1b ≈ rs2
+        rs2 = FourierTools.resample_czt(dat, (x->1.0, y->1.0), shear=(x->10.0,y->0.0),do_damp=false)
+        @test shear(dat,10) ≈ rs2
+        rs2 = FourierTools.resample_czt(dat, (x->1.0, y->1.0), shear=(10.0,0.0),do_damp=false)
+        @test shear(dat,10) ≈ rs2
+        rs2 = barrel_pin(dat, 0.5)
+        rs2b = FourierTools.resample_czt(dat, (x -> 1.0 + 0.5 .* (x-0.5)^2,x -> 1.0 + 0.5 .* (x-0.5)^2))
+        @test rs2b ≈ rs2
+    end
+
+    @testset "test resample_nfft" begin
+        dim =2
+        s_small = (12,16) # ntuple(_ -> rand(1:13), dim)
+        s_large = (20,18) # ntuple(i -> max.(s_small[i], rand(10:16)), dim)
+        dat = select_region(randn(Float32, (5,6)), new_size= s_small)
+        rs1 = FourierTools.resample(dat, s_large)
+        rs1b = select_region(rs1, new_size=size(dat))
+        mymap = (t) -> t .* s_small ./ s_large  
+        rs3 = FourierTools.resample_nfft(dat, mymap)
+        @test isapprox(rs1b, rs3, rtol=0.1)
+        new_pos = mymap.(idx(size(dat), scale=ScaFT))
+        rs4 = FourierTools.resample_nfft(dat, new_pos)
+        @test rs4 ≈ rs3
+        new_pos = cat(s_small[1]./s_large[1] .* xx(size(dat), scale=ScaFT), s_small[2]./s_large[2] .* yy(size(dat), scale=ScaFT),dims=3)
+        rs5 = FourierTools.resample_nfft(dat, new_pos)
+        @test rs5 ≈ rs3
+        # @test rs1b ≈ rs3
+        # test both modes: src and destination but only for a 1-pixel shift
+        rs6 = FourierTools.resample_nfft(dat, t->t .+ 1.0, is_src_coords=false, is_in_pixels=true)
+        rs7 = FourierTools.resample_nfft(dat, t->t .- 1.0, is_src_coords=true, is_in_pixels=true)
+        @test rs6 ≈ rs7
+        # test shrinking by a factor of two
+        new_pos = cat(xx(s_small.÷2, scale=ScaFT),yy(s_small.÷2, scale=ScaFT), dims=3)
+        rs8 = FourierTools.resample_nfft(dat, t->t, s_small.÷2, is_src_coords=true)
+        rs9 = FourierTools.resample_nfft(dat, new_pos,  is_src_coords=true)
+        rss = FourierTools.resample(dat, s_small.÷2)
+        @test rs8 ≈ rs9
+        rs10 = FourierTools.resample_nfft(dat, t->t, s_small.÷2; is_src_coords=false, is_in_pixels=true)
+        new_pos = cat(xx(s_small, offset=(0,0)),yy(s_small,offset=(0,0)), dims=3)
+        rs11 = FourierTools.resample_nfft(dat, new_pos, s_small.÷2; is_src_coords=false, is_in_pixels=true)
+        @test rs10 ≈ rs11    
+        # test the non-strided array
+        rs6 = FourierTools.resample_nfft(Base.PermutedDimsArray(dat,(2,1)), t->t .+ 1.0, is_src_coords=false, is_in_pixels=true)
+        rs7 = FourierTools.resample_nfft(Base.PermutedDimsArray(dat,(2,1)), t->t .- 1.0, is_src_coords=true, is_in_pixels=true)
+        @test rs6 ≈ rs7
+        rs6 = FourierTools.resample_nfft(1im .* dat , t->t .* 2.0, s_small.÷2, is_src_coords=false, is_in_pixels=false, pad_value=0.0)
+        rs7 = FourierTools.resample_nfft(1im .* dat, t->t .* 0.5, s_small.÷2, is_src_coords=true, is_in_pixels=false, pad_value=0.0)
+        @test rs6.*4 ≈ rs7
     end
 
 end
