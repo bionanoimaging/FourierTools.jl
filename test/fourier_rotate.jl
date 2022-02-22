@@ -18,6 +18,7 @@
             z .*= m
             FourierTools.center_set!(z, img)
             img_2 = FourierTools.rotate(z, θ, pad_value=img_1[1,1])
+            img_2b = FourierTools.center_extract(FourierTools.rotate(z, θ, pad_value=img_1[1,1], keep_new_size=true), size(img_2))
             img_3 = real(FourierTools.rotate(z .+ 0im, θ, pad_value=img_1[1,1]))
             img_4 = FourierTools.rotate!(z, θ)
    
@@ -25,6 +26,7 @@
             @test ≈(img_1, img_2, rtol=0.03)
             @test ≈(img_3, img_2, rtol=0.01)
             @test ==(img_4, z)
+            @test ==(img_2, img_2b)
 
             img_1c = FourierTools.center_extract(img_1, (100, 100))
             img_2c = FourierTools.center_extract(img_2, (100, 100))
@@ -33,6 +35,8 @@
         end
 
         f(deg2rad(-54.31))
+        f(deg2rad(-95.31))
+        f(deg2rad(107.55))
         f(deg2rad(-32.31))
         f(deg2rad(32.31))
         f(deg2rad(0))
