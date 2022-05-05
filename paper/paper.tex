@@ -9,7 +9,7 @@
 %\usepackage[linesnumbered,ruled,vlined]{algorithm2e}
 \usepackage{graphicx}
 %\usepackage[font=small,labelfont=bf]{caption}
-\usepackage{subcaption}
+\usepackage{caption}
 
 \usepackage{tikz}
 \usetikzlibrary{shapes.misc}
@@ -651,8 +651,8 @@ julia> shift(x, 0.5) # Using the correct kernel
         The reason is that the rotation is based on three shears and hence 
         each shear introduces circular artifacts which are shifted again by following shearing.
         \begin{figure}[h]
-            \subcaptionbox{Sheared by \SI{150}{px}.\label{fig:sheared}}{\includegraphics[width=.23\textwidth]{figures/img_sheared.png}}
-            \subcaptionbox{Rotated by \SI{50}{\degree}.\label{fig:rotated}}{\includegraphics[width=.23\textwidth]{figures/img_rotated.png}}
+            \captionbox{Sheared by \SI{150}{px}.\label{fig:sheared}}{\includegraphics[width=.23\textwidth]{figures/img_sheared.png}}
+            \captionbox{Rotated by \SI{50}{\degree}.\label{fig:rotated}}{\includegraphics[width=.23\textwidth]{figures/img_rotated.png}}
             \caption{Mandril testimage.}
             \label{fig:shearandrotation}
         \end{figure}
