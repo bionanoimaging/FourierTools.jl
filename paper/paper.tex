@@ -127,9 +127,9 @@ All algorithms and examples are implemented using the Julia package \verb|Fourie
         \begin{tikzpicture}
             \begin{axis}[xmin=-0.5, xmax=7, ymax=1.2, ymin=-1.2, width=8cm, height=5cm,
                 xtick = {0, 3.1415, 6.283}, xticklabels={0, $L/2$, $L$}]
-                    \addplot[sharp plot, domain=-1:9, color=green, samples=400] {0.2 * cos(deg(x)};
-                    \addplot[sharp plot, domain=-1:9, color=blue, samples=100] {0.5 * cos(deg(x) - 66.42};
-                    \addplot[sharp plot, domain=-1:9, color=red, samples=100] {1 * cos(deg(x) - 78.46};
+                    \addplot[sharp plot, domain=-1:9, color=green, samples=400] {0.2 * cos(deg(x))};
+                    \addplot[sharp plot, domain=-1:9, color=blue, samples=100] {0.5 * cos(deg(x) - 66.42)};
+                    \addplot[sharp plot, domain=-1:9, color=red, samples=100] {1 * cos(deg(x) - 78.46)};
                     \addplot[sharp plot, domain=-1:9, color=orange, samples=100] {0.2*cos(deg( 3 *x))};
                     \draw[] (axis cs:-1, 0) -- (axis cs:8, 0);
                     \draw[dashed] (axis cs:0, -2) -- (axis cs:0, 2);
