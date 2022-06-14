@@ -2,12 +2,12 @@ module FourierTools
 
 using PaddedViews, ShiftedArrays
 using FFTW
-FFTW.set_num_threads(4)
 using LinearAlgebra
 using IndexFunArrays
 using ChainRulesCore
 using NDTools
 using NFFT
+FFTW.set_num_threads(4)
 
 include("utils.jl")
 include("nfft_nd.jl")
@@ -21,6 +21,7 @@ include("fourier_shear.jl")
 include("fftshift_alternatives.jl")
 include("fft_helpers.jl")
 include("convolutions.jl")
+include("correlations.jl")
 include("damping.jl")
 include("czt.jl")
 
