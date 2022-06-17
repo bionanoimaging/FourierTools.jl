@@ -52,6 +52,10 @@ function shift!(arr::AbstractArray{<:Complex, N}, shifts; soft_fraction=0, fix_n
     return shift_by_1D_FT!(arr, shifts; soft_fraction=soft_fraction, fix_nyquist_frequency=fix_nyquist_frequency, take_real=take_real)
 end
 
+function shift!(arr::AbstractArray{<:Int, N}, shifts; kwargs...) where {N}
+    throw(ArgumentError("FFTW.jl does not accept AbstractArrays{<:Int, N}. Convert array to a Real/Complex."))
+end
+
 function shift!(arr::AbstractArray{<:Real, N}, shifts; soft_fraction=0, fix_nyquist_frequency=false, take_real=true) where {N}
     return shift_by_1D_RFT!(arr, shifts; soft_fraction=soft_fraction, fix_nyquist_frequency=fix_nyquist_frequency, take_real=take_real)
 end

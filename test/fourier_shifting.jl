@@ -2,6 +2,9 @@ Random.seed!(42)
 
 @testset "Fourier shifting methods" begin
 
+    # Int error
+    @test_throws ArgumentError FourierTools.shift([1,2,3], (1,))
+
     @testset "Empty shifts" begin
         x = randn(ComplexF32, (11, 12, 13))
         @test FourierTools.shift(x, []) == x
