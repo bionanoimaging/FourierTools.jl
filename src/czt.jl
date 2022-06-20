@@ -9,6 +9,12 @@ Note that the result type is defined by `eltype(xin)` and not by `scales`.
 This code is based on a 2D Matlab version of the CZT, written by H. Gross et al.
     
 #References: Rabiner, Schafer, Rader, The Cirp z-Transform Algorithm, IEEE Trans AU 17(1969) p. 86
+
+# Arguments:
++ `xin`: array to transform
++ `scaled`: factor to zoom into during the 1-dimensional czt. 
++ `d`: single dimension to transform (as a tuple)
+
 """
 function czt_1d(xin, scaled, d)
     sz=size(xin)
@@ -30,7 +36,7 @@ function czt_1d(xin, scaled, d)
     ww = w .^ kk2
     aa = a .^ (-nn)
     # is a 1d list of factors. This defines the shift in Fourier space (centering of frequencies)
-    aa = aa .* ww[dsize .+ nn]
+    aa .*= ww[dsize .+ nn]
     to_fft = NDTools.select_region(1 ./ ww[1:(2*dsize-1)], new_size=(2*dsize,), center=(dsize+1,))
     # return tofft
     # is always 1d (small array)
@@ -79,6 +85,11 @@ The tuple `scale` defines the zoom factors in the Fourier domain. Each has to be
 #See also: iczt, czt_1d
     
 #References: Rabiner, Schafer, Rader, The Cirp z-Transform Algorithm, IEEE Trans AU 17(1969) p. 86
+
+# Arguments:
++ `xin`: array to transform
++ `scale`: a tuple of factors (one for each dimension) to zoom into during the czt. 
++ `dims`: a tuple of dimensions over which to apply the czt.
 
 #Example:
 ```jdoctest
@@ -130,6 +141,11 @@ This code is based on a 2D Matlab version of the CZT, written by H. Gross.
 The tuple `scale` defines the zoom factors in the Fourier domain. Each has to be bigger than one.
     
 #References: Rabiner, Schafer, Rader, The Cirp z-Transform Algorithm, IEEE Trans AU 17(1969) p. 86
+
+# Arguments:
++ `xin`: array to transform
++ `scale`: a tuple of factors (one for each dimension) of the the inverse czt. 
++ `dims`: a tuple of dimensions over which to apply the inverse czt.
 
 #See also: czt, czt_1d
 
