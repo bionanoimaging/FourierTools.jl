@@ -101,7 +101,20 @@ function resample_by_FFT(mat, new_size)
     return res    
 end
 
-function upsample2_1D(mat::AbstractArray{T, N}, dim=1, fix_center=false) where {T,N}
+"""
+    upsample2_1D(mat::AbstractArray{T, N}; dims=1, fix_center=false, keep_singleton=false)
+
+Upsamples by a factor of two along dimension `dim`. 
+The code is optimized for speed by using subpixelshifts rather than Fourier resizing.
+By default the first pixel maintains its position. However, this leads to a shift of the center (size[d]÷2+1) in the resulting array for  uneven array sizes.
+`fix_center=true` can be used to remedy this and the result array center position will agree to the source array center position.
+`keep_singleton=true` will not upsample dimensions of size one.
+Note that upsample2_1D is based on Fourier-shifting and you may have to deal with wrap-around problems.
+"""
+function upsample2_1D(mat::AbstractArray{T, N}, dim=1, fix_center=false, keep_singleton=false) where {T,N}
+    if keep_singleton && size(mat,dim) ==1
+        return mat
+    end
     newsize = Tuple((d==dim) ? 2*size(mat,d) : size(mat,d) for d in 1:N)
     res = zeros(eltype(mat), newsize)
     if fix_center && isodd(size(mat,dim))
@@ -117,15 +130,29 @@ function upsample2_1D(mat::AbstractArray{T, N}, dim=1, fix_center=false) where {
 end
 
 """
-    upsample2(mat; dims=1:N)
+    upsample2(mat::AbstractArray{T, N}; dims=1:N, fix_center=false, keep_singleton=false)
 
 Upsamples by a factor of two in all dimensions. 
 The code is optimized for speed by using subpixelshifts rather than Fourier resizing.
+By default the first pixel maintains its position. However, this leads to a shift of the center (size[d]÷2+1) in the resulting array for  uneven array sizes.
+`fix_center=true` can be used to remedy this and the result array center position will agree to the source array center position.
+`keep_singleton=true` will not upsample dimensions of size one.
+Note that upsample2 is based on Fourier-shifting and you may have to deal with wrap-around problems.
+```jdoctest
+julia> upsample2(collect(collect(1.0:9.0)'))
+2×18 Matrix{Float64}:
+ 1.0  0.24123  2.0  3.24123  3.0  2.93582  4.0  5.0  5.0  5.0  6.0  7.06418  7.0  6.75877  8.0  9.75877  9.0  5.0
+ 1.0  0.24123  2.0  3.24123  3.0  2.93582  4.0  5.0  5.0  5.0  6.0  7.06418  7.0  6.75877  8.0  9.75877  9.0  5.0
+
+julia> upsample2(collect(collect(1.0:9.0)'); fix_center=true, keep_singleton=true)
+1×18 Matrix{Float64}:
+ 5.0  1.0  0.24123  2.0  3.24123  3.0  2.93582  4.0  5.0  5.0  5.0  6.0  7.06418  7.0  6.75877  8.0  9.75877  9.0
+ ```
 """
-function upsample2(mat::AbstractArray{T, N}; dims=1:N, fix_center=false) where {T,N}
+function upsample2(mat::AbstractArray{T, N}; dims=1:N, fix_center=false, keep_singleton=false) where {T,N}
     res = mat
     for d in dims
-        res = upsample2_1D(res,d, fix_center)
+        res = upsample2_1D(res,d, fix_center, keep_singleton)
     end
     return res
 end

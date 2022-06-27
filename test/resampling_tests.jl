@@ -117,6 +117,8 @@
         s2 = (d == 2 ? sz[d]*2 : sz[d] for d in 1:length(sz))
         @test ≈(upsample2(a, dims=(2,)),resample(a,s2))
         @test ≈(upsample2_abs2(a, dims=(2,)),abs2.(resample(a,s2)))
+        @test size( upsample2(collect(collect(1.0:9.0)'); fix_center=true, keep_singleton=true)) == (1,18)
+        @test upsample2(collect(1.0:9.0); fix_center=false)[1:16] ≈ upsample2(collect(1.0:9.0); fix_center=true)[2:17]
     end
     end
 
