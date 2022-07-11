@@ -211,8 +211,7 @@ function plan_conv_psf(u::AbstractArray{T, N}, psf::AbstractArray{T, M}, dims=nt
 end
 
 function p_conv_aux(P, P_inv, u, v_ft)
-    tmp = (P_inv.p * ((P * u) .* v_ft))
-    tmp .*= P_inv.scale
+    tmp = (P_inv.p * ((P * u) .* v_ft .* P_inv.scale))
     return tmp
 end
 
