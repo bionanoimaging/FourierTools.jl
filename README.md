@@ -28,8 +28,13 @@ The main features are:
 * array/image shifting (including noteworthy subpixel shifts)
 * array/image shearing
 * several tools like `ffts`, `ft`, `fftshift_view` etc. allowing simpler use with Fourier transforms
+* Chirp Z-Transform
+* Fractional Fourier Transform
 
 Have a look in the [examples folder](examples/) for interactive examples. The [documentation](https://bionanoimaging.github.io/FourierTools.jl/dev/) offers a quick overview.
+
+## FFTW Threading
+By default we set 4 Threads. Use `FFTW.set_num_threads(N)` to set `N` threads.
 
 
 ## Cite

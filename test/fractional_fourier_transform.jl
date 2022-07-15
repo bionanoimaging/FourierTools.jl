@@ -29,4 +29,17 @@
 
     @test all(.≈(real(frfft(frfft(box1d, 0.5, shift=true), -0.5, shift=true))[30:70] , real(box1d)[30:70], rtol=1e-1))
     @test all(.≈(real(frfft(frfft(box1d_, 0.5, shift=true), -0.5, shift=true))[30:70] , real(box1d_)[30:70], rtol=1e-1))
+
+
+
+    img = Float32.(testimage("resolution_test"))
+
+    @test abs.(ft(img)) ./ sqrt(length(img)) .+ 10 ≈ 10 .+ abs.(frfft(img, 0.999999)) rtol=1e-4
+    @test (real.(ft(img)) ./ sqrt(length(img)))[200:300] ≈ (real.(frfft(img, 0.999999)))[200:300] rtol=0.8
+
+    
+    x = randn((12,))
+    x2 = randn((13,))
+    @test frft(x, 0.5) ≈ frft(reshape(x, 12,1,1,1,1), 0.5)
+    @test frft(x, 0.5) ≈ reshape(frft(reshape(x, 1,12,1,1), 0.5), 12)
 end

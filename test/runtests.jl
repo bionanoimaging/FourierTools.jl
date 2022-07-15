@@ -6,6 +6,7 @@ using Zygote
 using NDTools
 using LinearAlgebra # for the assigned nfft function LinearAlgebra.mul!
 using FractionalTransforms
+using TestImages
 
 Random.seed!(42)
 

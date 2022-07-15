@@ -70,16 +70,22 @@ img = Float32.(testimage("resolution_test_512"));
 md"
 Fractional order
 
-$(@bind s Slider(-1.5:0.01:2, show_value=true))
+$(@bind s Slider(-3:0.05:3, show_value=true))
 "
 
 # ╔═╡ 7c445baa-d970-4954-a3dc-df828971bfd7
-[gray_show(log1p.(abs.(ft(img)))) gray_show(log1p.(abs.(sqrt(length(img)) .* frfft(img, s))))]
+[gray_show(log1p.(abs.(ft(img)))) gray_show(log1p.(abs.(sqrt(length(img)) .* frfft(img, s, shift=true))))]
 
 # ╔═╡ 1915c023-69cf-4d18-90cb-b47465dbef69
 begin
 	plot(log1p.(abs.(ft(img)[(end+begin)÷2+1,:] ./ sqrt(length(img)))))
 	plot!(log1p.(abs.(frfft(img, s)[(end+begin)÷2+1,:])))
+end
+
+# ╔═╡ 227ae9a3-9387-4ac3-b391-e2a78ce40d49
+begin
+	plot((real.(ft(img)[(end+begin)÷2+1,200:300] ./ sqrt(length(img)))))
+	plot!((real.(frfft(img, s)[(end+begin)÷2+1,200:300])))
 end
 
 # ╔═╡ abff911a-e10d-4311-955a-7afc4e0d344c
@@ -110,9 +116,10 @@ end
 # ╠═459649ed-ca70-426e-8273-97b146b5bcd5
 # ╟─4371cfbf-a3b3-45dc-847b-019994fbb234
 # ╠═d90b7f67-4166-44fa-aab7-de2c4f38fc00
-# ╟─24901666-4cc4-497f-a6ff-68c3e7ead629
+# ╠═24901666-4cc4-497f-a6ff-68c3e7ead629
 # ╠═7c445baa-d970-4954-a3dc-df828971bfd7
 # ╠═1915c023-69cf-4d18-90cb-b47465dbef69
+# ╠═227ae9a3-9387-4ac3-b391-e2a78ce40d49
 # ╟─abff911a-e10d-4311-955a-7afc4e0d344c
 # ╠═bae3c5b7-8964-493b-9e7b-d343e092219c
 # ╠═07d2b3b6-3584-4c64-9c4a-138beb3d6b88
