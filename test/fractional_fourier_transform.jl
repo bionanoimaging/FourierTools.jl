@@ -15,10 +15,18 @@
               1 .+ abs.(frfft(frfft(box1d_, 0.5, shift=true), 0.5, shift=true)[30:70]), rtol=7e-3))
 
 
-    @test all(.≈(1 .+ abs.(FractionalTransforms.frft(collect(box1d_), 0.8))[30:70], 
-             1 .+ abs.(frfft(box1d_, 0.8, shift=true))[30:70], rtol=1e-1))
+    for frac in [0, -1, 1, 2,-3, -4,4,-2, 1.1, 2.2, 3.3, 4.4, 5.5, -1.1, -2.2, -3.3, -4.4]
+        @test all(.≈(10 .+ abs.(FractionalTransforms.frft(collect(box1d_), frac))[30:70], 
+                 10 .+ abs.(frfft(box1d_, frac, shift=true))[30:70], rtol=9e-3))
+
+        @test all(.≈(10 .+ real.(FractionalTransforms.frft(collect(box1d_), frac))[30:70], 
+                     10 .+ real.(frfft(box1d_, frac, shift=true))[30:70], rtol=9e-3))
+
+        @test all(.≈(10 .+ imag.(FractionalTransforms.frft(collect(box1d_), frac))[30:70], 
+                 10 .+ imag.(frfft(box1d_, frac, shift=true))[30:70], rtol=9e-3))
+    end
     # reversibility
 
-    @test all(.≈(real(frfft(frfft(box1d, 0.5, shift=true), -0.5, shift=true))[30:70] , real(box1d)[30:70], rtol=1e-6))
-    @test all(.≈(real(frfft(frfft(box1d_, 0.5, shift=true), -0.5, shift=true))[30:70] , real(box1d_)[30:70], rtol=1e-6))
+    @test all(.≈(real(frfft(frfft(box1d, 0.5, shift=true), -0.5, shift=true))[30:70] , real(box1d)[30:70], rtol=1e-1))
+    @test all(.≈(real(frfft(frfft(box1d_, 0.5, shift=true), -0.5, shift=true))[30:70] , real(box1d_)[30:70], rtol=1e-1))
 end

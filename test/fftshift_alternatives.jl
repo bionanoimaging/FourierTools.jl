@@ -20,26 +20,3 @@
 end
 
 
-@testset "fftshift and ifftshift in-place" begin
-    function f(arr, dims)
-        arr3 = copy(arr)
-        @test fftshift(arr, dims) == fftshift!(copy(arr), arr, dims)
-        @test arr3 == arr
-        @test ifftshift(arr, dims) == ifftshift!(copy(arr), arr, dims)
-        @test arr3 == arr
-        @test fftshift!(copy(arr), arr, dims) != arr
-    end
-
-    f(randn((8,)), 1)
-    f(randn((2,)), 1)
-    f(randn((3,)), 1)
-    f(randn((3,4)), 1)
-    f(randn((3,4)), 2)
-    f(randn((4,4)), (1,2))
-    f(randn((5,5)), (1, 2))
-    f(randn((5,5)), (1,))
-    f(randn((8, 7, 6,4,1)), (1,2))
-    f(randn((8, 7, 6,4,1)), (2,3))
-    f(randn((8, 7, 6,4,1)), 3)
-    f(randn((8, 7, 6,4,1)), (1,2,3,4,5))
-end
