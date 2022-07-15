@@ -108,6 +108,36 @@ begin
 	plot!(real.(FractionalTransforms.frft(r, s2)))
 end
 
+# ╔═╡ 37ebf4d8-28fa-4d0b-929c-5df4c9f418e0
+md"## Gaussian Propagation"
+
+# ╔═╡ fab2b38f-7a93-438e-a1f9-9e58709aec2e
+x = -256:256
+
+# ╔═╡ 02708a88-14ce-45cc-8d40-71a74bc5a56d
+amp = exp.(-(x.^2 .+ x'.^2) ./ 100);
+
+# ╔═╡ 77807bbe-a33a-4d65-8e06-446ad368784f
+phase_term = exp.(1im .* x .* 2π ./ 5)
+
+# ╔═╡ 696a77b2-a904-4cf8-805e-b66621dbbb8f
+field = amp .* phase_term;
+
+# ╔═╡ e556fd79-00b1-468b-85eb-79a08edfc5bf
+gray_show(amp)
+
+# ╔═╡ 4e53efc4-de25-4b97-8dc8-985d56b8bc67
+complex_show(field)
+
+# ╔═╡ 14d21206-ba85-485c-b1c1-2fca106a7169
+complex_show(ft(field))
+
+# ╔═╡ 4dcf3db5-6d37-4a09-a161-4af53ffc91ec
+@bind f2 Slider(-1:0.01:2, show_value=true)
+
+# ╔═╡ 1fe0d80f-664b-4b9f-9ff3-95f0d00e32d5
+complex_show(frfft(field, f2))
+
 # ╔═╡ Cell order:
 # ╠═a696290a-0122-11ed-01e5-a39256aed683
 # ╟─55894157-a2d1-4567-99a8-a052d5335dd1
@@ -124,3 +154,13 @@ end
 # ╠═bae3c5b7-8964-493b-9e7b-d343e092219c
 # ╠═07d2b3b6-3584-4c64-9c4a-138beb3d6b88
 # ╠═1839f03e-6add-4c85-b6fd-9035656ed86c
+# ╠═37ebf4d8-28fa-4d0b-929c-5df4c9f418e0
+# ╠═fab2b38f-7a93-438e-a1f9-9e58709aec2e
+# ╠═02708a88-14ce-45cc-8d40-71a74bc5a56d
+# ╠═77807bbe-a33a-4d65-8e06-446ad368784f
+# ╠═696a77b2-a904-4cf8-805e-b66621dbbb8f
+# ╠═e556fd79-00b1-468b-85eb-79a08edfc5bf
+# ╠═4e53efc4-de25-4b97-8dc8-985d56b8bc67
+# ╠═14d21206-ba85-485c-b1c1-2fca106a7169
+# ╠═4dcf3db5-6d37-4a09-a161-4af53ffc91ec
+# ╠═1fe0d80f-664b-4b9f-9ff3-95f0d00e32d5
