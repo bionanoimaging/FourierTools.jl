@@ -131,7 +131,9 @@ function plan_nfft_nd(src::AbstractArray{T,D}, dst_coords::AbstractArray{T2,D2},
     # the eps is necessary due to round-off errors, which makes the comparisone with ift otherwise fail
     maxfreq = RT.(floor.((dsz.-1)./2) ./ dsz) .+ eps(RT)
 
-    pad_mask = any((x .< -RT(0.5)) .|| (x .> maxfreq), dims=1)[:]
+    # before it used .|| but broadcasting on || is unsupported in 1.6
+    #pad_mask = any((x .< -RT(0.5)) .||(x .> maxfreq), dims=1)[:]
+    pad_mask = any(map((a,b) -> a || b, (x .< -RT(0.5)), (x .> maxfreq)), dims=1)[:]
 
     pad_value = let
         if isnothing(pad_value)
