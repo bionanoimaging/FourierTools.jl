@@ -43,6 +43,13 @@ url = {https://github.com/bionanoimaging/FourierTools.jl}}
 ```
 
 
+## Related Packages
+There are numerous packages related to Fourier transforms which offer similar functions or which we are based on:
+* [FFTW.jl](https://github.com/JuliaMath/FFTW.jl) for FFTs
+* [NFFT.jl](https://github.com/JuliaMath/NFFT.jl) for non-uniform FFTs
+* [FractionalTransforms.jl](https://github.com/SciFracX/FractionalTransforms.jl) offers 1D fractional Fourier transforms
+
+
 [docs-dev-img]: https://img.shields.io/badge/docs-dev-pink.svg
 [docs-dev-url]: https://bionanoimaging.github.io/FourierTools.jl/dev/
 
