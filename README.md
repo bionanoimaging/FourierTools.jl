@@ -32,6 +32,13 @@ The main features are:
 Have a look in the [examples folder](examples/) for interactive examples. The [documentation](https://bionanoimaging.github.io/FourierTools.jl/dev/) offers a quick overview.
 
 
+
+## Related Packages
+There are numerous packages related to Fourier transforms which offer similar functions or which this package is based on:
+* [FFTW.jl](https://github.com/JuliaMath/FFTW.jl) for FFTs
+* [NFFT.jl](https://github.com/JuliaMath/NFFT.jl) for non-uniform FFTs
+* [FractionalTransforms.jl](https://github.com/SciFracX/FractionalTransforms.jl) offers 1D fractional Fourier transforms
+
 ## Cite
 If you use this package in an academic work, please cite us!
 See on the right side the *Cite this repository*:
@@ -41,13 +48,6 @@ author = {Wechsler, Felix and Heintzmann, Rainer},
 title = {FourierTools.jl - Efficiently Working with Fourier Space},
 url = {https://github.com/bionanoimaging/FourierTools.jl}}
 ```
-
-
-## Related Packages
-There are numerous packages related to Fourier transforms which offer similar functions or which we are based on:
-* [FFTW.jl](https://github.com/JuliaMath/FFTW.jl) for FFTs
-* [NFFT.jl](https://github.com/JuliaMath/NFFT.jl) for non-uniform FFTs
-* [FractionalTransforms.jl](https://github.com/SciFracX/FractionalTransforms.jl) offers 1D fractional Fourier transforms
 
 
 [docs-dev-img]: https://img.shields.io/badge/docs-dev-pink.svg
