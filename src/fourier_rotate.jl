@@ -1,7 +1,7 @@
 export rotate, rotate!
 
 """
-    rotate(arr, θ, rotation_plane=(1,2), adapt_size=true, keep_new_size=true)
+    rotate(arr, θ, rotation_plane=(1,2), adapt_size=true, keep_new_size=false)
 
 Rotate an `arr` in the plane `rotation_plane` with an angle `θ` in degree around the center pixel. Note that, in contrast to `ImageTransformations.imrotate`, the rotation is done around the Fourier-center pixel (size()÷2+1) and not the geometric  mid point.
 
@@ -62,8 +62,8 @@ function rotate(arr, θ, rotation_plane=(1, 2); adapt_size=true, keep_new_size=f
 
         # do the three step shearing
         arr = shear(arr, α, a, b, adapt_size=false)
-        arr = shear(arr, β, b, a, adapt_size=false)
-        arr = shear(arr, α, a, b, adapt_size=false)
+        shear!(arr, β, b, a)
+        shear!(arr, α, a, b)
         if keep_new_size || size(arr) == old_size
             return arr
         else
@@ -89,7 +89,7 @@ Note also that this version generates very bad results with the angle approachin
 + `Θ`: the angle (in rad) to rotate by
 + `rotation_plane`: two dimensions selecting the 2D plane in which a multidimensional dataset is rotated 
 """
-function rotate!(arr, θ, rotation_plane=(1, 2))
+function rotate!(arr, θ, rotation_plane=(1, 2); assign_wrap=false, pad_value=zero(eltype(arr)))
     θ = mod(θ + π, 2π) - π
     # convert to radiants
     a,b = rotation_plane
@@ -99,9 +99,9 @@ function rotate!(arr, θ, rotation_plane=(1, 2))
 	β = sin(θ) * size(arr, a)
 
     # do the three step shearing
-    shear!(arr, α, a, b)
-    shear!(arr, β, b, a)
-    shear!(arr, α, a, b)
+    shear!(arr, α, a, b, assign_wrap=assign_wrap, pad_value=pad_value)
+    shear!(arr, β, b, a, assign_wrap=assign_wrap, pad_value=pad_value)
+    shear!(arr, α, a, b, assign_wrap=assign_wrap, pad_value=pad_value)
 
     return arr
 end

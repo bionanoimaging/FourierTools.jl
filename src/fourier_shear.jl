@@ -1,4 +1,4 @@
-export shear, shear!
+export shear, shear!, assign_shear_wrap!
 
 """
     shear(arr, Δ, shear_dir_dim=1, shear_dim=2; fix_nyquist=false, adapt_size=false::Bool, pad_value=zero(eltype(arr)))
@@ -30,14 +30,17 @@ function shear(arr::AbstractArray, Δ, shear_dir_dim=1, shear_dim=2; fix_nyquist
 end
 
 """
-    shear!(arr, Δ, shear_dir_dim=1, shear_dim=2)
+    shear!(arr, Δ, shear_dir_dim=1, shear_dim=2; fix_nyquist=false, assign_wrap=false, pad_value=zero(eltype(arr)))
 
 For more details see `shear.`
+# Extra Arguments 
+`assign_wrap`: if `true` wrap-around areas are replaced by `pad_value`
+`pad_value`:   the value to replace wrap-around areas with
 
 For complex arrays we can completely avoid large memory allocations.
 For real arrays, we need at least allocate on array in the fourier space.
 """
-function shear!(arr::AbstractArray{<:Complex, N}, Δ, shear_dir_dim=1, shear_dim=2; fix_nyquist=false) where N
+function shear!(arr::AbstractArray{<:Complex, N}, Δ, shear_dir_dim=1, shear_dim=2; fix_nyquist=false, assign_wrap=false, pad_value=zero(eltype(arr))) where N
     fft!(arr, shear_dir_dim)
 
     # stores the maximum amount of shift
@@ -47,10 +50,13 @@ function shear!(arr::AbstractArray{<:Complex, N}, Δ, shear_dir_dim=1, shear_dim
 
     # go back to real space
     ifft!(arr, shear_dir_dim)
+    if assign_wrap
+        assign_shear_wrap!(arr, Δ, shear_dir_dim=shear_dir_dim, shear_dim=shear_dim, pad_value=pad_value)
+    end
     return arr
 end
 
-function shear!(arr::AbstractArray{<:Real, N}, Δ, shear_dir_dim=1, shear_dim=2; fix_nyquist=false) where N
+function shear!(arr::AbstractArray{<:Real, N}, Δ, shear_dir_dim=1, shear_dim=2; fix_nyquist=false, assign_wrap=false, pad_value=zero(eltype(arr))) where N
     p = plan_rfft(arr, shear_dir_dim)
     arr_ft = p * arr 
 
@@ -59,13 +65,43 @@ function shear!(arr::AbstractArray{<:Real, N}, Δ, shear_dir_dim=1, shear_dim=2;
     
     apply_shift_strength!(arr_ft, arr, shift, shear_dir_dim, shear_dim, Δ, fix_nyquist)
     # go back to real space
- 
-    
+     
     # overwrites arr in-place
     ldiv!(arr, p, arr_ft)
+    if assign_wrap
+        assign_shear_wrap!(arr, Δ, shear_dir_dim, shear_dim, pad_value)
+    end
     return arr
 end
 
+"""
+    assign_shear_wrap!(arr, Δ, shear_dir_dim=1, shear_dim=2, pad_value=zero(eltype(arr)))
+
+Assign a `pad_value` to the places that may contain wrapped information using the `shear!` function.
+Note that this only accounts for the geometrical wrap and not for possible fringes caused by sub-pixel effects.
+
+# Arguments:
++ `arr`: the array to replace values
++ `Δ`: the amount of shear between both sides of the `arr`
++ `shear_dir_dim`: the dimension of the direction of the shear 
++ `shear_dim`: the shear dimension along which the amount of shift changes to create the shear.
++ `pad_value`: the value to replace the array values by.
+"""
+function assign_shear_wrap!(arr, Δ, shear_dir_dim=1, shear_dim=2, pad_value=zero(eltype(arr)))
+    sd_size = size(arr, shear_dim)
+    mid_sd = sd_size.÷2 .+1
+    for sd = 1:size(arr, shear_dim)
+        myshear = Δ*(sd .- mid_sd)/sd_size
+        myabsshear = ceil(Int, abs(myshear))
+        if myshear < 0
+            selectdim(selectdim(arr, shear_dim, sd:sd), shear_dir_dim, 1:myabsshear) .= pad_value
+        elseif myshear > 0
+            sdd_size = size(arr, shear_dir_dim)
+            from = min(sdd_size - myabsshear, sdd_size)
+            selectdim(selectdim(arr, shear_dim, sd:sd), shear_dir_dim, from:sdd_size) .= pad_value
+        end
+    end
+end
 
 function apply_shift_strength!(arr, arr_orig, shift, shear_dir_dim, shear_dim, Δ, fix_nyquist=false)
     #applies the strength to each slice
