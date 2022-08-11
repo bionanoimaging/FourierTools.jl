@@ -23,11 +23,11 @@ end
 @testset "fftshift and ifftshift in-place" begin
     function f(arr, dims)
         arr3 = copy(arr)
-        @test fftshift(arr, dims) == fftshift!(copy(arr), arr, dims)
+        @test fftshift(arr, dims) == FourierTools._fftshift!(copy(arr), arr, dims)
         @test arr3 == arr
-        @test ifftshift(arr, dims) == ifftshift!(copy(arr), arr, dims)
+        @test ifftshift(arr, dims) == FourierTools._ifftshift!(copy(arr), arr, dims)
         @test arr3 == arr
-        @test fftshift!(copy(arr), arr, dims) != arr
+        @test FourierTools._fftshift!(copy(arr), arr, dims) != arr
     end
 
     f(randn((8,)), 1)

@@ -36,7 +36,11 @@
     @testset "Fix Nyquist" begin
         @test shear(shear([1 2; 3 4.0], 0.123), -0.123, fix_nyquist = true) == [1.0 2.0; 3.0 4.0]
         @test shear(shear([1 2; 3 4.0], 0.123), -0.123, fix_nyquist = false) != [1.0 2.0; 3.0 4.0]
-
     end
 
+    @testset "assign_shear_wrap!" begin
+        q = ones((10,11))
+        assign_shear_wrap!(q, 10)
+        @test q[:,1] == [0,0,0,0,0,1,1,1,1,1]
+    end
 end
