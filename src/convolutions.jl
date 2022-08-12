@@ -136,18 +136,23 @@ function plan_conv(u::AbstractArray{T1, N}, v::AbstractArray{T2, M}, dims=ntuple
         # FFTW.MEASURE flag might overwrite input! Hence copy!
         if (:flags in keys(kwargs) && 
             (getindex(kwargs, :flags) == FFTW.MEASURE || getindex(kwargs, :flags) == FFTW.PATIENT)) 
-            P = plan(copy(u), dims; kwargs...)
+            plan(copy(u), dims; kwargs...)
         else
-            P = plan(u, dims; kwargs...)
+            plan(u, dims; kwargs...)
         end
     end
-    P_inv = inv(P)
 
     v_ft = fft_or_rfft(T1)(v, dims)
     # construct the efficient conv function
     # P and P_inv can be understood like matrices
     # but their computation is fast
-    conv(u, v_ft=v_ft) = p_conv_aux(P, P_inv, u, v_ft)
+    conv = let P = P,
+               P_inv = inv(P),
+               # put a different name here! See https://discourse.julialang.org/t/type-issue-with-captured-variables-let-workaround-failed/85661
+               v_ft = v_ft
+        conv(u, v_ft=v_ft) = p_conv_aux(P, P_inv, u, v_ft)
+    end
+    
     return v_ft, conv
 end
 
@@ -211,8 +216,7 @@ function plan_conv_psf(u::AbstractArray{T, N}, psf::AbstractArray{T, M}, dims=nt
 end
 
 function p_conv_aux(P, P_inv, u, v_ft)
-    tmp = (P_inv.p * ((P * u) .* v_ft .* P_inv.scale))
-    return tmp
+    return (P_inv.p * ((P * u) .* v_ft .* P_inv.scale))
 end
 
 function ChainRulesCore.rrule(::typeof(p_conv_aux), P, P_inv, u, v)
