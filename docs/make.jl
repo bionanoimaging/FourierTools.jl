@@ -12,6 +12,7 @@ makedocs(modules = [FourierTools],
             "Shifting with FFTs" => "shifting.md",
             "Image Shearing with FFTs" => "shear.md",
             "Image Rotation with FFTs" => "rotate.md",
+            "NFFT" => "nfft.md",
             "Utility Functions" => "utils.md",
          ]
         )
