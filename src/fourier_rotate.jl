@@ -3,7 +3,7 @@ export rotate, rotate!
 """
     rotate(arr, θ, rotation_plane=(1,2), adapt_size=true, keep_new_size=false)
 
-Rotate an `arr` in the plane `rotation_plane` with an angle `θ` in degree around the center pixel. Note that, in contrast to `ImageTransformations.imrotate`, the rotation is done around the Fourier-center pixel (size()÷2+1) and not the geometric  mid point.
+Rotate an `arr` in the plane `rotation_plane` with an angle `θ` in rad around the center pixel. Note that, in contrast to `ImageTransformations.imrotate`, the rotation is done around the Fourier-center pixel (size()÷2+1) and not the geometric  mid point.
 
 # Arguments:
 + `arr`: the array to rotate
@@ -78,7 +78,7 @@ end
 """
     rotate!(arr, θ, rotation_plane=(1,2))
 
-In-place rotate an `arr` in the plane spanned by the two dimensions in the tuple `rotation_plane` with an angle `θ` in degree
+In-place rotate an `arr` in the plane spanned by the two dimensions in the tuple `rotation_plane` with an angle `θ` in rad
 around the center pixel. Note that, in contrast to `ImageTransformations.imrotate`, the rotation is done around the Fourier-center pixel (size()÷2+1) and not the geometric  mid point.
 Note also that due to the operation being performed by successive cyclic shear operations in-place, pixels near the corner will be experiencing a massive wrap-around problem.
 Use the out-of-place version `rotate` to avoid this.
