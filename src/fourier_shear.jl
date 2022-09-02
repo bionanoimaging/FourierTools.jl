@@ -46,6 +46,7 @@ function shear!(arr::TA, Δ, shear_dir_dim=1, shear_dim=2; fix_nyquist=false, as
 
     # stores the maximum amount of shift
     TR = real_arr_type(TA)
+    # shift = similar(arr, real(eltype(arr)), select_sizes(arr, shear_dir_dim))
     # shift = TR(reshape(fftfreq(size(arr, shear_dir_dim)), NDTools.select_sizes(arr, shear_dir_dim)))
     shift = TR(reorient(fftfreq(size(arr, shear_dir_dim)),shear_dir_dim, Val(N)))
     
@@ -65,12 +66,13 @@ function shear!(arr::TA, Δ, shear_dir_dim=1, shear_dim=2; fix_nyquist=false, as
 
     # stores the maximum amount of shift
     TR = real_arr_type(TA)
+    # shift = similar(arr, real(eltype(arr_ft)), select_sizes(arr_ft, shear_dir_dim))
     # shift = TR(reshape(rfftfreq(size(arr, shear_dir_dim)), NDTools.select_sizes(arr_ft, shear_dir_dim)))
     shift = TR(reorient(rfftfreq(size(arr, shear_dir_dim)),shear_dir_dim, Val(N)))
     
     apply_shift_strength!(arr_ft, arr, shift, shear_dir_dim, shear_dim, Δ, fix_nyquist)
     # go back to real space
-     
+
     # overwrites arr in-place
     ldiv!(arr, p, arr_ft)
     if assign_wrap
@@ -110,9 +112,9 @@ end
 
 function apply_shift_strength!(arr::TA, arr_orig, shift, shear_dir_dim, shear_dim, Δ, fix_nyquist=false) where {T, N, TA<:AbstractArray{T, N}}
     #applies the strength to each slice
-    # shift_strength = reshape(fftpos(1, size(arr, shear_dim), CenterFT), NDTools.select_sizes(arr, shear_dim))
-    # TR = real_arr_type(typeof(collect(arr[1:1]))) # There is a problem with circshifted arrays and this way of finding the type.
-    shift_strength = reorient(fftpos(1, size(arr, shear_dim), CenterFT), shear_dim, Val(N))
+    # The TR trick does not seem to work for the code below due to a call with a PaddedArray.
+    shift_strength = similar(arr, real(eltype(arr)), select_sizes(arr, shear_dim))
+    shift_strength .= (real(eltype(TA))).(reorient(fftpos(1, size(arr, shear_dim), CenterFT), shear_dim, Val(N)))
  
     # do the exp multiplication in place
     e = cispi.(2 .* Δ .* shift .* shift_strength)

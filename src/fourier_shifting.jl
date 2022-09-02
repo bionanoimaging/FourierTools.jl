@@ -88,6 +88,7 @@ function shift_by_1D_FT!(arr::TA, shifts; soft_fraction=0, take_real=false, fix_
         end
         # better use reorient from NDTools here?
         TR = real_arr_type(TA)
+        # freqs = similar(arr, real(eltype(arr)), select_sizes(arr, d))
         freqs = TR(reorient(fftfreq(size(arr, d)),d, Val(N)))
         # freqs = TR(reshape(fftfreq(size(arr, d)), ntuple(i -> 1, Val(d-1))..., size(arr,d)))
         # @show size(freqs)
@@ -142,8 +143,10 @@ function shift_by_1D_RFT!(arr::TA, shifts; soft_fraction=0, fix_nyquist_frequenc
         s = size(arr_ft,d); # s1[d]
         # @show size(arr, d) ÷ 2 + 1
         # freqs = TR(reshape(fftfreq(size(arr, d))[1:s], ntuple(i -> 1, d-1)..., s1))
+
         TR = real_arr_type(TA)
-        freqs = TR(reorient(fftfreq(size(arr, d))[1:s],d, Val(N)))
+        # freqs = similar(arr, real(eltype(arr_ft)), select_sizes(arr_ft, d))
+        freqs = TR(reorient(fftfreq(size(arr, d))[1:s], d, Val(N)))
         if iszero(soft_fraction)
             ϕ = cispi.(-freqs .* 2 .* shift)
         else
