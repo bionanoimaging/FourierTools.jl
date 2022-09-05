@@ -45,10 +45,10 @@ function shear!(arr::TA, Δ, shear_dir_dim=1, shear_dim=2; fix_nyquist=false, as
     fft!(arr, shear_dir_dim)
 
     # stores the maximum amount of shift
-    TR = real_arr_type(TA)
-    # shift = similar(arr, real(eltype(arr)), select_sizes(arr, shear_dir_dim))
-    # shift = TR(reshape(fftfreq(size(arr, shear_dir_dim)), NDTools.select_sizes(arr, shear_dir_dim)))
-    shift = TR(reorient(fftfreq(size(arr, shear_dir_dim)),shear_dir_dim, Val(N)))
+    # TR = real_arr_type(TA)
+    shift = similar(arr, real(eltype(arr)), select_sizes(arr, shear_dir_dim))
+    shift .= reshape(fftfreq(size(arr, shear_dir_dim)), NDTools.select_sizes(arr, shear_dir_dim))
+    # shift = TR(reorient(fftfreq(size(arr, shear_dir_dim)), shear_dir_dim, Val(N)))
     
     apply_shift_strength!(arr, arr, shift, shear_dir_dim, shear_dim, Δ, fix_nyquist)
 
@@ -65,10 +65,10 @@ function shear!(arr::TA, Δ, shear_dir_dim=1, shear_dim=2; fix_nyquist=false, as
     arr_ft = p * arr 
 
     # stores the maximum amount of shift
-    TR = real_arr_type(TA)
-    # shift = similar(arr, real(eltype(arr_ft)), select_sizes(arr_ft, shear_dir_dim))
-    # shift = TR(reshape(rfftfreq(size(arr, shear_dir_dim)), NDTools.select_sizes(arr_ft, shear_dir_dim)))
-    shift = TR(reorient(rfftfreq(size(arr, shear_dir_dim)),shear_dir_dim, Val(N)))
+    # TR = real_arr_type(TA)
+    shift = similar(arr, real(eltype(arr_ft)), select_sizes(arr_ft, shear_dir_dim))
+    shift .= reshape(rfftfreq(size(arr, shear_dir_dim)), NDTools.select_sizes(arr_ft, shear_dir_dim))
+    # shift = TR(reorient(rfftfreq(size(arr, shear_dir_dim)),shear_dir_dim, Val(N)))
     
     apply_shift_strength!(arr_ft, arr, shift, shear_dir_dim, shear_dim, Δ, fix_nyquist)
     # go back to real space

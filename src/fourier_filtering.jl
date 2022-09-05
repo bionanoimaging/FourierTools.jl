@@ -120,9 +120,11 @@ function fourier_filter_by_1D_FT!(arr::TA, fct=window_gaussian; dims=(1:ndims(ar
     # only calculate the necessary windows
     for d in dims 
         # these will possibly be transformed later
-        wins[d] = TR(ifftshift(fct(real(eltype(arr)), select_sizes(arr, d); kwargs...)))
+        win = similar(arr, real(eltype(arr)), select_sizes(arr, d))
+        win .= fct(real(eltype(arr)), select_sizes(arr, d); kwargs...)
+        wins[d] = ifftshift(win)
     end
-    return fourier_filter_by_1D_FT!(arr::TA, wins; transform_win=transform_win, dims=dims)
+    return fourier_filter_by_1D_FT!(arr, wins; transform_win=transform_win, dims=dims)
 end
 
 function fourier_filter_by_1D_RFT!(arr::TA, wins::AbstractVector; dims=(1:ndims(arr)), transform_win=false, kwargs...) where {T<:Real, N, TA<:AbstractArray{T, N}}
@@ -156,14 +158,22 @@ function fourier_filter_by_1D_RFT!(arr::TA, fct=window_gaussian; dims=(1:ndims(a
     if isempty(dims)
         return arr
     end
-    TR = real_arr_type(TA)
+    # TR = real_arr_type(TA)
     d = dims[1]
     p = plan_rfft(arr, d)
     arr_ft = p * arr
-    win = TR(fct(real(eltype(arr)), select_sizes(arr_ft,d), offset=CtrRFFT, scale=2 ./size(arr,d); kwargs...))
-    if transform_win
-        pw = plan_rfft(win, d)
-        win = pw*win
+    win = let
+        if transform_win
+            win = similar(arr, real(eltype(arr)), select_sizes(arr,d))
+            win .= fct(real(eltype(arr)), select_sizes(arr,d); kwargs...)
+            win = ifftshift(win) # for CuArray compatibility this has to be done sequentially. InPlace is not supported.
+            pw = plan_rfft(win, d)
+            pw*win
+        else
+            win = similar(arr, real(eltype(arr_ft)), select_sizes(arr_ft,d))
+            # win = TR(fct(real(eltype(arr)), select_sizes(arr_ft,d), offset=CtrRFFT, scale=2 ./size(arr,d); kwargs...))
+            win .= fct(real(eltype(arr)), select_sizes(arr_ft,d), offset=CtrRFFT, scale=2 ./size(arr,d); kwargs...)
+        end
     end
     arr_ft .*= win
     fourier_filter_by_1D_FT!(arr_ft, fct;  dims=dims[2:end], transform_win=transform_win, kwargs...)
@@ -174,34 +184,36 @@ function fourier_filter_by_1D_RFT!(arr::TA, fct=window_gaussian; dims=(1:ndims(a
 end
 
 """
-    filter_gaussian(arr, sigma=eltype(arr)(1); border_in=(real(eltype(arr)))(0), border_out=(real(eltype(arr))).(2 ./ (pi .* sigma)), kwargs...)
+    filter_gaussian(arr, sigma=eltype(arr)(1); real_space_kernel=true, border_in=(real(eltype(arr)))(0), border_out=(real(eltype(arr))).(2 ./ (pi .* sigma)), kwargs...)
 
 performs Gaussian filtering by multiplying a Gaussian function in Fourier space.
-Note that this is not identical to the Fourier-transform of a real-space Gaussian, especially for small kernel sizes and small arrays.
+Note that the argument `real_space_kernel` defines whether the Gaussian is computed in real or Fourier-space. Especially for small array sizes and small kernelsizes, the real-space version is preferred.
 See also `filter_gaussian!()` and `fourier_filter()`.
 
 #Arguments
 +`arr`:     the array to filter
 +`sigma`:     the real-space standard deviation to filter with. From this the Fourier-space standard deviation will be calculated. 
++ `real_space_kernel`: if `true`, the separable Gaussians are computed in real space and then Fourier-transformed. The overhead is relatively small, but the result does not create fringes.
 +`kwargs...`:   additional arguments to be passed to `window_gaussian`, which is the underlying function from `IndexFunArray.jl`. This can be useful to create Fourier-shifted (Gabor-) filtering.
 """
-function filter_gaussian(arr, sigma=eltype(arr)(1); real_space_kernel=false, border_in=(real(eltype(arr)))(0), border_out=(real(eltype(arr))).(2 ./ (pi .* sigma)), kwargs...)
+function filter_gaussian(arr, sigma=eltype(arr)(1); real_space_kernel=true, border_in=(real(eltype(arr)))(0), border_out=(real(eltype(arr))).(2 ./ (pi .* sigma)), kwargs...)
     filter_gaussian!(copy(arr), sigma; real_space_kernel=real_space_kernel, border_in=border_in, border_out=border_out, kwargs...)
 end
 
 """
-    filter_gaussian!(arr, sigma=eltype(arr)(1); border_in=(real(eltype(arr)))(0), border_out=(real(eltype(arr))).(2 ./ (pi .* sigma)), kwargs...)
+    filter_gaussian!(arr, sigma=eltype(arr)(1); real_space_kernel=true, border_in=(real(eltype(arr)))(0), border_out=(real(eltype(arr))).(2 ./ (pi .* sigma)), kwargs...)
 
 performs in-place Gaussian filtering by multiplying a Gaussian function in Fourier space.
-Note that this is not identical to the Fourier-transform of a real-space Gaussian, especially for small kernel sizes and small arrays.
+Note that the argument `real_space_kernel` defines whether the Gaussian is computed in real or Fourier-space. Especially for small array sizes and small kernelsizes, the real-space version is preferred.
 See also `filter_gaussian()` adn `fourier_filter!()`.
 
 #Arguments
 +`arr`:     the array to filter
 +`sigma`:     the real-space standard deviation to filter with. From this the Fourier-space standard deviation will be calculated. 
++ `real_space_kernel`: if `true`, the separable Gaussians are computed in real space and then Fourier-transformed. The overhead is relatively small, but the result does not create fringes.
 +`kwargs...`:   additional arguments to be passed to `window_gaussian`, which is the underlying function from `IndexFunArray.jl`. This can be useful to create Fourier-shifted (Gabor-) filtering.
 """
-function filter_gaussian!(arr, sigma=eltype(arr)(1); real_space_kernel=false, border_in=(real(eltype(arr)))(0), border_out=(real(eltype(arr))).(2 ./ (pi .* sigma)), kwargs...)
+function filter_gaussian!(arr, sigma=eltype(arr)(1); real_space_kernel=true, border_in=(real(eltype(arr)))(0), border_out=(real(eltype(arr))).(2 ./ (pi .* sigma)), kwargs...)
     if real_space_kernel
         mysum = sum(arr)
         fourier_filter!(arr, gaussian; transform_win=true, sigma=sigma, kwargs...)

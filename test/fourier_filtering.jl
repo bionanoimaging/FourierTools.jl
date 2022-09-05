@@ -6,7 +6,7 @@ Random.seed!(42)
         sz = (21, 22)
         x = randn(ComplexF32, sz)
         sigma = (1.1,2.2)
-        gf = filter_gaussian(x, sigma)
+        gf = filter_gaussian(x, sigma, real_space_kernel=false)
         # Note that this is not the same, since one kernel is generated in real space and one in Fourier space!
         # with sizes around 10, the difference is huge!
         k = gaussian(Float32, sz, sigma=sigma)
@@ -21,7 +21,7 @@ Random.seed!(42)
         sz = (21, 22)
         x = randn(Float32, sz)
         sigma = (1.1,2.2)
-        gf = filter_gaussian(x, sigma)
+        gf = filter_gaussian(x, sigma, real_space_kernel=true)
         # Note that this is not the same, since one kernel is generated in real space and one in Fourier space!
         # with sizes around 10, the difference is huge!
         k = gaussian(sz, sigma=sigma)
