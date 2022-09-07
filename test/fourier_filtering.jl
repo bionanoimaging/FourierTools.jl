@@ -29,4 +29,8 @@ Random.seed!(42)
         gf2 = conv_psf(x, k)
         @test ≈(gf,gf2, rtol=1e-2) # it is realatively inaccurate due to the kernel being generated in different places
     end
+    @testset "Other filters" begin
+        @test filter_hamming(FourierTools.delta(Float32, (3,)), border_in=0.0, border_out=1.0) ≈ [0.23,0.54, 0.23]
+        @test filter_hann(FourierTools.delta(Float32, (3,)), border_in=0.0, border_out=1.0) ≈ [0.25,0.5, 0.25]
+    end
 end

@@ -88,6 +88,7 @@ function shift_by_1D_FT!(arr::TA, shifts; soft_fraction=0, take_real=false, fix_
         end
         # better use reorient from NDTools here?
         # TR = real_arr_type(TA)
+
         freqs = similar(arr, real(eltype(arr)), select_sizes(arr, d))
         # freqs = TR(reorient(fftfreq(size(arr, d)),d, Val(N)))
         freqs .= reorient(fftfreq(size(arr, d)),d, Val(N))
@@ -98,6 +99,7 @@ function shift_by_1D_FT!(arr::TA, shifts; soft_fraction=0, take_real=false, fix_
         else
             ϕ = soft_shift(freqs, shift, soft_fraction)
         end
+        # ϕ = exp_ikx_sep(complex_arr_type(TA), size(arr), dims=(d,), shift_by = shift)[1]
         # in even case, set one value to real
         if iseven(size(arr, d))
             s = size(arr, d) ÷ 2 + 1

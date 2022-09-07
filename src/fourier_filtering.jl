@@ -1,5 +1,5 @@
 export fourier_filter!, fourier_filter
-export filter_gaussian # , filter_gaussian2
+export filter_gaussian, filter_gaussian!, filter_hann, filter_hann!, filter_hamming, filter_hamming!
 
 """
     fourier_filter!(arr::AbstractArray, fct=window_gaussian; kwargs...)
@@ -184,10 +184,105 @@ function fourier_filter_by_1D_RFT!(arr::TA, fct=window_gaussian; dims=(1:ndims(a
 end
 
 """
+    filter_hann(arr; border_in=(real(eltype(arr)))(0.8), border_out=(real(eltype(arr)))(1), kwargs...)
+
+performs Hann filtering by multiplying a Hann function in Fourier space.
+Note that this filter is separable but not circularly symmetric.
+See also `fourier_filter()`.
+
+#Arguments
++`arr`:     the array to filter
++`sigma`:     the real-space standard deviation to filter with. From this the Fourier-space standard deviation will be calculated. 
++`kwargs...`:   additional arguments to be passed to `window_gaussian`, which is the underlying function from `IndexFunArray.jl`.
+                Of particular importance are `border_in` and `border_out` defining the inner and outer border of the window relative to the Nyquist frequency.
+#Example
+```jdoctest
+julia> res = filter_hann(FourierTools.delta((7,6)), border_in=0.3, border_out=0.4)
+7×6 Matrix{Float64}:
+  0.00954688  -0.00477344  -0.0334141  -0.0477344  -0.0334141  -0.00477344
+ -0.00660664   0.00330332   0.0231233   0.0330332   0.0231233   0.00330332
+ -0.0267498    0.0133749    0.0936242   0.133749    0.0936242   0.0133749
+ -0.0357143    0.0178571    0.125       0.178571    0.125       0.0178571
+ -0.0267498    0.0133749    0.0936242   0.133749    0.0936242   0.0133749
+ -0.00660664   0.00330332   0.0231233   0.0330332   0.0231233   0.00330332
+  0.00954688  -0.00477344  -0.0334141  -0.0477344  -0.0334141  -0.00477344
+```
+"""
+function filter_hann(arr; border_in=(real(eltype(arr)))(0.8), border_out=(real(eltype(arr)))(1), kwargs...)
+    filter_hann!(copy(arr); border_in=border_in, border_out=border_out, kwargs...)
+end
+
+"""
+    filter_hann!(arr; border_in=(real(eltype(arr)))(0.8), border_out=(real(eltype(arr)))(1), kwargs...)
+
+performs in-place Hann filtering by multiplying a Hann function in Fourier space.
+Note that this filter is separable but not circularly symmetric.
+See also `fourier_filter!()`.
+
+#Arguments
++`arr`:     the array to replace by filtered version
++`sigma`:     the real-space standard deviation to filter with. From this the Fourier-space standard deviation will be calculated. 
++`kwargs...`:   additional arguments to be passed to `window_gaussian`, which is the underlying function from `IndexFunArray.jl`.
+                Of particular importance are `border_in` and `border_out` defining the inner and outer border of the window relative to the Nyquist frequency.
+
+See filter_hann() for an example.
+"""
+function filter_hann!(arr; border_in=(real(eltype(arr)))(0.8), border_out=(real(eltype(arr)))(1), kwargs...)
+    return fourier_filter!(arr, window_hanning; border_in=border_in, border_out=border_out, kwargs...)
+end
+
+"""
+    filter_hamming(arr; border_in=(real(eltype(arr)))(0.8), border_out=(real(eltype(arr)))(1), kwargs...)
+
+performs Hamming filtering by multiplying a Hamming function in Fourier space.
+Note that this filter is separable but not circularly symmetric.
+See also `fourier_filter()`.
+
+#Arguments
++`arr`:     the array to filter
++`sigma`:     the real-space standard deviation to filter with. From this the Fourier-space standard deviation will be calculated. 
++`kwargs...`:   additional arguments to be passed to `window_gaussian`, which is the underlying function from `IndexFunArray.jl`.
+                Of particular importance are `border_in` and `border_out` defining the inner and outer border of the window relative to the Nyquist frequency.
+#Example
+```jdoctest
+julia> res = filter_hamming(FourierTools.delta((7,6)), border_in=0.3, border_out=0.4)
+7×6 Matrix{Float64}:
+  0.00808048  -0.00404024  -0.0282817  -0.0488342  -0.0282817  -0.00404024
+ -0.00559186   0.00279593   0.0195715   0.0337943   0.0195715   0.00279593
+ -0.022641     0.0113205    0.0792435   0.13683     0.0792435   0.0113205
+ -0.0363619    0.018181     0.127267    0.219752    0.127267    0.018181
+ -0.022641     0.0113205    0.0792435   0.13683     0.0792435   0.0113205
+ -0.00559186   0.00279593   0.0195715   0.0337943   0.0195715   0.00279593
+  0.00808048  -0.00404024  -0.0282817  -0.0488342  -0.0282817  -0.00404024
+```
+"""
+function filter_hamming(arr; border_in=(real(eltype(arr)))(0.8), border_out=(real(eltype(arr)))(1), kwargs...)
+    filter_hamming!(copy(arr); border_in=border_in, border_out=border_out, kwargs...)
+end
+
+"""
+    filter_hamming!(arr; border_in=(real(eltype(arr)))(0.8), border_out=(real(eltype(arr)))(1), kwargs...)
+
+performs in-place Hamming filtering by multiplying a Hann function in Fourier space.
+Note that this filter is separable but not circularly symmetric.
+See also `fourier_filter!()`.
+
+#Arguments
++`arr`:     the array to replace by filtered version
++`sigma`:     the real-space standard deviation to filter with. From this the Fourier-space standard deviation will be calculated. 
++`kwargs...`:   additional arguments to be passed to `window_gaussian`, which is the underlying function from `IndexFunArray.jl`.
+                Of particular importance are `border_in` and `border_out` defining the inner and outer border of the window relative to the Nyquist frequency.
+
+See filter_hamming() for an example.
+"""
+function filter_hamming!(arr; border_in=(real(eltype(arr)))(0.8), border_out=(real(eltype(arr)))(1), kwargs...)
+    return fourier_filter!(arr, window_hamming; border_in=border_in, border_out=border_out, kwargs...)
+end
+
+"""
     filter_gaussian(arr, sigma=eltype(arr)(1); real_space_kernel=true, border_in=(real(eltype(arr)))(0), border_out=(real(eltype(arr))).(2 ./ (pi .* sigma)), kwargs...)
 
-performs Gaussian filtering by multiplying a Gaussian function in Fourier space.
-Note that the argument `real_space_kernel` defines whether the Gaussian is computed in real or Fourier-space. Especially for small array sizes and small kernelsizes, the real-space version is preferred.
+performs Gaussian filtering via Fourier filtering. Note that the argument `real_space_kernel` defines whether the Gaussian is computed in real or Fourier-space. Especially for small array sizes and small kernelsizes, the real-space version is preferred.
 See also `filter_gaussian!()` and `fourier_filter()`.
 
 #Arguments
@@ -203,12 +298,12 @@ end
 """
     filter_gaussian!(arr, sigma=eltype(arr)(1); real_space_kernel=true, border_in=(real(eltype(arr)))(0), border_out=(real(eltype(arr))).(2 ./ (pi .* sigma)), kwargs...)
 
-performs in-place Gaussian filtering by multiplying a Gaussian function in Fourier space.
+performs in-place Gaussian filtering by mulitplication in Fourier space.
 Note that the argument `real_space_kernel` defines whether the Gaussian is computed in real or Fourier-space. Especially for small array sizes and small kernelsizes, the real-space version is preferred.
-See also `filter_gaussian()` adn `fourier_filter!()`.
+See also `filter_gaussian()` and `fourier_filter!()`.
 
 #Arguments
-+`arr`:     the array to filter
++`arr`:     the array to replace by filtered version
 +`sigma`:     the real-space standard deviation to filter with. From this the Fourier-space standard deviation will be calculated. 
 + `real_space_kernel`: if `true`, the separable Gaussians are computed in real space and then Fourier-transformed. The overhead is relatively small, but the result does not create fringes.
 +`kwargs...`:   additional arguments to be passed to `window_gaussian`, which is the underlying function from `IndexFunArray.jl`. This can be useful to create Fourier-shifted (Gabor-) filtering.
