@@ -80,20 +80,26 @@ function soft_shift(freqs, shift, fraction=eltype(freqs)(0.1); corner=false)
     return cispi.(-freqs .* 2 .* (w .* shift + (1.0 .-w).* rounded_shift))
 end
 
-function shift_by_1D_FT!(arr::AbstractArray{<:Complex, N}, shifts; soft_fraction=0, take_real=false, fix_nyquist_frequency=false) where {N}
+function shift_by_1D_FT!(arr::TA, shifts; soft_fraction=0, take_real=false, fix_nyquist_frequency=false) where {N, TA<:AbstractArray{<:Complex, N}}
     # iterates of the dimension d using the corresponding shift
     for (d, shift) in pairs(shifts)
         if iszero(shift)
             continue
         end
         # better use reorient from NDTools here?
-        freqs = reshape(fftfreq(size(arr, d)), ntuple(i -> 1, Val(d-1))..., size(arr,d))
+        # TR = real_arr_type(TA)
+
+        freqs = similar(arr, real(eltype(arr)), select_sizes(arr, d))
+        # freqs = TR(reorient(fftfreq(size(arr, d)),d, Val(N)))
+        freqs .= reorient(fftfreq(size(arr, d)),d, Val(N))
+        # @show size(freqs)
         # allocates a 1D slice of exp values 
         if iszero(soft_fraction)
             ϕ = cispi.(- freqs .* 2 .* shift)
         else
             ϕ = soft_shift(freqs, shift, soft_fraction)
         end
+        # ϕ = exp_ikx_sep(complex_arr_type(TA), size(arr), dims=(d,), shift_by = shift)[1]
         # in even case, set one value to real
         if iseven(size(arr, d))
             s = size(arr, d) ÷ 2 + 1
@@ -126,14 +132,24 @@ end
 # the idea is the following:
 # rfft(x, 1) -> exp shift -> fft(x, 2) -> exp shift ->  fft(x, 3) -> exp shift -> ifft(x, [2,3]) -> irfft(x, 1)
 # So once we did a rft to shift something we can call the routine for complex arrays to shift
-function shift_by_1D_RFT!(arr::AbstractArray{<:Real, N}, shifts; soft_fraction=0, fix_nyquist_frequency=false, take_real=true) where {T, N}
+function shift_by_1D_RFT!(arr::TA, shifts; soft_fraction=0, fix_nyquist_frequency=false, take_real=true) where {N, TA<:AbstractArray{<:Real, N}}
     for (d, shift) in pairs(shifts)
         if iszero(shift)
             continue
         end
         
-        s = size(arr, d) ÷ 2 + 1
-        freqs = reshape(fftfreq(size(arr, d))[1:s], ntuple(i -> 1, d-1)..., s) 
+        p = plan_rfft(arr, d)
+        arr_ft = p * arr
+
+        #s1 = select_sizes(arr_ft, d)
+        s = size(arr_ft,d); # s1[d]
+        # @show size(arr, d) ÷ 2 + 1
+        # freqs = TR(reshape(fftfreq(size(arr, d))[1:s], ntuple(i -> 1, d-1)..., s1))
+
+        # TR = real_arr_type(TA)
+        freqs = similar(arr, real(eltype(arr_ft)), select_sizes(arr_ft, d))
+        # freqs = TR(reorient(fftfreq(size(arr, d))[1:s], d, Val(N)))
+        freqs .= reorient(rfftfreq(size(arr, d)), d, Val(N))
         if iszero(soft_fraction)
             ϕ = cispi.(-freqs .* 2 .* shift)
         else
@@ -146,9 +162,6 @@ function shift_by_1D_RFT!(arr::AbstractArray{<:Real, N}, shifts; soft_fraction=0
             invr = isinf(invr) ? 0 : invr
             ϕ[s] = fix_nyquist_frequency ? invr : ϕ[s]
         end
-        p = plan_rfft(arr, d)
-
-        arr_ft = p * arr
         arr_ft .*= ϕ
         # since we now did a single rfft dim, we can switch to the complex routine
         new_shifts = ntuple(i -> i ≤ d ? 0 : shifts[i], N)

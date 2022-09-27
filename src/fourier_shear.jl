@@ -16,16 +16,17 @@ There is also `shear!` available.
 + `fix_nyquist`: apply a fix to the highest frequency during the Fourier-space application of the exponential factor
 + `adapt_size`: if true, pad the data prior to the shear. The result array will be larger
 + `pad_value`: the value to pad with (only applies if `adapt_size=true`)
++ `assign_wrap=assign_wrap`: replaces wrap-around areas by `pad_value` (only of `adapt_size` is `false`)
 
 For complex arrays we use `fft`, for real array we use `rfft`.
 """
-function shear(arr::AbstractArray, Δ, shear_dir_dim=1, shear_dim=2; fix_nyquist=false, adapt_size=false::Bool, pad_value=zero(eltype(arr)))
+function shear(arr::AbstractArray, Δ, shear_dir_dim=1, shear_dim=2; fix_nyquist=false, assign_wrap=false, adapt_size=false::Bool, pad_value=zero(eltype(arr)))
     if adapt_size
         ns = Tuple(d == shear_dir_dim ? size(arr,d)+ceil(Int,abs.(Δ)) : size(arr,d) for d in 1:ndims(arr))
         arr2 = collect(select_region(arr, new_size=ns, pad_value=pad_value))
         return shear!(arr2, Δ, shear_dir_dim, shear_dim, fix_nyquist=fix_nyquist)
     else
-        return shear!(copy(arr), Δ, shear_dir_dim, shear_dim, fix_nyquist=fix_nyquist)
+        return shear!(copy(arr), Δ, shear_dir_dim, shear_dim, fix_nyquist=fix_nyquist, assign_wrap=assign_wrap, pad_value=pad_value)
     end
 end
 
@@ -40,11 +41,14 @@ For more details see `shear.`
 For complex arrays we can completely avoid large memory allocations.
 For real arrays, we need at least allocate on array in the fourier space.
 """
-function shear!(arr::AbstractArray{<:Complex, N}, Δ, shear_dir_dim=1, shear_dim=2; fix_nyquist=false, assign_wrap=false, pad_value=zero(eltype(arr))) where N
+function shear!(arr::TA, Δ, shear_dir_dim=1, shear_dim=2; fix_nyquist=false, assign_wrap=false, pad_value=zero(eltype(arr))) where {N, TA<:AbstractArray{<:Complex, N}}
     fft!(arr, shear_dir_dim)
 
     # stores the maximum amount of shift
-    shift = reshape(fftfreq(size(arr, shear_dir_dim)), NDTools.select_sizes(arr, shear_dir_dim))
+    # TR = real_arr_type(TA)
+    shift = similar(arr, real(eltype(arr)), select_sizes(arr, shear_dir_dim))
+    shift .= reshape(fftfreq(size(arr, shear_dir_dim)), NDTools.select_sizes(arr, shear_dir_dim))
+    # shift = TR(reorient(fftfreq(size(arr, shear_dir_dim)), shear_dir_dim, Val(N)))
     
     apply_shift_strength!(arr, arr, shift, shear_dir_dim, shear_dim, Δ, fix_nyquist)
 
@@ -56,16 +60,19 @@ function shear!(arr::AbstractArray{<:Complex, N}, Δ, shear_dir_dim=1, shear_dim
     return arr
 end
 
-function shear!(arr::AbstractArray{<:Real, N}, Δ, shear_dir_dim=1, shear_dim=2; fix_nyquist=false, assign_wrap=false, pad_value=zero(eltype(arr))) where N
+function shear!(arr::TA, Δ, shear_dir_dim=1, shear_dim=2; fix_nyquist=false, assign_wrap=false, pad_value=zero(eltype(arr))) where {N, TA<:AbstractArray{<:Real, N}}
     p = plan_rfft(arr, shear_dir_dim)
     arr_ft = p * arr 
 
     # stores the maximum amount of shift
-    shift = reshape(rfftfreq(size(arr, shear_dir_dim)), NDTools.select_sizes(arr_ft, shear_dir_dim))
+    # TR = real_arr_type(TA)
+    shift = similar(arr, real(eltype(arr_ft)), select_sizes(arr_ft, shear_dir_dim))
+    shift .= reshape(rfftfreq(size(arr, shear_dir_dim)), NDTools.select_sizes(arr_ft, shear_dir_dim))
+    # shift = TR(reorient(rfftfreq(size(arr, shear_dir_dim)),shear_dir_dim, Val(N)))
     
     apply_shift_strength!(arr_ft, arr, shift, shear_dir_dim, shear_dim, Δ, fix_nyquist)
     # go back to real space
-     
+
     # overwrites arr in-place
     ldiv!(arr, p, arr_ft)
     if assign_wrap
@@ -103,10 +110,12 @@ function assign_shear_wrap!(arr, Δ, shear_dir_dim=1, shear_dim=2, pad_value=zer
     end
 end
 
-function apply_shift_strength!(arr, arr_orig, shift, shear_dir_dim, shear_dim, Δ, fix_nyquist=false)
+function apply_shift_strength!(arr::TA, arr_orig, shift, shear_dir_dim, shear_dim, Δ, fix_nyquist=false) where {T, N, TA<:AbstractArray{T, N}}
     #applies the strength to each slice
-    shift_strength = reshape(fftpos(1, size(arr, shear_dim), CenterFT), NDTools.select_sizes(arr, shear_dim))
-
+    # The TR trick does not seem to work for the code below due to a call with a PaddedArray.
+    shift_strength = similar(arr, real(eltype(arr)), select_sizes(arr, shear_dim))
+    shift_strength .= (real(eltype(TA))).(reorient(fftpos(1, size(arr, shear_dim), CenterFT), shear_dim, Val(N)))
+ 
     # do the exp multiplication in place
     e = cispi.(2 .* Δ .* shift .* shift_strength)
     # for even arrays we need to fix real property of highest frequency
