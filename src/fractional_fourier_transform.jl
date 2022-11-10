@@ -1,5 +1,7 @@
 export frfft
 
+# TODO: circular convolution introduces wrap around artifacts which have not been handled yet
+
 """
     frfft(arr, p; shift=false, method=:garcia)
 
