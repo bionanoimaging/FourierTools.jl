@@ -42,12 +42,12 @@ function czt_1d(xin, scaled, d)
     # is always 1d (small array)
     fv = fft(to_fft)
 
-    y = xin .* reorient(aa,d)
+    y = xin .* reorient(aa, d, Val(ndims(xin)))
     # twice the size along direction d
-    nsz = sz .* NDTools.single_dim_size(d,2,length(sz)) 
+    nsz = sz .* NDTools.single_dim_size(Val(d),2,Val(length(sz))) 
     to_fft = NDTools.select_region(y, new_size=nsz, center=nsz.÷2 .+1)
     # convolve on a larger grid along one dimension
-    g = ifft(fft(to_fft, d) .* reorient(fv,d), d) 
+    g = ifft(fft(to_fft, d) .* reorient(fv, d, Val(ndims(xin))), d)
     # return g
     oldctr = sz[d]÷2 + 1
     newctr = size(g) .÷ 2 .+1
@@ -62,7 +62,7 @@ function czt_1d(xin, scaled, d)
     # is a 1d list of factors
     fak =  ww[dsize:(2*dsize-1)] .* cispi.(ramp(rtype,1,dsize, scale=1/scaled * extra_phase))
     # return select_region(g, new_size=sz,center=ctr)
-    xout = select_region(g, new_size=sz,center=ctr) .* reorient(fak,d)
+    xout = select_region(g, new_size=sz,center=ctr) .* reorient(fak, d, Val(ndims(xin)))
 
     # this is a fix to deal with the problem that imaginary numbers are appearing for even-sized arrays, caused by the first entry
     if iseven(dsize) && (scaled>1.0) 
@@ -73,7 +73,7 @@ function czt_1d(xin, scaled, d)
         end
     end
     return xout
-    # xout .= g[dsize:(2*dsize-1)] .* reorient(fak,d)
+    # xout .= g[dsize:(2*dsize-1)] .* reorient(fak, d, Val(ndims(xin)))
 end
 
 """

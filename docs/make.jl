@@ -7,11 +7,12 @@ makedocs(modules = [FourierTools],
          pages = Any[
             "FourierTools.jl" => "index.md",
             "FFT Helpers" => "helpers.md",
-            "FFT Based Convolutions" => "convolutions.md",
+            "FFT Based Convolutions and Cross-Correlation" => "convolutions.md",
             "Resampling (sinc Interpolation)" => "resampling.md",
             "Shifting with FFTs" => "shifting.md",
             "Image Shearing with FFTs" => "shear.md",
             "Image Rotation with FFTs" => "rotate.md",
+            "NFFT" => "nfft.md",
             "Utility Functions" => "utils.md",
          ]
         )

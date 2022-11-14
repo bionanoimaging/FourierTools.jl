@@ -18,10 +18,12 @@ include("fourier_shear.jl")
 include("fourier_rotate.jl")
 include("resampling_tests.jl")
 include("convolutions.jl")
+include("correlations.jl")
 include("custom_fourier_types.jl")
 include("damping.jl")
 include("czt.jl")
 include("nfft_tests.jl")
 include("fractional_fourier_transform.jl")
+include("fourier_filtering.jl")
 
 return

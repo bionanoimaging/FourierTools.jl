@@ -1,43 +1,36 @@
 export fftshift_view, ifftshift_view
 export fftshift2d, ifftshift2d, fftshift2d_view, ifftshift2d_view
-export fftshift!, ifftshift!
 
 
 """
-    fftshift!(dst, src, [dims])
+    _fftshift!(dst, src, [dims])
 
 Equivalent to `dst = fftshift(src)` but uses internally
 `circshift!(dst, src, size(src) .÷ 2)`.
 
 If `dims` is not given then the signal is shifted along each dimension.
 """
-function fftshift!(dst::AbstractArray{T, N}, src::AbstractArray{T, N},
+function _fftshift!(dst::AbstractArray{T, N}, src::AbstractArray{T, N},
                    dims=ntuple(i -> i, Val(N))) where {T, N}
     Δ = ntuple(i -> i ∈ dims ? size(src, i) ÷ 2 : 0, Val(N))
     circshift!(dst, src, Δ)
 end
 
 """
-    ifftshift!(dst, src, [dims])
+    _ifftshift!(dst, src, [dims])
 
 Equivalent to `dst = ifftshift(src)` but uses internally
 `circshift!(dst, src, .- size(src) .÷ 2)`
 
 If `dims` is not given then the signal is shifted along each dimension.
 """
-function ifftshift!(dst::AbstractArray{T, N}, src::AbstractArray{T, N},
+function _ifftshift!(dst::AbstractArray{T, N}, src::AbstractArray{T, N},
                    dims=ntuple(i -> i, Val(N))) where {T, N}
     Δ = ntuple(i -> i ∈ dims ? - size(src, i) ÷ 2 : 0, Val(N))
     circshift!(dst, src, Δ)
 end
 
 
-# add constructor here, might be merged to ShiftedArrays
-# this prevents that CircShiftedArrays get nested with twice application
-# https://github.com/JuliaArrays/ShiftedArrays.jl/pull/44
-function ShiftedArrays.CircShiftedArray(csa::CircShiftedArray, n = Tuple(0 for i in 1:N))
-    CircShiftedArray(parent(csa), n .+ csa.shifts)
-end
 
 """
     fftshift_view(A [, dims])

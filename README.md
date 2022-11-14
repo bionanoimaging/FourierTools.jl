@@ -27,15 +27,24 @@ The main features are:
 * array/image rotation 
 * array/image shifting (including noteworthy subpixel shifts)
 * array/image shearing
+* convenient wrappers of [NFFT.jl](https://github.com/JuliaMath/NFFT.jl)
 * several tools like `ffts`, `ft`, `fftshift_view` etc. allowing simpler use with Fourier transforms
 * Chirp Z-Transform
 * Fractional Fourier Transform
+* reexports [FFTW.jl](https://github.com/JuliaMath/FFTW.jl)
 
 Have a look in the [examples folder](examples/) for interactive examples. The [documentation](https://bionanoimaging.github.io/FourierTools.jl/dev/) offers a quick overview.
 
 ## FFTW Threading
 By default we set 4 Threads. Use `FFTW.set_num_threads(N)` to set `N` threads.
 
+
+
+## Related Packages
+There are numerous packages related to Fourier transforms which offer similar functions or which this package is based on:
+* [FFTW.jl](https://github.com/JuliaMath/FFTW.jl) for FFTs
+* [NFFT.jl](https://github.com/JuliaMath/NFFT.jl) for non-uniform FFTs
+* [FractionalTransforms.jl](https://github.com/SciFracX/FractionalTransforms.jl) offers 1D fractional Fourier transforms
 
 ## Cite
 If you use this package in an academic work, please cite us!
@@ -46,6 +55,9 @@ author = {Wechsler, Felix and Heintzmann, Rainer},
 title = {FourierTools.jl - Efficiently Working with Fourier Space},
 url = {https://github.com/bionanoimaging/FourierTools.jl}}
 ```
+
+## Development
+Feel free to file an issue regarding problems, suggestions or improvement ideas for this package!
 
 
 [docs-dev-img]: https://img.shields.io/badge/docs-dev-pink.svg
