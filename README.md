@@ -27,7 +27,9 @@ The main features are:
 * array/image rotation 
 * array/image shifting (including noteworthy subpixel shifts)
 * array/image shearing
+* convenient wrappers of [NFFT.jl](https://github.com/JuliaMath/NFFT.jl)
 * several tools like `ffts`, `ft`, `fftshift_view` etc. allowing simpler use with Fourier transforms
+* reexports [FFTW.jl](https://github.com/JuliaMath/FFTW.jl)
 
 Have a look in the [examples folder](examples/) for interactive examples. The [documentation](https://bionanoimaging.github.io/FourierTools.jl/dev/) offers a quick overview.
 
@@ -48,6 +50,9 @@ author = {Wechsler, Felix and Heintzmann, Rainer},
 title = {FourierTools.jl - Efficiently Working with Fourier Space},
 url = {https://github.com/bionanoimaging/FourierTools.jl}}
 ```
+
+## Development
+Feel free to file an issue regarding problems, suggestions or improvement ideas for this package!
 
 
 [docs-dev-img]: https://img.shields.io/badge/docs-dev-pink.svg
