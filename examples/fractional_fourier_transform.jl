@@ -125,8 +125,24 @@ Fractional order
 $(@bind s Slider(-3:0.001:3, show_value=true))
 "
 
+# ╔═╡ 08d95a42-24fe-4995-98d6-1f415de71538
+function frft_1D(x, order)
+	x_ft = similar(x, complex(eltype(x)), size(x))
+
+
+	for i = 1:size(x, 1)
+		x_ft[i, :] = FractionalTransforms.frft(x[i, :], order)
+	end
+	
+	for j = 1:size(x, 2)
+		x_ft[:, j] = FractionalTransforms.frft(x_ft[:, j], order)
+	end
+
+	return x_ft
+end
+
 # ╔═╡ 7c445baa-d970-4954-a3dc-df828971bfd7
-[simshow(abs.(ft(img)), γ=0.2) simshow(sqrt(length(img)) .* abs.(frfft(img, s, shift=true)), γ=0.2)]
+[simshow(abs.(ft(img)), γ=0.2) simshow(sqrt(length(img)) .* abs.(frfft(img, s, shift=true)), γ=0.2) simshow(sqrt(length(img)) .* abs.(frft_1D(img, s)), γ=0.2)]
 
 # ╔═╡ 1915c023-69cf-4d18-90cb-b47465dbef69
 begin
@@ -246,6 +262,7 @@ simshow(frfft(frfft(field, f3/2),f3/2))
 # ╠═d90b7f67-4166-44fa-aab7-de2c4f38fc00
 # ╟─24901666-4cc4-497f-a6ff-68c3e7ead629
 # ╠═7c445baa-d970-4954-a3dc-df828971bfd7
+# ╠═08d95a42-24fe-4995-98d6-1f415de71538
 # ╠═1915c023-69cf-4d18-90cb-b47465dbef69
 # ╠═3109fc21-50c6-46e6-850d-add6f54872d7
 # ╠═284cd6f2-1ee3-4923-afa6-ea57e93b28a7
