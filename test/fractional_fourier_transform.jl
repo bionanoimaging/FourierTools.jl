@@ -15,7 +15,7 @@
               1 .+ abs.(frfft(frfft(box1d_, 0.5, shift=true), 0.5, shift=true)[30:70]), rtol=7e-3))
 
 
-    for frac in [0, -1, 1, 2,-3, -4,4,-2, 1.1, 2.2, 3.3, 4.4, 5.5, -1.1, -2.2, -3.3, -4.4]
+    for frac in [0, -0.999, 0.99, 2.001,-3.001, -3.999,4,-2, 1.1, 2.2, 3.3, 4.4, 5.5, -1.1, -2.2, -3.3, -4.4]
         @test all(.≈(10 .+ abs.(FractionalTransforms.frft(collect(box1d_), frac))[30:70], 
                  10 .+ abs.(frfft(box1d_, frac, shift=true))[30:70], rtol=9e-3))
 
@@ -39,6 +39,7 @@
     
     x = randn((12,))
     x2 = randn((13,))
-    @test frft(x, 0.5) ≈ frft(reshape(x, 12,1,1,1,1), 0.5)
-    @test frft(x, 0.5) ≈ reshape(frft(reshape(x, 1,12,1,1), 0.5), 12)
+    @test frfft(x, 0.5) ≈ frfft(reshape(x, 12,1,1,1,1), 0.5)
+    @test frfft(x, 0.5) ≈ reshape(frfft(collect(reshape(x, 1,12,1,1)), 0.5), 12)
+    @test reshape(frfft(reshape(x, 1,12,1,1), 0.43), 12) ≈ frfft(x, 0.43)
 end
