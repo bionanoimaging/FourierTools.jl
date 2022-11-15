@@ -29,9 +29,14 @@ The main features are:
 * array/image shearing
 * convenient wrappers of [NFFT.jl](https://github.com/JuliaMath/NFFT.jl)
 * several tools like `ffts`, `ft`, `fftshift_view` etc. allowing simpler use with Fourier transforms
+* Chirp Z-Transform
+* Fractional Fourier Transform
 * reexports [FFTW.jl](https://github.com/JuliaMath/FFTW.jl)
 
 Have a look in the [examples folder](examples/) for interactive examples. The [documentation](https://bionanoimaging.github.io/FourierTools.jl/dev/) offers a quick overview.
+
+## FFTW Threading
+By default we set 4 Threads. Use `FFTW.set_num_threads(N)` to set `N` threads.
 
 
 

@@ -29,5 +29,6 @@ include("convolutions.jl")
 include("correlations.jl")
 include("damping.jl")
 include("czt.jl")
+include("fractional_fourier_transform.jl")
 
 end # module
