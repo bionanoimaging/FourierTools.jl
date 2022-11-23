@@ -2,10 +2,10 @@
 @testset "Custom Fourier Types" begin
     N = 5
     x = randn((N, N))
-    fs = FourierTools.FourierSplit(x, 2, 2, 4)
+    fs = FourierTools.FourierSplit(x, 2, 2, 4, true)
     @test FourierTools.parenttype(fs) == typeof(x)
     
-    fj = FourierTools.FourierJoin(x, 2, 2, 4)
+    fj = FourierTools.FourierJoin(x, 2, 2, 4, true)
 
     @test FourierTools.parenttype(fj) == typeof(x)
     @test FourierTools.parenttype(typeof(fj)) == typeof(x)
