@@ -138,7 +138,7 @@ function rft_pad(mat, new_size)
     return select_region(mat;new_size=new_size, center=c2.+1)
 end
 
-function ft_fix_before(mat, size_old, size_new; start_dim=1)
+function ft_fix_before(mat::AbstractArray{T, N}, size_old, size_new; start_dim=1)::FourierJoin{T,N,AbstractArray{T, N}} where {T,N}
     for d = start_dim:ndims(mat)
         sn = size_new[d]
         so = size_old[d]
@@ -149,7 +149,7 @@ function ft_fix_before(mat, size_old, size_new; start_dim=1)
     return mat
 end
 
-function ft_fix_after(mat,size_old,size_new; start_dim=1)
+function ft_fix_after(mat::AbstractArray{T, N},size_old,size_new; start_dim=1)::FourierSplit{T,N,AbstractArray{T, N}} where {T,N}
     start_dim
     ndims(mat)
     for d=start_dim:ndims(mat)
