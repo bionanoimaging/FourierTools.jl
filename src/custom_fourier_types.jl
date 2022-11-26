@@ -13,7 +13,7 @@ struct FourierSplit{T,N, AA<:AbstractArray{T, N}} <: AbstractArray{T,N}
     function FourierSplit(parent::AA, D::Int,L1::Int,L2::Int, do_split::Bool) where {T,N, AA<:AbstractArray{T, N}}
         return new{T,N, AA}(parent, D, L1, L2, do_split)
     end
-    function FourierSplit(parent::AA, D::Int,L1::Int, do_split::Bool) where {T,N, AA<:AbstractArray{T, N}}
+    function FourierSplit(parent::AA, D::Int, L1::Int, do_split::Bool) where {T,N, AA<:AbstractArray{T, N}}
         mid = fft_center(size(parent)[D])
         L2 = mid + (mid-L1)
         return FourierSplit(parent, D,L1,L2, do_split)

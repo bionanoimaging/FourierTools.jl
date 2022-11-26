@@ -138,29 +138,58 @@ function rft_pad(mat, new_size)
     return select_region(mat;new_size=new_size, center=c2.+1)
 end
 
-function ft_fix_before(mat::AbstractArray{T, N}, size_old, size_new; start_dim=1)::FourierJoin{T,N,AbstractArray{T, N}} where {T,N}
-    for d = start_dim:ndims(mat)
-        sn = size_new[d]
-        so = size_old[d]
-        do_join = (sn < so && iseven(sn))
-        L1 = (size_old[d] -size_new[d] )÷2 +1
-        mat = FourierJoin(mat, d, L1, do_join)
-    end
-    return mat
+"""
+    ft_fix_before(mat::MT, size_old, size_new, ::Val{N})::FourierJoin{T,N,MT}  where {T,N, MT<:AbstractArray{T,N}} 
+    implements the specialized (highest dimension) version of a recursive dimension-specific function that returns an array type which knows
+    how to access (joins) certain elements.
+"""
+function ft_fix_before(mat::MT, size_old, size_new, ::Val{N})::FourierJoin{T,N,MT}  where {T,N, MT<:AbstractArray{T,N}} 
+    sn = size_new[N]
+    so = size_old[N]
+    do_join = (sn < so && iseven(sn))
+    L1 = (size_old[N] -size_new[N] )÷2 +1
+    return FourierJoin(mat, N, L1, do_join)
 end
 
-function ft_fix_after(mat::AbstractArray{T, N},size_old,size_new; start_dim=1)::FourierSplit{T,N,AbstractArray{T, N}} where {T,N}
-    start_dim
-    ndims(mat)
-    for d=start_dim:ndims(mat)
-        sn = size_new[d]
-        so = size_old[d]
-        # if equal do nothing
-        do_split = (sn > so && iseven(so))
-        L1 = (size_new[d]-size_old[d])÷2+1
-        mat = FourierSplit(mat,d,L1, do_split)
+"""
+    ft_fix_before(mat::MT, size_old, size_new, ::Val{D}=Val(1))  where {D, T, N, MT<:AbstractArray{T,N}} 
+    implements the general version of a recursive dimension-specific function that returns an array type which knows
+    how to access (joins) certain elements.
+"""
+function ft_fix_before(mat::MT, size_old, size_new, ::Val{D}=Val(1))  where {D, T, N, MT<:AbstractArray{T,N}} 
+    if D <= N
+        sn = size_new[D]
+        so = size_old[D]
+        do_join = (sn < so && iseven(sn))
+        L1 = (size_old[D] -size_new[D] )÷2 +1
+        mat = FourierJoin(mat, D, L1, do_join)
+        return ft_fix_before(mat, size_old, size_new, Val(D + 1))
+    else
+        L1 = (size_old[N] -size_new[N] )÷2 +1
+        return FourierJoin(mat, N, L1, false)
     end
-    return mat
+end
+
+function ft_fix_after(mat::MT, size_old, size_new, ::Val{N})::FourierSplit{T,N,MT}   where {T, N, MT<:AbstractArray{T,N}}
+    sn = size_new[N]
+    so = size_old[N]
+    do_split = (sn > so && iseven(so))
+    L1 = (size_new[N]-size_old[N])÷2+1
+    return FourierSplit(mat, N, L1, do_split)
+end
+
+function ft_fix_after(mat::MT, size_old, size_new, ::Val{D}=Val(1)) where {D, T, N, MT<:AbstractArray{T,N}}
+    if D <= N
+        sn = size_new[D]
+        so = size_old[D]
+        do_split = (sn > so && iseven(so))
+        L1 = (size_new[D]-size_old[D])÷2+1
+        mat = FourierSplit(mat, D, L1, do_split)
+        return ft_fix_after(mat, size_old, size_new, Val(D + 1))
+    else
+        L1 = (size_new[N]-size_old[N])÷2+1
+        return FourierSplit(mat, N, L1, false)
+    end
 end
 
 function rft_fix_first_dim_before(mat,size_old,size_new;dim=1)
@@ -184,10 +213,10 @@ end
 
 function rft_fix_before(mat,size_old,size_new)
     mat=rft_fix_first_dim_before(mat,size_old,size_new;dim=1) # ignore the first dimension
-    ft_fix_before(mat,size_old,size_new;start_dim=2) # ignore the first dimension
+    ft_fix_before(mat,size_old,size_new, Val(2)) # ignore the first dimension since it starts at Val(2)
 end
 
 function rft_fix_after(mat,size_old,size_new)
     mat = rft_fix_first_dim_after(mat,size_old,size_new;dim=1) # ignore the first dimension
-    ft_fix_after(mat,size_old,size_new;start_dim=2) # ignore the first dimension
+    ft_fix_after(mat,size_old,size_new, Val(2)) # ignore the first dimension since it starts at Val(2)
 end
