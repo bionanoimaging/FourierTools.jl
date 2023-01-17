@@ -1,7 +1,7 @@
 export czt, iczt
 
 """
-    czt_1d(xin , scaled , d)
+    czt_1d(xin , scaled , d; kill_wrap=false, pad_value=zero(eltype(xin)))
 
 Chirp z transform along a single direction d of an ND array `xin` into the ND array 'xout'.
 Note that xin and xout can be the same array for inplace operations.
@@ -14,9 +14,11 @@ This code is based on a 2D Matlab version of the CZT, written by H. Gross et al.
 + `xin`: array to transform
 + `scaled`: factor to zoom into during the 1-dimensional czt. 
 + `d`: single dimension to transform (as a tuple)
++ `kill_wrap`: if true, the wrapped places will be set to pad_value
++ `pad_value`: the value that the wrap-around will be set to if `kill_wrap` is `true`. 
 
 """
-function czt_1d(xin, scaled, d)
+function czt_1d(xin, scaled, d; kill_wrap=false, pad_value=zero(eltype(xin)))
     sz=size(xin)
     # returns the real datatype
     rtype = real(eltype(xin))  
@@ -72,12 +74,17 @@ function czt_1d(xin, scaled, d)
             NDTools.slice(xout,d, o) .-= NDTools.slice(xin,d, 1) .* (1im).^mod(o-midp,4)
         end
     end
-    return xout
+    if kill_wrap && (scaled < 1.0)
+        nsz = Tuple(d == nd ? ceil(Int64, scaled * size(xin,d)) : size(xin,nd) for nd=1:ndims(xin))
+        return select_region(select_region(xout, new_size=nsz), new_size=size(xout), pad_value=pad_value)
+    else
+        return xout
+    end
     # xout .= g[dsize:(2*dsize-1)] .* reorient(fak, d, Val(ndims(xin)))
 end
 
 """
-    czt(xin , scale, dims=1:length(size(xin)))
+    czt(xin , scale, dims=1:length(size(xin)), kill_wrap=false)
 Chirp z transform of the ND array `xin`
 This code is based on a 2D Matlab version of the CZT, written by H. Gross.
 The tuple `scale` defines the zoom factors in the Fourier domain. Each has to be bigger than one.
@@ -90,6 +97,7 @@ The tuple `scale` defines the zoom factors in the Fourier domain. Each has to be
 + `xin`: array to transform
 + `scale`: a tuple of factors (one for each dimension) to zoom into during the czt. 
 + `dims`: a tuple of dimensions over which to apply the czt.
++ `kill_wrap`: if true, the wrapped places will be set to zero. Note that the `pad_value` argument is only allowed for 1d czts to not cause confusion.
 
 #Example:
 ```jdoctest
@@ -126,16 +134,16 @@ julia> zoomed = real.(ift(xft))
   0.0239759   -0.028264    0.0541186  -0.0116475   -0.261294   0.312719  -0.261294  -0.0116475    0.0541186  -0.028264
 ```
 """
-function czt(xin::Array{T,N}, scale, dims=1:length(size(xin)))::Array{complex(T),N} where {T,N}
+function czt(xin::Array{T,N}, scale, dims=1:length(size(xin)); kill_wrap=false)::Array{complex(T),N} where {T,N}
     xout = xin
     for d in dims
-        xout = czt_1d(xout, scale[d], d)
+        xout = czt_1d(xout, scale[d], d; kill_wrap=kill_wrap)
     end
     return xout
 end
 
 """
-    iczt(xin , scale, dims=1:length(size(xin)))
+    iczt(xin , scale, dims=1:length(size(xin)); kill_wrap=false)
 Inverse chirp z transform of the ND array `xin`
 This code is based on a 2D Matlab version of the CZT, written by H. Gross.
 The tuple `scale` defines the zoom factors in the Fourier domain. Each has to be bigger than one.
@@ -146,6 +154,7 @@ The tuple `scale` defines the zoom factors in the Fourier domain. Each has to be
 + `xin`: array to transform
 + `scale`: a tuple of factors (one for each dimension) of the the inverse czt. 
 + `dims`: a tuple of dimensions over which to apply the inverse czt.
++ `kill_wrap`: if true, the wrapped places will be set to zero. Note that the `pad_value` argument is only allowed for 1d czts to not cause confusion.
 
 #See also: czt, czt_1d
 
@@ -184,6 +193,6 @@ julia> iczt(xft,(1.2,1.3))
  -0.0965531+0.0404296im  -0.159713+0.0637132im    0.48095+0.0775406im    0.67753-0.263814im        0.77553-0.121603im    0.660335-0.00736904im   0.495205-0.135059im   -0.163859+0.125535im
  ```
 """
-function iczt( xin , scale, dims=1:length(size(xin)))
-    conj(czt(conj(xin), scale, dims)) / prod(size(xin))
+function iczt( xin , scale, dims=1:length(size(xin)); kill_wrap=false)
+    conj(czt(conj(xin), scale, dims; kill_wrap=kill_wrap)) / prod(size(xin))
 end

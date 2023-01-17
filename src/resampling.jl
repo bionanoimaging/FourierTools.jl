@@ -167,15 +167,26 @@ function upsample2_abs2(mat::AbstractArray{T, N}; dims=1:N) where {T,N}
 end
 
 """
-    resample_czt(arr, rel_zoom; shear=nothing, shear_dim=nothing, fix_nyquist=false, new_size = size(arr), rel_pad=0.2)
+    resample_czt(arr, rel_zoom; shear=nothing, shear_dim=nothing, fix_nyquist=false, new_size = size(arr), do_damp=false, rel_pad=0.2, kill_wrap=true)
 
 resamples the image with fixed factors or a list of separable functions using the chirp z transform algorithm.
 The data is first padded by a relative amount `rel_pad` which is needed to avoid wrap-around problems.
 As opposed to `resample()`, this routine allows for arbitrary non-integer zoom factors.
-It is reasonably fast but only allows a stretch (via `rel_zoom`) and a shift (via `shear` in pixels) per line or column
+It is reasonably fast but only allows a stretch (via `rel_zoom`) and a shift (via `shear` in pixels) per line or column.
 
 Note that each entry of the tuple in `rel_zoom` or `shear` describes the zoom or shear to apply to all other dimensions individually
 per entry along this dimension number. 
+
+# Arguments:
++ `arr`: array to resample
++ `rel_zoom`: factors to zoom as a tuple or a tuple of functions defining the zooms
++ `shear`: a tuple of shears or a tuple of shear functions defining the shears
++ `shear_dim`: which dimension to shear
++ `fix_nyquist`: defines whether to apply `fix_nyquist` when using the apply_shift_strength! function.
++ `do_damp`: applies a padding and damping outside the region  to zoom, to avoid artefacts
++ `rel_pad`: amount of padding to apply, if `do_damp` is true
++ `kill_wrap`: removes the wrap-around when zooming out.
++ `new_size`: size of the result array. If not provided the same as the input size will be used.
 
 # Examples
 ```jdoctest
@@ -192,7 +203,7 @@ julia> d = resample_czt(a, (x->1.0,x->1.0), shear=(x->50*x^2,0.0)); # a more com
 julia> @ve a,b,c,d # visualize distortions
 ```
 """
-function resample_czt(arr::AbstractArray{T,N}, rel_zoom; shear=nothing, shear_dim=nothing, fix_nyquist=false, new_size = size(arr), rel_pad=0.2, do_damp=false, center=CtrMid) where {T,N}
+function resample_czt(arr::AbstractArray{T,N}, rel_zoom; shear=nothing, shear_dim=nothing, fix_nyquist=false, new_size = size(arr), rel_pad=0.2, do_damp=false, center=CtrMid, kill_wrap=true, pad_value=zero(eltype(arr))) where {T,N}
     RT = real(T)
     orig_size = size(arr)
     if do_damp
@@ -200,13 +211,20 @@ function resample_czt(arr::AbstractArray{T,N}, rel_zoom; shear=nothing, shear_di
     else
         arr = copy(arr)
     end
-    for d in 1:length(rel_zoom)
+    for d in eachindex(rel_zoom)
         sd = mod(d,ndims(arr))+1
         if !isnothing(shear_dim)
             sd = shear_dim[d]
         end
         my_zoom = 1.0
-        # case of a list of zoom numbers
+        # resize the array before zooming, in case the result array is larger
+        # This may be a bit wasteful depending on the zoom factors, but this case also
+        # covers the zoomed shearing case
+        if (new_size[d] > size(arr,d))
+            nz = Tuple(d == nd ? new_size[nd] : size(arr,nd) for nd=1:ndims(arr))
+            arr = collect(select_region(arr, new_size=nz))
+        end
+    # case of a list (or tuple) of zoom numbers
         if (isa(rel_zoom, Tuple) && isa(rel_zoom[1], Number)) || isa(rel_zoom, Number)
             my_zoom = rel_zoom[d]
             f_res = ift(arr, d)
@@ -219,9 +237,9 @@ function resample_czt(arr::AbstractArray{T,N}, rel_zoom; shear=nothing, shear_di
                 FourierTools.apply_shift_strength!(f_res, f_res, shifts, d, sd, -myshear, fix_nyquist)
             end
             if T<:Real
-                f_res = real(FourierTools.czt_1d(f_res, my_zoom, d))
+                f_res = real(FourierTools.czt_1d(f_res, my_zoom, d; kill_wrap=kill_wrap, pad_value=pad_value))
             else
-                f_res = T.(FourierTools.czt_1d(f_res, my_zoom, d))
+                f_res = T.(FourierTools.czt_1d(f_res, my_zoom, d; kill_wrap=kill_wrap, pad_value=pad_value))
             end
             select_region!(f_res, arr) 
         # case of position dependent zoom functions
@@ -251,9 +269,9 @@ function resample_czt(arr::AbstractArray{T,N}, rel_zoom; shear=nothing, shear_di
                 end
                 f_res = let 
                     if T<:Real
-                        real(FourierTools.czt_1d(f_res, my_zoom, 1))
+                        real(FourierTools.czt_1d(f_res, my_zoom, 1; kill_wrap=kill_wrap, pad_value=pad_value))
                     else
-                        FourierTools.czt_1d(f_res, my_zoom, 1)
+                        FourierTools.czt_1d(f_res, my_zoom, 1; kill_wrap=kill_wrap, pad_value=pad_value)
                     end
                 end
                 select_region!(f_res, slice)
