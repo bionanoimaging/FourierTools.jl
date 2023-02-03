@@ -166,8 +166,7 @@ function upsample2_abs2(mat::AbstractArray{T, N}; dims=1:N) where {T,N}
 end
 
 """
-    resample_czt(arr, rel_zoom; shear=nothing, shear_dim=nothing, fix_nyquist=false, new_size = size(arr), 
-                 do_damp=false, rel_pad=0.2, remove_wrap=true)
+    resample_czt(arr, rel_zoom; shear=nothing, shear_dim=nothing, fix_nyquist=false, new_size = size(arr), do_damp=false, rel_pad=0.2, remove_wrap=true)
 
 resamples the image with fixed factors or a list of separable functions using the chirp z transform algorithm.
 The data is first padded by a relative amount `rel_pad` which is needed to avoid wrap-around problems.
@@ -205,7 +204,7 @@ julia> @ve a,b,c,d # visualize distortions
 """
 function resample_czt(arr::AbstractArray{T,N}, rel_zoom; 
                       shear=nothing, shear_dim=nothing, fix_nyquist=false, new_size = size(arr), 
-                      rel_pad=0.2, do_damp=false, center=CtrMid, remove_wrap=true, pad_value=zero(eltype(arr))) where {T,N}
+                      rel_pad=0.2, do_damp=false, remove_wrap=true, pad_value=zero(eltype(arr))) where {T,N}
     RT = real(T)
     orig_size = size(arr)
     if do_damp
