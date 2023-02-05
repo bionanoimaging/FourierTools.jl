@@ -2,7 +2,6 @@ export rft_size, fft_center, fftpos
 export expanddims, fourierspace_pixelsize, realspace_pixelsize
 export δ
 
-
  #get_RFT_scale(real_size) = 0.5 ./ (max.(real_size ./ 2, 1))  # The same as the FFT scale but for the full array in real space!
 
 """
@@ -222,6 +221,7 @@ end
 
 """
     get_indices_around_center(i_in, i_out)
+
 A function which provides two output indices `i1` and `i2`
 where `i2 - i1 = i_out`
 The indices are chosen in a way that the set `i1:i2`
@@ -246,6 +246,7 @@ end
 
 """
     center_extract(arr, new_size_array)
+
 Extracts a center of an array. 
 `new_size_array` must be list of sizes indicating the output
 size of each dimension. Centered means that a center frequency
@@ -287,6 +288,7 @@ end
 
 """
     center_set!(arr_large, arr_small)
+
 Puts the `arr_small` central into `arr_large`.
 The convention, where the center is, is the same as the definition
 as for FFT based centered.
@@ -319,6 +321,7 @@ end
 
 """
     center_pos(x)
+
 Calculate the position of the center frequency.
 Size of the array is `x`
 # Examples
@@ -338,6 +341,7 @@ end
 
 """
     fourierspace_pixelsize(realspace_pixelsize, mysize)
+
 converts a real space pixel pitch `realspace_pixelsize` into a Fourier-space pixel size.
 This applies to all types of fft, ft, rft, or rfft alike.
 Arguments:
@@ -350,6 +354,7 @@ end
 
 """
     realspace_pixelsize(fourier_pixelsize, mysize)
+
 converts a fourier space pixel pitch `fourier_pixelsize` into a pixel pitch in real space.
 This applies to all types of ifft, ift, irft, or irfft alike.
 Arguments:
