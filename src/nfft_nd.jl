@@ -20,7 +20,7 @@ end
 
 
 """
-    plan_nfft_nd(src, dst_coords; is_in_pixels=false, is_local_shift=false, pad_value=nothing, reltol=1e-9)
+plan_nfft_nd(src, dst_coords; is_in_pixels=false, is_local_shift=false, pad_value=nothing, reltol=1e-9)
 
 Plans an n-dimensional non-uniform FFT on grids with a regular topology. In comparison to the `nfft()` routine, which this computed
 is based on, this version does not require any reshape operations.
@@ -168,7 +168,8 @@ function plan_nfft_nd(src::AbstractArray{T,D}, dst_coords::AbstractArray{T2,D2},
 end
 
 """
-    plan_nfft_nd(src::AbstractArray{T,D}, dst_fkt::Function, dst_size=size(src); is_in_pixels=false, is_adjoint=false, kwargs...)
+plan_nfft_nd(src::AbstractArray{T,D}, dst_fkt::Function, dst_size=size(src); is_in_pixels=false, is_adjoint=false, kwargs...)
+
 Plans an n-dimensional non-uniform FFT on grids with a regular topology defined via the function `dst_fkt`.
 
 # Arguments

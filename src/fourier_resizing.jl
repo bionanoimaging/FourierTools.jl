@@ -1,9 +1,8 @@
 export select_region_ft, select_region_rft
 export rft_fix_after, rft_fix_before, ft_fix_after, ft_fix_before
 
-
 """
-    select_region_ft(mat,new_size)
+select_region_ft(mat,new_size)
 
 Performs the necessary Fourier-space operations of resampling
 in the space of ft (meaning the already circshifted version of fft).
@@ -62,16 +61,16 @@ julia> select_region_ft(ffts(x), (5,3))
  -86.75+0.0im     165.5+0.0im    -86.75+0.0im
 ```
 """
-function select_region_ft(mat,new_size)
+function select_region_ft(mat, new_size)
     old_size = size(mat)
-    mat_fixed_before = ft_fix_before(mat,old_size,new_size)
-    mat_pad = ft_pad(mat_fixed_before,new_size)
+    mat_fixed_before = ft_fix_before(mat, old_size, new_size)
+    mat_pad = ft_pad(mat_fixed_before, new_size)
     # afterwards we add the highest pos. frequency to the highest lowest one 
-    return ft_fix_after(mat_pad ,old_size,new_size)
+    return ft_fix_after(mat_pad ,old_size, new_size)
 end
 
 """
-    select_region_rft(mat,old_size, new_size)
+select_region_rft(mat,old_size, new_size)
 
 performs the necessary Fourier-space operations of resampling
 in the space of rft (meaning the already circshifted version of rfft).
@@ -87,16 +86,15 @@ The size of the corresponding real-space array before it was rfted.
 The size of the corresponding real-space array view after the operation finished. The Fourier-center
 is always assumed to align before and after the padding aperation.
 """
-function select_region_rft(mat,old_size, new_size)
-    rft_old_size = size(mat)
-    rft_new_size = Base.setindex(new_size,new_size[1]÷2 +1, 1)
+function select_region_rft(mat, old_size, new_size)
+    # rft_old_size = size(mat)
+    rft_new_size = Base.setindex(new_size,new_size[1] ÷ 2 + 1, 1)
     return rft_fix_after(rft_pad(
-        rft_fix_before(mat,old_size,new_size),
-        rft_new_size),old_size,new_size)
+        rft_fix_before(mat, old_size, new_size), rft_new_size), old_size, new_size)
 end
 
 """
-    select_region(mat,new_size)
+select_region(mat,new_size)
 
 performs the necessary Fourier-space operations of resampling
 in the space of ft (meaning the already circshifted version of fft).
@@ -123,45 +121,47 @@ julia> select_region(ones(3,3),new_size=(7,7),center=(1,3))
 """
 function select_region(mat; new_size=size(mat), center=ft_center_diff(size(mat)).+1, pad_value=zero(eltype(mat)))
     new_size = Tuple(expand_size(new_size, size(mat)))
-    center = Tuple(expand_size(center, ft_center_diff(size(mat)).+1))
-    oldcenter = ft_center_diff(new_size).+1
-    PaddedView(pad_value, mat,new_size, oldcenter .- center.+1);
+    center = Tuple(expand_size(center, ft_center_diff(size(mat)) .+ 1))
+    oldcenter = ft_center_diff(new_size) .+ 1
+    PaddedView(pad_value, mat, new_size, oldcenter .- center.+1);
 end
 
 function ft_pad(mat, new_size)
-    return select_region(mat;new_size=new_size)
+    return select_region(mat; new_size = new_size)
 end
 
 function rft_pad(mat, new_size)
     c2 = rft_center_diff(size(mat))
-    c2 = Base.setindex(c2, new_size[1].÷2, 1);
-    return select_region(mat;new_size=new_size, center=c2.+1)
+    c2 = Base.setindex(c2, new_size[1] .÷ 2, 1);
+    return select_region(mat; new_size=new_size, center = c2 .+ 1)
 end
 
 """
-    ft_fix_before(mat::MT, size_old, size_new, ::Val{N})::FourierJoin{T,N,MT}  where {T,N, MT<:AbstractArray{T,N}} 
-    implements the specialized (highest dimension) version of a recursive dimension-specific function that returns an array type which knows
-    how to access (joins) certain elements.
+ft_fix_before(mat::MT, size_old, size_new, ::Val{N})::FourierJoin{T,N,MT}  where {T,N, MT<:AbstractArray{T,N}} 
+
+implements the specialized (highest dimension) version of a recursive dimension-specific function that returns an array type which knows
+how to access (joins) certain elements.
 """
 function ft_fix_before(mat::MT, size_old, size_new, ::Val{N})::FourierJoin{T,N,MT}  where {T,N, MT<:AbstractArray{T,N}} 
     sn = size_new[N]
     so = size_old[N]
     do_join = (sn < so && iseven(sn))
-    L1 = (size_old[N] -size_new[N] )÷2 +1
+    L1 = (size_old[N] - size_new[N] ) ÷ 2 + 1
     return FourierJoin(mat, N, L1, do_join)
 end
 
 """
-    ft_fix_before(mat::MT, size_old, size_new, ::Val{D}=Val(1))  where {D, T, N, MT<:AbstractArray{T,N}} 
-    implements the general version of a recursive dimension-specific function that returns an array type which knows
-    how to access (joins) certain elements.
+ft_fix_before(mat::MT, size_old, size_new, ::Val{D}=Val(1))  where {D, T, N, MT<:AbstractArray{T,N}} 
+
+implements the general version of a recursive dimension-specific function that returns an array type which knows
+how to access (joins) certain elements.
 """
 function ft_fix_before(mat::MT, size_old, size_new, ::Val{D}=Val(1))  where {D, T, N, MT<:AbstractArray{T,N}} 
     if D <= N
         sn = size_new[D]
         so = size_old[D]
         do_join = (sn < so && iseven(sn))
-        L1 = (size_old[D] -size_new[D] )÷2 +1
+        L1 = (size_old[D] - size_new[D] )÷2 +1
         mat = FourierJoin(mat, D, L1, do_join)
         return ft_fix_before(mat, size_old, size_new, Val(D + 1))
     else
@@ -174,7 +174,7 @@ function ft_fix_after(mat::MT, size_old, size_new, ::Val{N})::FourierSplit{T,N,M
     sn = size_new[N]
     so = size_old[N]
     do_split = (sn > so && iseven(so))
-    L1 = (size_new[N]-size_old[N])÷2+1
+    L1 = (size_new[N] - size_old[N]) ÷ 2 + 1
     return FourierSplit(mat, N, L1, do_split)
 end
 
@@ -192,31 +192,41 @@ function ft_fix_after(mat::MT, size_old, size_new, ::Val{D}=Val(1)) where {D, T,
     end
 end
 
-function rft_fix_first_dim_before(mat,size_old,size_new;dim=1)
-    sn = size_new[dim] # Note that this dim is the corresponding real-space size
-    so = size_old[dim] # Note that this dim is the corresponding real-space size
-    do_join = (sn < so && iseven(sn)) # result size is even upon cropping
+function rft_fix_first_dim_before(mat, size_old, size_new; dim=1)
+    # Note that this dim is the corresponding real-space size
+    sn = size_new[dim] 
+    so = size_old[dim]
+    # result size is even upon cropping
+    do_join = (sn < so && iseven(sn))
     L1 = size_new[dim] ÷ 2 + 1
-    mat = FourierJoin(mat, dim, L1, L1, do_join) # a hack to dublicate the value
+    # a hack to dublicate the value
+    mat = FourierJoin(mat, dim, L1, L1, do_join)
     return mat
 end
 
 function rft_fix_first_dim_after(mat,size_old,size_new;dim=1)
-    sn = size_new[dim] # Note that this dim is the corresponding real-space size
-    so = size_old[dim] # Note that this dim is the corresponding real-space size
-    do_split = (sn > so && iseven(so)) # source size is even upon padding
+    # Note that this dim is the corresponding real-space size
+    sn = size_new[dim] 
+    so = size_old[dim] 
+    # source size is even upon padding
+    do_split = (sn > so && iseven(so)) 
     L1 = size_old[dim] ÷ 2 + 1
-    mat = FourierSplit(mat,dim,L1,-1, do_split) # This hack prevents a second position to be affected
+    # This hack prevents a second position to be affected
+    mat = FourierSplit(mat, dim, L1, -1, do_split)
     # if equal do nothing
     return mat
 end
 
 function rft_fix_before(mat,size_old,size_new)
-    mat=rft_fix_first_dim_before(mat,size_old,size_new;dim=1) # ignore the first dimension
-    ft_fix_before(mat,size_old,size_new, Val(2)) # ignore the first dimension since it starts at Val(2)
+    # ignore the first dimension
+    mat=rft_fix_first_dim_before(mat,size_old,size_new;dim=1) 
+    # ignore the first dimension since it starts at Val(2)
+    ft_fix_before(mat, size_old, size_new, Val(2)) 
 end
 
 function rft_fix_after(mat,size_old,size_new)
-    mat = rft_fix_first_dim_after(mat,size_old,size_new;dim=1) # ignore the first dimension
-    ft_fix_after(mat,size_old,size_new, Val(2)) # ignore the first dimension since it starts at Val(2)
+    # ignore the first dimension
+    mat = rft_fix_first_dim_after(mat,size_old,size_new;dim=1) 
+    # ignore the first dimension since it starts at Val(2)
+    ft_fix_after(mat, size_old, size_new, Val(2))
 end

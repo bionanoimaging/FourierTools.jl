@@ -2,7 +2,7 @@ export shift, shift!
 
 
 """
-    shift!(arr, shifts; kwargs...)
+shift!(arr, shifts; kwargs...)
 
 Shifts an array in-place. For real arrays it is based on `rfft`.
 For complex arrays based on `fft`.
@@ -61,7 +61,7 @@ function shift!(arr::AbstractArray{<:Real, N}, shifts; soft_fraction=0, fix_nyqu
 end
 
 """
-    shift(arr, shifts)
+shift(arr, shifts)
 
 Returning a shifted array.
 See [`shift!`](@ref shift!) for more details

@@ -10,7 +10,7 @@ export barrel_pin
 
 
 """
-    resample(arr, new_size [, normalize=true])
+resample(arr, new_size [, normalize=true])
 
 Calculates the `sinc` interpolation of an `arr` on a new array size
 `new_size`.
@@ -86,7 +86,7 @@ end
 
 
 """
-    resample_by_FFT(mat, new_size)
+resample_by_FFT(mat, new_size)
 
 Does a resampling based on `fft`. This function is called by `resampling`.
 """
@@ -102,7 +102,7 @@ function resample_by_FFT(mat, new_size)
 end
 
 """
-    upsample2_1D(mat::AbstractArray{T, N}; dims=1, fix_center=false, keep_singleton=false)
+upsample2_1D(mat::AbstractArray{T, N}; dims=1, fix_center=false, keep_singleton=false)
 
 Upsamples by a factor of two along dimension `dim`. 
 The code is optimized for speed by using subpixelshifts rather than Fourier resizing.
@@ -130,7 +130,7 @@ function upsample2_1D(mat::AbstractArray{T, N}, dim=1, fix_center=false, keep_si
 end
 
 """
-    upsample2(mat::AbstractArray{T, N}; dims=1:N, fix_center=false, keep_singleton=false)
+upsample2(mat::AbstractArray{T, N}; dims=1:N, fix_center=false, keep_singleton=false)
 
 Upsamples by a factor of two in all dimensions. 
 The code is optimized for speed by using subpixelshifts rather than Fourier resizing.
@@ -158,7 +158,7 @@ function upsample2(mat::AbstractArray{T, N}; dims=1:N, fix_center=false, keep_si
 end
 
 """
-    upsample2_abs2(mat::AbstractArray{T, N}; dims=1:N)
+upsample2_abs2(mat::AbstractArray{T, N}; dims=1:N)
 
 Upsamples by a factor of two and applies the abs2 operation. The code is optimized for speed.
 """
@@ -167,7 +167,7 @@ function upsample2_abs2(mat::AbstractArray{T, N}; dims=1:N) where {T,N}
 end
 
 """
-    resample_czt(arr, rel_zoom; shear=nothing, shear_dim=nothing, fix_nyquist=false, new_size = size(arr), rel_pad=0.2)
+resample_czt(arr, rel_zoom; shear=nothing, shear_dim=nothing, fix_nyquist=false, new_size = size(arr), rel_pad=0.2)
 
 resamples the image with fixed factors or a list of separable functions using the chirp z transform algorithm.
 The data is first padded by a relative amount `rel_pad` which is needed to avoid wrap-around problems.
@@ -269,7 +269,8 @@ function resample_czt(arr::AbstractArray{T,N}, rel_zoom; shear=nothing, shear_di
 end
 
 """
-    barrel_pin(arr, rel=0.5)
+barrel_pin(arr, rel=0.5)
+
 emulates a barrel (`rel>0`) or a pincushion (`rel<0`) distortion. The distortions are calculated using `resample_czt()` with separable quadratic zooms.
 
 See also: `resample_czt()`
@@ -294,7 +295,7 @@ function barrel_pin(arr::AbstractArray{T,N}, rel=0.5) where {T,N}
 end
 
 """
-    resample_nfft(img, new_pos, dst_size=nothing; pixel_coords=false, is_local_shift=false, is_src_coords=true, reltol=1e-9)
+resample_nfft(img, new_pos, dst_size=nothing; pixel_coords=false, is_local_shift=false, is_src_coords=true, reltol=1e-9)
     
 resamples an ND-array to a set of new positions `new_pos` measured in either in pixels (`pixel_coords=true`) or relative (Fourier-) image coordinates (`pixel_coords=false`).
 `new_pos` can be 

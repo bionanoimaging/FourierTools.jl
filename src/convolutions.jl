@@ -3,7 +3,7 @@ export plan_conv_buffer, plan_conv_psf_buffer
 
 
 """
-    conv(u, v[, dims])
+conv(u, v[, dims])
 
 Convolve `u` with `v` over `dims` dimensions with an FFT based method.
 Note, that this method introduces wrap-around artifacts without
@@ -66,7 +66,7 @@ function conv(u::AbstractArray{<:Real, N}, v::AbstractArray{<:Real, M}, dims=ntu
 end
 
 """
-    conv_psf(u, psf[, dims])
+conv_psf(u, psf[, dims])
 
 `conv_psf` is a shorthand for `conv(u,ifftshift(psf))`. For examples see `conv`.
 """
@@ -89,7 +89,7 @@ end
 
 
 """
-    plan_conv(u, v [, dims]; kwargs...)
+plan_conv(u, v [, dims]; kwargs...)
 
 Pre-plan an optimized convolution for arrays shaped like `u` and `v` (based on pre-plan FFT)
 along the given dimenions `dims`.
@@ -157,7 +157,7 @@ function plan_conv(u::AbstractArray{T1, N}, v::AbstractArray{T2, M}, dims=ntuple
 end
 
 """
-    plan_conv_buffer(u, v [, dims]; kwargs...)
+plan_conv_buffer(u, v [, dims]; kwargs...)
 
 Similar to [`plan_conv`](@ref) but instead uses buffers to prevent memory allocations.
 Not AD friendly!
@@ -194,7 +194,7 @@ function plan_conv_buffer(u::AbstractArray{T1, N}, v::AbstractArray{T2, M}, dims
 end
 
 """
-    plan_conv_psf_buffer(u, psf [, dims]; kwargs...) where {T, N}
+plan_conv_psf_buffer(u, psf [, dims]; kwargs...) where {T, N}
 
 `plan_conv_psf_buffer` is a shorthand for `plan_conv_buffer(u, ifftshift(psf))`. For examples see `plan_conv`.
 """
@@ -230,7 +230,7 @@ function ChainRulesCore.rrule(::typeof(p_conv_aux), P, P_inv, u, v)
 end
 
 """
-    fft_or_rfft(T)
+fft_or_rfft(T)
 
 Small helper function to decide whether a real
 or a complex valued FFT is appropriate.

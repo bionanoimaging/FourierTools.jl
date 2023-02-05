@@ -1,7 +1,7 @@
 export shear, shear!, assign_shear_wrap!
 
 """
-    shear(arr, Δ, shear_dir_dim=1, shear_dim=2; fix_nyquist=false, adapt_size=false::Bool, pad_value=zero(eltype(arr)))
+shear(arr, Δ, shear_dir_dim=1, shear_dim=2; fix_nyquist=false, adapt_size=false::Bool, pad_value=zero(eltype(arr)))
 
 Shears an array by the amount of `Δ` pixels via an FFT approach. `Δ` is the relative shift between the
 top and bottom row shifted with respect to each other.
@@ -31,7 +31,7 @@ function shear(arr::AbstractArray, Δ, shear_dir_dim=1, shear_dim=2; fix_nyquist
 end
 
 """
-    shear!(arr, Δ, shear_dir_dim=1, shear_dim=2; fix_nyquist=false, assign_wrap=false, pad_value=zero(eltype(arr)))
+shear!(arr, Δ, shear_dir_dim=1, shear_dim=2; fix_nyquist=false, assign_wrap=false, pad_value=zero(eltype(arr)))
 
 For more details see `shear.`
 # Extra Arguments 
@@ -82,7 +82,7 @@ function shear!(arr::TA, Δ, shear_dir_dim=1, shear_dim=2; fix_nyquist=false, as
 end
 
 """
-    assign_shear_wrap!(arr, Δ, shear_dir_dim=1, shear_dim=2, pad_value=zero(eltype(arr)))
+assign_shear_wrap!(arr, Δ, shear_dir_dim=1, shear_dim=2, pad_value=zero(eltype(arr)))
 
 Assign a `pad_value` to the places that may contain wrapped information using the `shear!` function.
 Note that this only accounts for the geometrical wrap and not for possible fringes caused by sub-pixel effects.

@@ -1,8 +1,7 @@
 export ccorr
 
-
 """
-    ccorr(u, v[, dims]; centered=false)
+ccorr(u, v[, dims]; centered=false)
 
 Calculates the cross-correlation between `u` and `v` along `dims`.
 `centered=true` moves the output of the cross-correlation to the Fourier center.
@@ -12,7 +11,6 @@ the output is real as well.
 If either `u` or `v` is complex we use `fft` and output is hence complex.
 
 Per default the correlation is performed along `min(ndims(u), ndims(v))`.
-
 
 ```jldoctest
 julia> ccorr([1,1,0,0], [1,1,0,0], centered=true)

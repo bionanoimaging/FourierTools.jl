@@ -2,7 +2,7 @@ export fourier_filter!, fourier_filter
 export filter_gaussian, filter_gaussian!, filter_hann, filter_hann!, filter_hamming, filter_hamming!
 
 """
-    fourier_filter!(arr::AbstractArray, fct=window_gaussian; kwargs...)
+fourier_filter!(arr::AbstractArray, fct=window_gaussian; kwargs...)
     
 filters an array by multiplication in Fourierspace. This version uses in-place Fourier-transforms and multiplication whereever possible.
 The filter window function is assumed to be separable. Depending on the array type either full-complex or real-to-complex FFTs will be used.
@@ -184,7 +184,7 @@ function fourier_filter_by_1D_RFT!(arr::TA, fct=window_gaussian; dims=(1:ndims(a
 end
 
 """
-    filter_hann(arr; border_in=(real(eltype(arr)))(0.8), border_out=(real(eltype(arr)))(1), kwargs...)
+filter_hann(arr; border_in=(real(eltype(arr)))(0.8), border_out=(real(eltype(arr)))(1), kwargs...)
 
 performs Hann filtering by multiplying a Hann function in Fourier space.
 Note that this filter is separable but not circularly symmetric.
@@ -213,7 +213,7 @@ function filter_hann(arr; border_in=(real(eltype(arr)))(0.8), border_out=(real(e
 end
 
 """
-    filter_hann!(arr; border_in=(real(eltype(arr)))(0.8), border_out=(real(eltype(arr)))(1), kwargs...)
+filter_hann!(arr; border_in=(real(eltype(arr)))(0.8), border_out=(real(eltype(arr)))(1), kwargs...)
 
 performs in-place Hann filtering by multiplying a Hann function in Fourier space.
 Note that this filter is separable but not circularly symmetric.
@@ -232,7 +232,7 @@ function filter_hann!(arr; border_in=(real(eltype(arr)))(0.8), border_out=(real(
 end
 
 """
-    filter_hamming(arr; border_in=(real(eltype(arr)))(0.8), border_out=(real(eltype(arr)))(1), kwargs...)
+filter_hamming(arr; border_in=(real(eltype(arr)))(0.8), border_out=(real(eltype(arr)))(1), kwargs...)
 
 performs Hamming filtering by multiplying a Hamming function in Fourier space.
 Note that this filter is separable but not circularly symmetric.
@@ -261,7 +261,7 @@ function filter_hamming(arr; border_in=(real(eltype(arr)))(0.8), border_out=(rea
 end
 
 """
-    filter_hamming!(arr; border_in=(real(eltype(arr)))(0.8), border_out=(real(eltype(arr)))(1), kwargs...)
+filter_hamming!(arr; border_in=(real(eltype(arr)))(0.8), border_out=(real(eltype(arr)))(1), kwargs...)
 
 performs in-place Hamming filtering by multiplying a Hann function in Fourier space.
 Note that this filter is separable but not circularly symmetric.
@@ -280,7 +280,7 @@ function filter_hamming!(arr; border_in=(real(eltype(arr)))(0.8), border_out=(re
 end
 
 """
-    filter_gaussian(arr, sigma=eltype(arr)(1); real_space_kernel=true, border_in=(real(eltype(arr)))(0), border_out=(real(eltype(arr))).(2 ./ (pi .* sigma)), kwargs...)
+filter_gaussian(arr, sigma=eltype(arr)(1); real_space_kernel=true, border_in=(real(eltype(arr)))(0), border_out=(real(eltype(arr))).(2 ./ (pi .* sigma)), kwargs...)
 
 performs Gaussian filtering via Fourier filtering. Note that the argument `real_space_kernel` defines whether the Gaussian is computed in real or Fourier-space. Especially for small array sizes and small kernelsizes, the real-space version is preferred.
 See also `filter_gaussian!()` and `fourier_filter()`.
@@ -296,7 +296,7 @@ function filter_gaussian(arr, sigma=eltype(arr)(1); real_space_kernel=true, bord
 end
 
 """
-    filter_gaussian!(arr, sigma=eltype(arr)(1); real_space_kernel=true, border_in=(real(eltype(arr)))(0), border_out=(real(eltype(arr))).(2 ./ (pi .* sigma)), kwargs...)
+filter_gaussian!(arr, sigma=eltype(arr)(1); real_space_kernel=true, border_in=(real(eltype(arr)))(0), border_out=(real(eltype(arr))).(2 ./ (pi .* sigma)), kwargs...)
 
 performs in-place Gaussian filtering by mulitplication in Fourier space.
 Note that the argument `real_space_kernel` defines whether the Gaussian is computed in real or Fourier-space. Especially for small array sizes and small kernelsizes, the real-space version is preferred.

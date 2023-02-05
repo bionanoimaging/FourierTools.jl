@@ -1,6 +1,11 @@
-##  This View checks for the index to be L1 or the mirrored version (L2)
-# and then replaces the value by half of the parent at L1
-# do_split is a Bool that indicates whether this mechanism is active. It is needed for type stability reasons of functions returnting this type
+"""
+FourierSplit{T,N, AA<:AbstractArray{T, N}} <: AbstractArray{T,N}
+
+This View checks for the index to be L1 or the mirrored version (L2)
+and then replaces the value by half of the parent at L1
+`do_split` is a Bool that indicates whether this mechanism is active. 
+It is needed for type stability reasons of functions returnting this type.
+"""
 struct FourierSplit{T,N, AA<:AbstractArray{T, N}} <: AbstractArray{T,N}
     parent::AA # holds the data (or is another view)
     D::Int # dimension along which to apply to copy
@@ -8,8 +13,12 @@ struct FourierSplit{T,N, AA<:AbstractArray{T, N}} <: AbstractArray{T,N}
     L2::Int # high index positon to copy to (and half)
     do_split::Bool
 
-    # This version below is needed to avoid a split for the firs rft dimension but still return half the value
-    # FFTs and other RFT dimension should use the version without L2
+"""
+    FourierSplit(parent::AA, D::Int,L1::Int,L2::Int, do_split::Bool) where {T,N, AA<:AbstractArray{T, N}}
+
+This version below is needed to avoid a split for the first rft dimension,
+but still return half the value FFTs and other RFT dimension should use the version without L2.
+"""
     function FourierSplit(parent::AA, D::Int,L1::Int,L2::Int, do_split::Bool) where {T,N, AA<:AbstractArray{T, N}}
         return new{T,N, AA}(parent, D, L1, L2, do_split)
     end
@@ -36,9 +45,14 @@ Base.size(A::FourierSplit) = size(parent(A))
     end
 end
 
-## This View checks for the index to be L1 
-# and then replaces the value by add the value at the mirrored position L2
-# do_join is a Bool that indicates whether this mechanism is active. It is needed for type stability reasons of functions returnting this type
+"""
+FourierJoin{T,N, AA<:AbstractArray{T, N}} <: AbstractArray{T, N}
+
+This View checks for the index to be L1 
+and then replaces the value by add the value at the mirrored position L2
+`do_join` is a Bool that indicates whether this mechanism is active. 
+It is needed for type stability reasons of functions returnting this type
+"""
 struct FourierJoin{T,N, AA<:AbstractArray{T, N}} <: AbstractArray{T, N}
     parent::AA
     D::Int # dimension along which to apply to copy
@@ -46,8 +60,11 @@ struct FourierJoin{T,N, AA<:AbstractArray{T, N}} <: AbstractArray{T, N}
     L2::Int # high index positon to copy to (and half)
     do_join::Bool
 
-    # This version below is needed to avoid a split for the firs rft dimension but still return half the value
-    # FFTs and other RFT dimension should use the version without L2
+"""
+This version below is needed to avoid a split for the 
+first rft dimension but still return half the value
+FFTs and other RFT dimension should use the version without L2
+"""
     function FourierJoin(parent::AA, D::Int, L1::Int, L2::Int, do_join::Bool) where {T, N, AA<:AbstractArray{T, N}}
         return new{T, N, AA}(parent, D, L1, L2, do_join)
     end
@@ -58,6 +75,7 @@ struct FourierJoin{T,N, AA<:AbstractArray{T, N}} <: AbstractArray{T, N}
         return FourierJoin(parent, D, L1, L2, do_join)
     end
 end
+
 Base.IndexStyle(::Type{FS}) where {FS<:FourierJoin} = IndexStyle(parenttype(FS))
 parenttype(::Type{FourierJoin{T,N,AA}}) where {T,N,AA} = AA
 parenttype(A::FourierJoin) = parenttype(typeof(A))

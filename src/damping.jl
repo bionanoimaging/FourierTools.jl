@@ -2,7 +2,7 @@ using IndexFunArrays, LinearAlgebra, NDTools
 export damp_edge_outside
 
 """
-    damp_edge_outside(img::AbstractArray{T,N}, border, mykernel, usepixels)
+damp_edge_outside(img::AbstractArray{T,N}, border, mykernel, usepixels)
     
 Extrapolates the data by filling in blurred information outside the edges. This is a bit like DampEdge but using a normalized convolution with a kernel
 
