@@ -158,7 +158,7 @@ function upsample2(mat::AbstractArray{T, N}; dims=1:N, fix_center=false, keep_si
 end
 
 """
-upsample2_abs2(mat::AbstractArray{T, N}; dims=1:N)
+    upsample2_abs2(mat::AbstractArray{T, N}; dims=1:N)
 
 Upsamples by a factor of two and applies the abs2 operation. The code is optimized for speed.
 """

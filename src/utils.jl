@@ -168,7 +168,7 @@ end
 
 
 """
-ft_center_diff(s [, dims])
+    ft_center_diff(s [, dims])
 
 Calculates how much each dimension must be shifted that the
 center frequency is at the Fourier center.

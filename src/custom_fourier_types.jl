@@ -1,5 +1,5 @@
 """
-FourierSplit{T,N, AA<:AbstractArray{T, N}} <: AbstractArray{T,N}
+    FourierSplit{T,N, AA<:AbstractArray{T, N}} <: AbstractArray{T,N}
 
 This View checks for the index to be L1 or the mirrored version (L2)
 and then replaces the value by half of the parent at L1
