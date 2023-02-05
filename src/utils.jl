@@ -2,11 +2,10 @@ export rft_size, fft_center, fftpos
 export expanddims, fourierspace_pixelsize, realspace_pixelsize
 export δ
 
-
  #get_RFT_scale(real_size) = 0.5 ./ (max.(real_size ./ 2, 1))  # The same as the FFT scale but for the full array in real space!
 
 """
-δ([T,] sz, pos=FourierTools.fft_center.(sz))
+    δ([T,] sz, pos=FourierTools.fft_center.(sz))
 
 Return an array which has `1` at `pos` in the 
 array of size `sz`.
@@ -46,7 +45,7 @@ end
 
 
 """
-fftpos(L, N, around=CenterFirst::Center)
+    fftpos(L, N, around=CenterFirst::Center)
 
 Construct a range from -L/2 to L/2 around `around`
 
@@ -121,7 +120,7 @@ function fftpos(l, N, around::Type{CenterMiddle})
 end
 
 """
-fftpos(l, N, around)
+    fftpos(l, N, around)
 
 Another `fftpos` method where the range is constructed
 around `around`. `around` is here a number indicating
@@ -137,7 +136,7 @@ end
 
 
 """
-fft_center(x)
+    fft_center(x)
 
 Returns the center of a size in Fourier sense and Julia 
 1-based indices.
@@ -147,7 +146,7 @@ function fft_center(x)
 end
 
 """
-rft_size(sz::NTuple{Int})
+    rft_size(sz::NTuple{Int})
 
 Returns the size of an rft or rfft performed on the data x, without performing the rfft.
 sz: corresponding real space size to obtain the rft size for
@@ -157,7 +156,7 @@ function rft_size(sz::NTuple{N, Int}, dim=1) where {N}
 end
 
 """
-rft_size(arr)
+    rft_size(arr)
 
 Returns the size of an rft or rfft performed on the data x, without performing the rfft.
 
@@ -181,7 +180,7 @@ end
 
 
 """
-rft_center_diff(s [, dims])
+    rft_center_diff(s [, dims])
 
 Calculates how much each dimension must be shifted that the
 center frequency is at the Fourier center.
@@ -195,7 +194,7 @@ end
 
 
 """
-rfft_size(size, dims)
+    rfft_size(size, dims)
 
 Returns the size `rfft` would return if applied
 to a real array. `size` is the input size to `rfft` 
@@ -221,7 +220,7 @@ end
 
 
 """
-get_indices_around_center(i_in, i_out)
+    get_indices_around_center(i_in, i_out)
 
 A function which provides two output indices `i1` and `i2`
 where `i2 - i1 = i_out`
@@ -246,7 +245,7 @@ end
 
 
 """
-center_extract(arr, new_size_array)
+    center_extract(arr, new_size_array)
 
 Extracts a center of an array. 
 `new_size_array` must be list of sizes indicating the output
@@ -288,7 +287,7 @@ end
 
 
 """
-center_set!(arr_large, arr_small)
+    center_set!(arr_large, arr_small)
 
 Puts the `arr_small` central into `arr_large`.
 The convention, where the center is, is the same as the definition
@@ -321,7 +320,7 @@ end
 
 
 """
-center_pos(x)
+    center_pos(x)
 
 Calculate the position of the center frequency.
 Size of the array is `x`
@@ -341,7 +340,7 @@ end
 
 
 """
-fourierspace_pixelsize(realspace_pixelsize, mysize)
+    fourierspace_pixelsize(realspace_pixelsize, mysize)
 
 converts a real space pixel pitch `realspace_pixelsize` into a Fourier-space pixel size.
 This applies to all types of fft, ft, rft, or rfft alike.
@@ -354,7 +353,7 @@ function fourierspace_pixelsize(realspace_pixelsize, mysize)
 end
 
 """
-realspace_pixelsize(fourier_pixelsize, mysize)
+    realspace_pixelsize(fourier_pixelsize, mysize)
 
 converts a fourier space pixel pitch `fourier_pixelsize` into a pixel pitch in real space.
 This applies to all types of ifft, ift, irft, or irfft alike.
@@ -369,7 +368,7 @@ end
 
 
 """
-eltype_error(T1, T2)
+    eltype_error(T1, T2)
 
 Throws an error of `T1 != T2`
 """

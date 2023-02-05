@@ -3,7 +3,7 @@ export fftshift2d, ifftshift2d, fftshift2d_view, ifftshift2d_view
 
 
 """
-_fftshift!(dst, src, [dims])
+    _fftshift!(dst, src, [dims])
 
 Equivalent to `dst = fftshift(src)` but uses internally
 `circshift!(dst, src, size(src) .÷ 2)`.
@@ -17,7 +17,7 @@ function _fftshift!(dst::AbstractArray{T, N}, src::AbstractArray{T, N},
 end
 
 """
-_ifftshift!(dst, src, [dims])
+    _ifftshift!(dst, src, [dims])
 
 Equivalent to `dst = ifftshift(src)` but uses internally
 `circshift!(dst, src, .- size(src) .÷ 2)`
@@ -33,7 +33,7 @@ end
 
 
 """
-fftshift_view(A [, dims])
+    fftshift_view(A [, dims])
 
 Result is semantically equivalent to `fftshift(A, dims)` but returns 
 a view instead. 
@@ -44,7 +44,7 @@ end
 
 
 """
-ifftshift_view(A [, dims])
+    ifftshift_view(A [, dims])
 
 Result is semantically equivalent to `fftshift(A, dims)` but returns 
 a view instead. 
@@ -57,7 +57,7 @@ end
 
 
 """
-rfftshift_view(A, dims)
+    rfftshift_view(A, dims)
 
 Shifts the frequencies to the center expect for `dims[1]` because there os no negative
 and positive frequency.
@@ -69,7 +69,7 @@ end
 
 
 """
-irfftshift_view(A, dims)
+    irfftshift_view(A, dims)
 
 Shifts the frequencies back to the corner except for `dims[1]` because there os no negative
 and positive frequency.
@@ -79,7 +79,7 @@ function irfftshift_view(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))
 end
 
 """
-fftshift2d(mat::AbstractArray{T, N}) where {T, N}
+    fftshift2d(mat::AbstractArray{T, N}) where {T, N}
 
 Short-hand for `fftshift(mat, (1,2))`.
 See `fftshift` for details.
@@ -89,7 +89,7 @@ function fftshift2d(mat::AbstractArray{T, N}) where {T, N}
 end
 
 """
-ifftshift2d(mat::AbstractArray{T, N}) where {T, N}
+    ifftshift2d(mat::AbstractArray{T, N}) where {T, N}
 
 Short-hand for `ifftshift(mat, (1,2))`.
 See `ifftshift` for details.
@@ -99,7 +99,7 @@ function ifftshift2d(mat::AbstractArray{T, N}) where {T, N}
 end
 
 """
-fftshift2d_view(mat::AbstractArray{T, N}) where {T, N}
+    fftshift2d_view(mat::AbstractArray{T, N}) where {T, N}
 
 Short-hand for `fftshift_view(mat, (1,2))`.
 See `fftshift_view` for details.
@@ -109,7 +109,7 @@ function fftshift2d_view(mat::AbstractArray{T, N}) where {T, N}
 end
 
 """
-ifftshift2d_view(mat::AbstractArray{T, N}) where {T, N}
+    ifftshift2d_view(mat::AbstractArray{T, N}) where {T, N}
 
 Short-hand for `ifftshift_view(mat, (1,2))` performing only a 2D inverse ft.
 See `ifft` for details.

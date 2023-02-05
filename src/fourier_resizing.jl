@@ -2,7 +2,7 @@ export select_region_ft, select_region_rft
 export rft_fix_after, rft_fix_before, ft_fix_after, ft_fix_before
 
 """
-select_region_ft(mat,new_size)
+    select_region_ft(mat,new_size)
 
 Performs the necessary Fourier-space operations of resampling
 in the space of ft (meaning the already circshifted version of fft).
@@ -70,7 +70,7 @@ function select_region_ft(mat, new_size)
 end
 
 """
-select_region_rft(mat,old_size, new_size)
+    select_region_rft(mat,old_size, new_size)
 
 performs the necessary Fourier-space operations of resampling
 in the space of rft (meaning the already circshifted version of rfft).
@@ -94,7 +94,7 @@ function select_region_rft(mat, old_size, new_size)
 end
 
 """
-select_region(mat,new_size)
+    select_region(mat,new_size)
 
 performs the necessary Fourier-space operations of resampling
 in the space of ft (meaning the already circshifted version of fft).
@@ -137,7 +137,7 @@ function rft_pad(mat, new_size)
 end
 
 """
-ft_fix_before(mat::MT, size_old, size_new, ::Val{N})::FourierJoin{T,N,MT}  where {T,N, MT<:AbstractArray{T,N}} 
+    ft_fix_before(mat::MT, size_old, size_new, ::Val{N})::FourierJoin{T,N,MT}  where {T,N, MT<:AbstractArray{T,N}} 
 
 implements the specialized (highest dimension) version of a recursive dimension-specific function that returns an array type which knows
 how to access (joins) certain elements.
@@ -151,7 +151,7 @@ function ft_fix_before(mat::MT, size_old, size_new, ::Val{N})::FourierJoin{T,N,M
 end
 
 """
-ft_fix_before(mat::MT, size_old, size_new, ::Val{D}=Val(1))  where {D, T, N, MT<:AbstractArray{T,N}} 
+    ft_fix_before(mat::MT, size_old, size_new, ::Val{D}=Val(1))  where {D, T, N, MT<:AbstractArray{T,N}} 
 
 implements the general version of a recursive dimension-specific function that returns an array type which knows
 how to access (joins) certain elements.

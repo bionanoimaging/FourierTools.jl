@@ -46,7 +46,7 @@ Base.size(A::FourierSplit) = size(parent(A))
 end
 
 """
-FourierJoin{T,N, AA<:AbstractArray{T, N}} <: AbstractArray{T, N}
+    FourierJoin{T,N, AA<:AbstractArray{T, N}} <: AbstractArray{T, N}
 
 This View checks for the index to be L1 
 and then replaces the value by add the value at the mirrored position L2

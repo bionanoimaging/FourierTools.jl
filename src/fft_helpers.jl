@@ -5,7 +5,7 @@ export ft2d,ift2d, rft2d, irft2d
 export ffts2d, ffts2d!, iffts2d, rffts2d, irffts2d
 
 """
-optional_collect(a)
+    optional_collect(a)
 
 Only collects certain arrays, for a pure `Array` there is no collect
 and it returns simply `a`.
@@ -27,7 +27,7 @@ end
 
 
 """
-ffts(A [, dims])
+    ffts(A [, dims])
 
 Result is semantically equivalent to `fftshift(fft(A, dims), dims)`
 However, the shift is done with `ShiftedArrays` and therefore doesn't allocate memory.
@@ -41,7 +41,7 @@ end
 
 
 """
-ffts!(A [, dims])
+    ffts!(A [, dims])
 
 Result is semantically equivalent to `fftshift(fft!(A, dims), dims)`.
 `A` is in-place modified.
@@ -55,7 +55,7 @@ function ffts!(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T
 end
 
 """
-iffts(A [, dims])
+    iffts(A [, dims])
 
 Result is semantically equivalent to `ifft(ifftshift(A, dims), dims)`.
 `A` is in-place modified.
@@ -70,7 +70,7 @@ end
 
 
 """
-rffts(A [, dims])
+    rffts(A [, dims])
 
 Calculates a `rfft(A, dims)` and then shift the frequencies to the center.
 `dims[1]` is not shifted, because there is no negative and positive frequency.
@@ -84,7 +84,7 @@ function rffts(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T
 end
 
 """
-irffts(A, d, [, dims])
+    irffts(A, d, [, dims])
 
 Calculates a `irfft(A, d, dims)` and then shift the frequencies back to the corner.
 `dims[1]` is not shifted, because there is no negative and positive frequency.
@@ -100,7 +100,7 @@ end
 
 
 """
-ft(A [, dims])
+    ft(A [, dims])
 
 Digital Fourier-transformation centered in both spaces.
 The result is semantically equivalent to `fftshift(fft(ifftshift(A, dims), dims), dims)`
@@ -129,7 +129,7 @@ end
 
 
 """
-ift(A [, dims])
+    ift(A [, dims])
 
 Digital inverse Fourier-transformation centered in both spaces.
 The result is semantically equivalent to `fftshift(ifft(ifftshift(A, dims), dims), dims)`
@@ -160,7 +160,7 @@ end
 
 
 """
-rft(A [, dims])
+    rft(A [, dims])
 
 Digital real-valued Fourier-transformation centered in both spaces.
 The result is semantically equivalent to `fftshift(rfft(ifftshift(A, dims), dims), dims)`
@@ -185,7 +185,7 @@ function rft(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, 
 end
 
 """
-irft(A, d, [, dims])
+    irft(A, d, [, dims])
 
 Digital real-valued inverse Fourier-transformation centered in both spaces.
 The result is semantically equivalent to `fftshift(irfft(ifftshift(A, dims), dims), dims)`
@@ -212,7 +212,7 @@ end
 
 ## Short-hand versions of the ft functions
 """
-ft2d(mat::AbstractArray{T, N}) where {T, N}
+    ft2d(mat::AbstractArray{T, N}) where {T, N}
 
 Only over `dims=(1,2)`.
 """
@@ -220,7 +220,7 @@ function ft2d(mat::AbstractArray{T, N}) where {T, N}
     ft(mat,(1,2))
 end
 """
-ift2d(mat::AbstractArray{T, N}) where {T, N}
+    ift2d(mat::AbstractArray{T, N}) where {T, N}
 
 Only over `dims=(1,2)`.
 """
@@ -228,7 +228,7 @@ function ift2d(mat::AbstractArray{T, N}) where {T, N}
     ift(mat,(1,2))
 end
 """
-rft2d(mat::AbstractArray{T, N}) where {T, N}
+    rft2d(mat::AbstractArray{T, N}) where {T, N}
 
 Only over `dims=(1,2)`.
 """
@@ -237,7 +237,7 @@ function rft2d(mat::AbstractArray{T, N}) where {T, N}
 end
 
 """
-irft2d(mat::AbstractArray{T, N}, d) where {T, N}
+    irft2d(mat::AbstractArray{T, N}, d) where {T, N}
 
 Only over `dims=(1,2)`.
 """
@@ -246,7 +246,7 @@ function irft2d(mat::AbstractArray{T, N}, d::Int) where {T, N}
 end
 
 """
-ft2d(mat::AbstractArray{T, N}) where {T, N}
+    ft2d(mat::AbstractArray{T, N}) where {T, N}
 
 Only over `dims=(1,2)`.
 """
@@ -255,7 +255,7 @@ function ffts2d(mat::AbstractArray{T, N}) where {T, N}
 end
 
 """
-fft2ds!(mat::AbstractArray{T, N}) where {T, N}
+    fft2ds!(mat::AbstractArray{T, N}) where {T, N}
 
 Only over `dims=(1,2)`.
 """
@@ -265,7 +265,7 @@ end
 
 
 """
-iffts2d(mat::AbstractArray{T, N}) where {T, N}
+    iffts2d(mat::AbstractArray{T, N}) where {T, N}
 
 Only over `dims=(1,2)`.
 """
@@ -282,7 +282,7 @@ function rffts2d(mat::AbstractArray{T, N}) where {T, N}
 end
 
 """
-riffts2d(mat::AbstractArray{T, N}, d) where {T, N}
+    riffts2d(mat::AbstractArray{T, N}, d) where {T, N}
 
 Only over `dims=(1,2)`.
 """
@@ -293,7 +293,7 @@ end
 
 ## Short-hand versions of the fft functions
 """
-fft2d(mat::AbstractArray{T, N}) where {T, N}
+    fft2d(mat::AbstractArray{T, N}) where {T, N}
 
 Only over `dims=(1,2)`.
 """
@@ -301,7 +301,7 @@ function fft2d(mat::AbstractArray{T, N}) where {T, N}
     fft(mat,(1,2))
 end
 """
-ifft2d(mat::AbstractArray{T, N}) where {T, N}
+    ifft2d(mat::AbstractArray{T, N}) where {T, N}
 
 Only over `dims=(1,2)`.
 """
@@ -310,7 +310,7 @@ function ifft2d(mat::AbstractArray{T, N}) where {T, N}
 end
 
 """
-rfft2d(mat::AbstractArray{T, N}) where {T, N}
+    rfft2d(mat::AbstractArray{T, N}) where {T, N}
 
 Only over `dims=(1,2)`.
 """
@@ -319,7 +319,7 @@ function rfft2d(mat::AbstractArray{T, N}) where {T, N}
 end
 
 """
-irfft2d(mat::AbstractArray{T, N}, d) where {T, N}
+    irfft2d(mat::AbstractArray{T, N}, d) where {T, N}
 
 Only over `dims=(1,2)`.
 """

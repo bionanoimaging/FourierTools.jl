@@ -77,7 +77,7 @@ function czt_1d(xin, scaled, d)
 end
 
 """
-czt(xin , scale, dims=1:length(size(xin)))
+    czt(xin , scale, dims=1:length(size(xin)))
 
 Chirp z transform of the ND array `xin`
 This code is based on a 2D Matlab version of the CZT, written by H. Gross.
@@ -136,7 +136,7 @@ function czt(xin::Array{T,N}, scale, dims=1:length(size(xin)))::Array{complex(T)
 end
 
 """
-iczt(xin , scale, dims=1:length(size(xin)))
+    iczt(xin , scale, dims=1:length(size(xin)))
 
 Inverse chirp z transform of the ND array `xin`
 This code is based on a 2D Matlab version of the CZT, written by H. Gross.

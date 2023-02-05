@@ -4,7 +4,7 @@ export frfft
 # TODO: circular convolution introduces wrap around artifacts which have not been handled yet
 
 """
-frfft(arr, p; shift=false, method=:garcia)
+    frfft(arr, p; shift=false, method=:garcia)
 
 Calculates the fractional Fast Fourier transform (FRFFT) of the order `p` of `arr`.
 No `dims` argument is supported yet.

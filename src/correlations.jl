@@ -1,7 +1,7 @@
 export ccorr
 
 """
-ccorr(u, v[, dims]; centered=false)
+    ccorr(u, v[, dims]; centered=false)
 
 Calculates the cross-correlation between `u` and `v` along `dims`.
 `centered=true` moves the output of the cross-correlation to the Fourier center.
