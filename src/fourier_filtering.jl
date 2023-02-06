@@ -54,7 +54,7 @@ function fourier_filter!(arr::AbstractArray{<:Real, N}, wins::AbstractVector; tr
 end
 
 """
-fourier_filter(arr::AbstractArray, fct=window_gaussian; kwargs...)
+    fourier_filter(arr::AbstractArray, fct=window_gaussian; kwargs...)
     
 filters an array by multiplication in Fourierspace. This version uses in-place Fourier-transforms and multiplication whereever possible.
 The filter window function is assumed to be separable. Depending on the array type either full-complex or real-to-complex FFTs will be used.

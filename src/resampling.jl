@@ -290,6 +290,7 @@ end
 
 """
     barrel_pin(arr, rel=0.5)
+
 emulates a barrel (`rel>0`) or a pincushion (`rel<0`) distortion. The distortions are calculated 
 using `resample_czt()` with separable quadratic zooms.
 

@@ -169,6 +169,7 @@ end
 
 """
     plan_nfft_nd(src::AbstractArray{T,D}, dst_fkt::Function, dst_size=size(src); is_in_pixels=false, is_adjoint=false, kwargs...)
+
 Plans an n-dimensional non-uniform FFT on grids with a regular topology defined via the function `dst_fkt`.
 
 # Arguments

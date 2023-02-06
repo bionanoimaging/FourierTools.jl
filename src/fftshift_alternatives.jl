@@ -101,8 +101,8 @@ end
 """
     fftshift2d_view(mat::AbstractArray{T, N}) where {T, N}
 
-    Short-hand for `fftshift_view(mat, (1,2))`.
-    See `fftshift_view` for details.
+Short-hand for `fftshift_view(mat, (1,2))`.
+See `fftshift_view` for details.
 """
 function fftshift2d_view(mat::AbstractArray{T, N}) where {T, N}
     fftshift_view(mat,(1,2))
@@ -111,8 +111,8 @@ end
 """
     ifftshift2d_view(mat::AbstractArray{T, N}) where {T, N}
 
-    Short-hand for `ifftshift_view(mat, (1,2))` performing only a 2D inverse ft.
-    See `ifft` for details.
+Short-hand for `ifftshift_view(mat, (1,2))` performing only a 2D inverse ft.
+See `ifft` for details.
 """
 function ifftshift2d_view(mat::AbstractArray{T, N}) where {T, N}
     ifftshift_view(mat,(1,2))
