@@ -137,6 +137,7 @@ By default the first pixel maintains its position. However, this leads to a shif
 `fix_center=true` can be used to remedy this and the result array center position will agree to the source array center position.
 `keep_singleton=true` will not upsample dimensions of size one.
 Note that upsample2 is based on Fourier-shifting and you may have to deal with wrap-around problems.
+
 ```jdoctest
 julia> upsample2(collect(collect(1.0:9.0)'))
 2×18 Matrix{Float64}:
@@ -146,7 +147,7 @@ julia> upsample2(collect(collect(1.0:9.0)'))
 julia> upsample2(collect(collect(1.0:9.0)'); fix_center=true, keep_singleton=true)
 1×18 Matrix{Float64}:
  5.0  1.0  0.24123  2.0  3.24123  3.0  2.93582  4.0  5.0  5.0  5.0  6.0  7.06418  7.0  6.75877  8.0  9.75877  9.0
- ```
+```
 """
 function upsample2(mat::AbstractArray{T, N}; dims=1:N, fix_center=false, keep_singleton=false) where {T,N}
     res = mat
@@ -343,7 +344,7 @@ the result has usually less artefacts, but the positions may be more less conven
 
 See also: `resample`, `resample_czt`
 # Examples
-```julia-repl
+```jdoctest
 julia> using FourierTools, TestImages, NDTools, View5D, IndexFunArrays
 
 julia> a = Float32.(testimage("resolution"));
