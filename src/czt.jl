@@ -95,7 +95,7 @@ The tuple `scale` defines the zoom factors in the Fourier domain. Each has to be
 
 # Arguments:
 + `xin`: array to transform
-+ `scale`: a tuple of factors (one for each dimension) to zoom into during the czt. 
++ `scale`: a tuple of factors (one for each dimension) to zoom into during the czt. Note that a factor of nothing (or 1.0) needs to be provided, if a dimension is not transformed.
 + `dims`: a tuple of dimensions over which to apply the czt.
 + `remove_wrap`: if true, the wrapped places will be set to zero. Note that the `pad_value` argument is only allowed for 1d czts to not cause confusion.
 
@@ -137,6 +137,14 @@ julia> zoomed = real.(ift(xft))
 function czt(xin::Array{T,N}, scale, dims=1:length(size(xin)); 
             remove_wrap=false)::Array{complex(T),N} where {T,N}
     xout = xin
+    if length(scale) != ndims(xin)
+        error("Every of the $(ndims(xin)) dimension needs exactly one corresponding scale (zoom) factor, which should be equal to 1.0 for dimensions not contained in the dims argument.")
+    end
+    for d = 1:ndims(xin)
+        if !(d in dims) && scale[d] != 1.0 && !isnothing(scale[d])
+            error("The scale factor $(scale[d]) needs to be nothing or 1.0, if this dimension is not in the list of dimensions to transform.")
+        end
+    end
     for d in dims
         xout = czt_1d(xout, scale[d], d; remove_wrap=remove_wrap)
     end
@@ -153,7 +161,7 @@ The tuple `scale` defines the zoom factors in the Fourier domain. Each has to be
 
 # Arguments:
 + `xin`: array to transform
-+ `scale`: a tuple of factors (one for each dimension) of the the inverse czt. 
++ `scale`: a tuple of factors (one for each dimension) of the the inverse czt. Note that a factor of nothing (or 1.0) needs to be provided, if a dimension is not transformed.
 + `dims`: a tuple of dimensions over which to apply the inverse czt.
 + `remove_wrap`: if true, the wrapped places will be set to zero. 
                  Note that the `pad_value` argument is only allowed for 1d czts to not cause confusion.
