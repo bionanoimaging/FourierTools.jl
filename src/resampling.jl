@@ -138,7 +138,7 @@ By default the first pixel maintains its position. However, this leads to a shif
 `keep_singleton=true` will not upsample dimensions of size one.
 Note that upsample2 is based on Fourier-shifting and you may have to deal with wrap-around problems.
 
-```jdoctest
+```jldoctest
 julia> upsample2(collect(collect(1.0:9.0)'))
 2×18 Matrix{Float64}:
  1.0  0.24123  2.0  3.24123  3.0  2.93582  4.0  5.0  5.0  5.0  6.0  7.06418  7.0  6.75877  8.0  9.75877  9.0  5.0
@@ -190,7 +190,7 @@ per entry along this dimension number.
 + `new_size`: size of the result array. If not provided the same as the input size will be used.
 
 # Examples
-```jdoctest
+```jldoctest
 julia> using TestImages, NDTools, View5D
 
 julia> a = Float32.(testimage("resolution"));
@@ -297,7 +297,7 @@ using `resample_czt()` with separable quadratic zooms.
 
 See also: `resample_czt()`
 # Examples
-```jdoctest
+```jldoctest
 julia> using TestImages, NDTools, View5D
 
 julia> a = Float32.(testimage("resolution"))
@@ -344,7 +344,7 @@ the result has usually less artefacts, but the positions may be more less conven
 
 See also: `resample`, `resample_czt`
 # Examples
-```jdoctest
+```jldoctest
 julia> using FourierTools, TestImages, NDTools, View5D, IndexFunArrays
 
 julia> a = Float32.(testimage("resolution"));

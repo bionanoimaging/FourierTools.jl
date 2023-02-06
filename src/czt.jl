@@ -96,9 +96,11 @@ The tuple `scale` defines the zoom factors in the Fourier domain. Each has to be
 
 # Arguments:
 + `xin`: array to transform
-+ `scale`: a tuple of factors (one for each dimension) to zoom into during the czt. Note that a factor of nothing (or 1.0) needs to be provided, if a dimension is not transformed.
++ `scale`: a tuple of factors (one for each dimension) to zoom into during the czt. 
+   Note that a factor of nothing (or 1.0) needs to be provided, if a dimension is not transformed.
 + `dims`: a tuple of dimensions over which to apply the czt.
-+ `remove_wrap`: if true, the wrapped places will be set to zero. Note that the `pad_value` argument is only allowed for 1d czts to not cause confusion.
++ `remove_wrap`: if true, the wrapped places will be set to zero. 
+   Note that the `pad_value` argument is only allowed for czt_1d to not cause confusion.
 
 #Example:
 ```jdoctest
@@ -163,7 +165,8 @@ The tuple `scale` defines the zoom factors in the Fourier domain. Each has to be
 
 # Arguments:
 + `xin`: array to transform
-+ `scale`: a tuple of factors (one for each dimension) of the the inverse czt. Note that a factor of nothing (or 1.0) needs to be provided, if a dimension is not transformed.
++ `scale`: a tuple of factors (one for each dimension) of the the inverse czt. 
+   Note that a factor of nothing (or 1.0) needs to be provided, if a dimension is not transformed.
 + `dims`: a tuple of dimensions over which to apply the inverse czt.
 + `remove_wrap`: if true, the wrapped places will be set to zero. 
                  Note that the `pad_value` argument is only allowed for 1d czts to not cause confusion.
