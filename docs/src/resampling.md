@@ -78,7 +78,5 @@ FourierTools.resample_by_RFFT
 FourierTools.resample_nfft
 FourierTools.resample_czt
 FourierTools.upsample2
-FourierTools.upsample2_abs2
-FourierTools.upsample2_1D
 FourierTools.barrel_pin
 ```

@@ -6,9 +6,10 @@ export czt, iczt
 Chirp z transform along a single direction d of an ND array `xin` into the ND array 'xout'.
 Note that xin and xout can be the same array for inplace operations.
 Note that the result type is defined by `eltype(xin)` and not by `scales`.
-This code is based on a 2D Matlab version of the CZT, written by H. Gross et al.
-    
+
 #References: Rabiner, Schafer, Rader, The Cirp z-Transform Algorithm, IEEE Trans AU 17(1969) p. 86
+This code is loosely based on a 2D Matlab version of the CZT, written by N.G. Worku & H. Gross
+with their consent (28. Oct. 2020) to make it openly available.
 
 # Arguments:
 + `xin`: array to transform

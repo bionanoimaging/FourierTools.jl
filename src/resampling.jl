@@ -1,9 +1,7 @@
 export resample
 export resample_by_FFT
 export resample_by_RFFT
-export upsample2_abs2
 export upsample2
-export upsample2_1D
 export resample_nfft
 export resample_czt
 export barrel_pin
