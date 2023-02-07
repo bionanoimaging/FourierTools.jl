@@ -67,7 +67,7 @@ The right image is the upsampled version of the left one.
 ![](assets/image_low_res.png)
 ![](assets/image_high_res.png)
 
-There are fast versions (`upsample2`)for upsampling by a factor of 2.
+There are fast versions (`upsample2`) for upsampling by a factor of 2.
 
 
 ## Function References

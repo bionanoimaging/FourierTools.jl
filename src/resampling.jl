@@ -242,7 +242,7 @@ function resample_czt(arr::AbstractArray{T,N}, rel_zoom;
             if T<:Real
                 f_res = real(FourierTools.czt_1d(f_res, my_zoom, d; remove_wrap=remove_wrap, pad_value=pad_value))
             else
-                f_res = T.(FourierTools.czt_1d(f_res, my_zoom, d; remove_wrap=remove_wrap, pad_value=pad_value))
+                f_res = FourierTools.czt_1d(f_res, my_zoom, d; remove_wrap=remove_wrap, pad_value=pad_value)
             end
             select_region!(f_res, arr) 
         # case of position dependent zoom functions
