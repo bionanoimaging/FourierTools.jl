@@ -8,8 +8,8 @@ using NDTools # this is needed for the select_region! function below.
         y = randn(ComplexF32, (5,6))
         zoom = (1.0,1.0,1.0)
         @test ≈(czt(x, zoom), ft(x),rtol=1e-4)         
-        @test ≈(czt(y, zoom), ft(y),rtol=1e-5)
-        @test ≈(iczt(czt(y,zoom),zoom),  y, rtol=1e-5)
+        @test ≈(czt(y, (1.0,1.0)), ft(y),rtol=1e-5)
+        @test ≈(iczt(czt(y, (1.0,1.0)), (1.0,1.0)),  y, rtol=1e-5)
         zoom = (2.0,2.0)
         @test ≈(czt(y,zoom),  select_region(upsample2(ft(y), fix_center=true),new_size=size(y)), rtol=1e-5)
         # zoom smaller 1.0 causes wrap around:
