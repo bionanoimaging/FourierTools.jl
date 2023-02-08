@@ -7,7 +7,7 @@ Chirp z transform along a single direction d of an ND array `xin` into the ND ar
 Note that xin and xout can be the same array for inplace operations.
 Note that the result type is defined by `eltype(xin)` and not by `scales`.
 
-#References: Rabiner, Schafer, Rader, The Cirp z-Transform Algorithm, IEEE Trans AU 17(1969) p. 86
+# References: Rabiner, Schafer, Rader, The Cirp z-Transform Algorithm, IEEE Trans AU 17(1969) p. 86
 This code is loosely based on a 2D Matlab version of the CZT, written by N.G. Worku & H. Gross
 with their consent (28. Oct. 2020) to make it openly available.
 
@@ -91,9 +91,9 @@ Chirp z transform of the ND array `xin`
 This code is based on a 2D Matlab version of the CZT, written by H. Gross.
 The tuple `scale` defines the zoom factors in the Fourier domain. Each has to be bigger than one.
 
-#See also: iczt, czt_1d
+# See also: `iczt`, `czt_1d`
     
-#References: Rabiner, Schafer, Rader, The Cirp z-Transform Algorithm, IEEE Trans AU 17(1969) p. 86
+# References: Rabiner, Schafer, Rader, The Cirp z-Transform Algorithm, IEEE Trans AU 17(1969) p. 86
 
 # Arguments:
 + `xin`: array to transform
@@ -103,8 +103,9 @@ The tuple `scale` defines the zoom factors in the Fourier domain. Each has to be
 + `remove_wrap`: if true, the wrapped places will be set to zero. 
    Note that the `pad_value` argument is only allowed for czt_1d to not cause confusion.
 
-#Example:
-```jdoctest
+# Example:
+#
+```jldoctest
 julia> using IndexFunArrays
 
 julia> sz = (10,10);
@@ -162,7 +163,7 @@ Inverse chirp z transform of the ND array `xin`
 This code is based on a 2D Matlab version of the CZT, written by H. Gross.
 The tuple `scale` defines the zoom factors in the Fourier domain. Each has to be bigger than one.
     
-#References: Rabiner, Schafer, Rader, The Cirp z-Transform Algorithm, IEEE Trans AU 17(1969) p. 86
+# References: Rabiner, Schafer, Rader, The Cirp z-Transform Algorithm, IEEE Trans AU 17(1969) p. 86
 
 # Arguments:
 + `xin`: array to transform
@@ -172,10 +173,10 @@ The tuple `scale` defines the zoom factors in the Fourier domain. Each has to be
 + `remove_wrap`: if true, the wrapped places will be set to zero. 
                  Note that the `pad_value` argument is only allowed for 1d czts to not cause confusion.
 
-#See also: czt, czt_1d
+# See also: czt, czt_1d
 
-#Example: 
-```jdoctest
+# Example: 
+```jldoctest
 julia> using IndexFunArrays
 
 julia> sz = (10,10);
