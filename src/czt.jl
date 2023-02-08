@@ -104,7 +104,7 @@ The tuple `scale` defines the zoom factors in the Fourier domain. Each has to be
    Note that the `pad_value` argument is only allowed for czt_1d to not cause confusion.
 
 # Example:
-#
+
 ```jldoctest
 julia> using IndexFunArrays
 
@@ -173,10 +173,12 @@ The tuple `scale` defines the zoom factors in the Fourier domain. Each has to be
 + `remove_wrap`: if true, the wrapped places will be set to zero. 
                  Note that the `pad_value` argument is only allowed for 1d czts to not cause confusion.
 
-# See also: czt, czt_1d
+See also: `czt`, `czt_1d`
 
-# Example: 
+# Example
+
 ```jldoctest
+
 julia> using IndexFunArrays
 
 julia> sz = (10,10);
@@ -208,7 +210,7 @@ julia> iczt(xft,(1.2,1.3))
  -0.0275957+0.169775im     1.04314+0.130321im     1.13205-0.151519im     0.80774+0.0124851im       1.00574+0.0629632im   0.790545-0.283668im       1.1463+0.0940003im    1.03899+0.0589268im
    0.130009-0.120643im    0.450186-0.111656im    0.986722+0.0414382im    1.24013+0.14664im         1.06002+0.0348813im    1.25999+0.166495im     0.970263+0.0249785im   0.454973-0.106869im
  -0.0965531+0.0404296im  -0.159713+0.0637132im    0.48095+0.0775406im    0.67753-0.263814im        0.77553-0.121603im    0.660335-0.00736904im   0.495205-0.135059im   -0.163859+0.125535im
- ```
+```
 """
 function iczt( xin , scale, dims=1:length(size(xin)); remove_wrap=false)
     conj(czt(conj(xin), scale, dims; remove_wrap=remove_wrap)) / prod(size(xin))
