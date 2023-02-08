@@ -1,22 +1,25 @@
 export czt, iczt
 
 """
-    czt_1d(xin , scaled , d)
+    czt_1d(xin , scaled , d; remove_wrap=false, pad_value=zero(eltype(xin)))
 
 Chirp z transform along a single direction d of an ND array `xin` into the ND array 'xout'.
 Note that xin and xout can be the same array for inplace operations.
 Note that the result type is defined by `eltype(xin)` and not by `scales`.
-This code is based on a 2D Matlab version of the CZT, written by H. Gross et al.
-    
-#References: Rabiner, Schafer, Rader, The Cirp z-Transform Algorithm, IEEE Trans AU 17(1969) p. 86
+
+# References: Rabiner, Schafer, Rader, The Cirp z-Transform Algorithm, IEEE Trans AU 17(1969) p. 86
+This code is loosely based on a 2D Matlab version of the CZT, written by N.G. Worku & H. Gross
+with their consent (28. Oct. 2020) to make it openly available.
 
 # Arguments:
 + `xin`: array to transform
 + `scaled`: factor to zoom into during the 1-dimensional czt. 
 + `d`: single dimension to transform (as a tuple)
++ `remove_wrap`: if true, the wrapped places will be set to pad_value
++ `pad_value`: the value that the wrap-around will be set to if `remove_wrap` is `true`. 
 
 """
-function czt_1d(xin, scaled, d)
+function czt_1d(xin, scaled, d; remove_wrap=false, pad_value=zero(eltype(xin)))
     sz=size(xin)
     # returns the real datatype
     rtype = real(eltype(xin))  
@@ -72,28 +75,37 @@ function czt_1d(xin, scaled, d)
             NDTools.slice(xout,d, o) .-= NDTools.slice(xin,d, 1) .* (1im).^mod(o-midp,4)
         end
     end
-    return xout
+    if remove_wrap && (scaled < 1.0)
+        nsz = Tuple(d == nd ? ceil(Int64, scaled * size(xin,d)) : size(xin,nd) for nd=1:ndims(xin))
+        return select_region(select_region(xout, new_size=nsz), new_size=size(xout), pad_value=pad_value)
+    else
+        return xout
+    end
     # xout .= g[dsize:(2*dsize-1)] .* reorient(fak, d, Val(ndims(xin)))
 end
 
 """
-    czt(xin , scale, dims=1:length(size(xin)))
+    czt(xin , scale, dims=1:length(size(xin)), remove_wrap=false)
 
 Chirp z transform of the ND array `xin`
 This code is based on a 2D Matlab version of the CZT, written by H. Gross.
 The tuple `scale` defines the zoom factors in the Fourier domain. Each has to be bigger than one.
 
-#See also: iczt, czt_1d
+# See also: `iczt`, `czt_1d`
     
-#References: Rabiner, Schafer, Rader, The Cirp z-Transform Algorithm, IEEE Trans AU 17(1969) p. 86
+# References: Rabiner, Schafer, Rader, The Cirp z-Transform Algorithm, IEEE Trans AU 17(1969) p. 86
 
 # Arguments:
 + `xin`: array to transform
 + `scale`: a tuple of factors (one for each dimension) to zoom into during the czt. 
+   Note that a factor of nothing (or 1.0) needs to be provided, if a dimension is not transformed.
 + `dims`: a tuple of dimensions over which to apply the czt.
++ `remove_wrap`: if true, the wrapped places will be set to zero. 
+   Note that the `pad_value` argument is only allowed for czt_1d to not cause confusion.
 
-#Example:
-```jdoctest
+# Example:
+
+```jldoctest
 julia> using IndexFunArrays
 
 julia> sz = (10,10);
@@ -127,32 +139,46 @@ julia> zoomed = real.(ift(xft))
   0.0239759   -0.028264    0.0541186  -0.0116475   -0.261294   0.312719  -0.261294  -0.0116475    0.0541186  -0.028264
 ```
 """
-function czt(xin::Array{T,N}, scale, dims=1:length(size(xin)))::Array{complex(T),N} where {T,N}
+function czt(xin::Array{T,N}, scale, dims=1:length(size(xin)); 
+            remove_wrap=false)::Array{complex(T),N} where {T,N}
     xout = xin
+    if length(scale) != ndims(xin)
+        error("Every of the $(ndims(xin)) dimension needs exactly one corresponding scale (zoom) factor, which should be equal to 1.0 for dimensions not contained in the dims argument.")
+    end
+    for d = 1:ndims(xin)
+        if !(d in dims) && scale[d] != 1.0 && !isnothing(scale[d])
+            error("The scale factor $(scale[d]) needs to be nothing or 1.0, if this dimension is not in the list of dimensions to transform.")
+        end
+    end
     for d in dims
-        xout = czt_1d(xout, scale[d], d)
+        xout = czt_1d(xout, scale[d], d; remove_wrap=remove_wrap)
     end
     return xout
 end
 
 """
-    iczt(xin , scale, dims=1:length(size(xin)))
+    iczt(xin , scale, dims=1:length(size(xin)); remove_wrap=false)
 
 Inverse chirp z transform of the ND array `xin`
 This code is based on a 2D Matlab version of the CZT, written by H. Gross.
 The tuple `scale` defines the zoom factors in the Fourier domain. Each has to be bigger than one.
     
-#References: Rabiner, Schafer, Rader, The Cirp z-Transform Algorithm, IEEE Trans AU 17(1969) p. 86
+# References: Rabiner, Schafer, Rader, The Cirp z-Transform Algorithm, IEEE Trans AU 17(1969) p. 86
 
 # Arguments:
 + `xin`: array to transform
 + `scale`: a tuple of factors (one for each dimension) of the the inverse czt. 
+   Note that a factor of nothing (or 1.0) needs to be provided, if a dimension is not transformed.
 + `dims`: a tuple of dimensions over which to apply the inverse czt.
++ `remove_wrap`: if true, the wrapped places will be set to zero. 
+                 Note that the `pad_value` argument is only allowed for 1d czts to not cause confusion.
 
-#See also: czt, czt_1d
+See also: `czt`, `czt_1d`
 
-#Example: 
-```jdoctest
+# Example
+
+```jldoctest
+
 julia> using IndexFunArrays
 
 julia> sz = (10,10);
@@ -184,8 +210,8 @@ julia> iczt(xft,(1.2,1.3))
  -0.0275957+0.169775im     1.04314+0.130321im     1.13205-0.151519im     0.80774+0.0124851im       1.00574+0.0629632im   0.790545-0.283668im       1.1463+0.0940003im    1.03899+0.0589268im
    0.130009-0.120643im    0.450186-0.111656im    0.986722+0.0414382im    1.24013+0.14664im         1.06002+0.0348813im    1.25999+0.166495im     0.970263+0.0249785im   0.454973-0.106869im
  -0.0965531+0.0404296im  -0.159713+0.0637132im    0.48095+0.0775406im    0.67753-0.263814im        0.77553-0.121603im    0.660335-0.00736904im   0.495205-0.135059im   -0.163859+0.125535im
- ```
+```
 """
-function iczt( xin , scale, dims=1:length(size(xin)))
-    conj(czt(conj(xin), scale, dims)) / prod(size(xin))
+function iczt( xin , scale, dims=1:length(size(xin)); remove_wrap=false)
+    conj(czt(conj(xin), scale, dims; remove_wrap=remove_wrap)) / prod(size(xin))
 end

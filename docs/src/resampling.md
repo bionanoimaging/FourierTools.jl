@@ -67,10 +67,17 @@ The right image is the upsampled version of the left one.
 ![](assets/image_low_res.png)
 ![](assets/image_high_res.png)
 
+There are fast versions (`upsample2`) for upsampling by a factor of 2.
 
 
 ## Function References
 ```@docs
 FourierTools.resample
+FourierTools.resample_by_FFT
+FourierTools.resample_by_RFFT
+FourierTools.resample_nfft
+FourierTools.resample_czt
 FourierTools.upsample2
+FourierTools.upsample2_abs2
+FourierTools.barrel_pin
 ```

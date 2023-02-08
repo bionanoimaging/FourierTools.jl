@@ -13,6 +13,7 @@ makedocs(modules = [FourierTools],
             "Image Shearing with FFTs" => "shear.md",
             "Image Rotation with FFTs" => "rotate.md",
             "NFFT" => "nfft.md",
+            "CZT" => "czt.md",
             "Fractional Fourier Transform" => "fractional.md",
             "Utility Functions" => "utils.md",
          ]

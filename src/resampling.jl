@@ -1,13 +1,11 @@
 export resample
 export resample_by_FFT
 export resample_by_RFFT
-export upsample2_abs2
 export upsample2
-export upsample2_1D
+export upsample2_abs2
 export resample_nfft
 export resample_czt
 export barrel_pin
-
 
 """
     resample(arr, new_size [, normalize=true])
@@ -138,7 +136,8 @@ By default the first pixel maintains its position. However, this leads to a shif
 `fix_center=true` can be used to remedy this and the result array center position will agree to the source array center position.
 `keep_singleton=true` will not upsample dimensions of size one.
 Note that upsample2 is based on Fourier-shifting and you may have to deal with wrap-around problems.
-```jdoctest
+
+```jldoctest
 julia> upsample2(collect(collect(1.0:9.0)'))
 2×18 Matrix{Float64}:
  1.0  0.24123  2.0  3.24123  3.0  2.93582  4.0  5.0  5.0  5.0  6.0  7.06418  7.0  6.75877  8.0  9.75877  9.0  5.0
@@ -147,7 +146,7 @@ julia> upsample2(collect(collect(1.0:9.0)'))
 julia> upsample2(collect(collect(1.0:9.0)'); fix_center=true, keep_singleton=true)
 1×18 Matrix{Float64}:
  5.0  1.0  0.24123  2.0  3.24123  3.0  2.93582  4.0  5.0  5.0  5.0  6.0  7.06418  7.0  6.75877  8.0  9.75877  9.0
- ```
+```
 """
 function upsample2(mat::AbstractArray{T, N}; dims=1:N, fix_center=false, keep_singleton=false) where {T,N}
     res = mat
@@ -167,18 +166,30 @@ function upsample2_abs2(mat::AbstractArray{T, N}; dims=1:N) where {T,N}
 end
 
 """
-    resample_czt(arr, rel_zoom; shear=nothing, shear_dim=nothing, fix_nyquist=false, new_size = size(arr), rel_pad=0.2)
+    resample_czt(arr, rel_zoom; shear=nothing, shear_dim=nothing, fix_nyquist=false, new_size = size(arr), 
+                 do_damp=false, rel_pad=0.2, remove_wrap=true)
 
 resamples the image with fixed factors or a list of separable functions using the chirp z transform algorithm.
 The data is first padded by a relative amount `rel_pad` which is needed to avoid wrap-around problems.
 As opposed to `resample()`, this routine allows for arbitrary non-integer zoom factors.
-It is reasonably fast but only allows a stretch (via `rel_zoom`) and a shift (via `shear` in pixels) per line or column
+It is reasonably fast but only allows a stretch (via `rel_zoom`) and a shift (via `shear` in pixels) per line or column.
 
 Note that each entry of the tuple in `rel_zoom` or `shear` describes the zoom or shear to apply to all other dimensions individually
 per entry along this dimension number. 
 
+# Arguments:
++ `arr`: array to resample
++ `rel_zoom`: factors to zoom as a tuple or a tuple of functions defining the zooms
++ `shear`: a tuple of shears or a tuple of shear functions defining the shears
++ `shear_dim`: which dimension to shear
++ `fix_nyquist`: defines whether to apply `fix_nyquist` when using the apply_shift_strength! function.
++ `do_damp`: applies a padding and damping outside the region  to zoom, to avoid artefacts
++ `rel_pad`: amount of padding to apply, if `do_damp` is true
++ `remove_wrap`: removes the wrap-around when zooming out.
++ `new_size`: size of the result array. If not provided the same as the input size will be used.
+
 # Examples
-```jdoctest
+```jldoctest
 julia> using TestImages, NDTools, View5D
 
 julia> a = Float32.(testimage("resolution"));
@@ -192,7 +203,9 @@ julia> d = resample_czt(a, (x->1.0,x->1.0), shear=(x->50*x^2,0.0)); # a more com
 julia> @ve a,b,c,d # visualize distortions
 ```
 """
-function resample_czt(arr::AbstractArray{T,N}, rel_zoom; shear=nothing, shear_dim=nothing, fix_nyquist=false, new_size = size(arr), rel_pad=0.2, do_damp=false, center=CtrMid) where {T,N}
+function resample_czt(arr::AbstractArray{T,N}, rel_zoom; 
+                      shear=nothing, shear_dim=nothing, fix_nyquist=false, new_size = size(arr), 
+                      rel_pad=0.2, do_damp=false, center=CtrMid, remove_wrap=true, pad_value=zero(eltype(arr))) where {T,N}
     RT = real(T)
     orig_size = size(arr)
     if do_damp
@@ -200,13 +213,20 @@ function resample_czt(arr::AbstractArray{T,N}, rel_zoom; shear=nothing, shear_di
     else
         arr = copy(arr)
     end
-    for d in 1:length(rel_zoom)
+    for d in eachindex(rel_zoom)
         sd = mod(d,ndims(arr))+1
         if !isnothing(shear_dim)
             sd = shear_dim[d]
         end
         my_zoom = 1.0
-        # case of a list of zoom numbers
+        # resize the array before zooming, in case the result array is larger
+        # This may be a bit wasteful depending on the zoom factors, but this case also
+        # covers the zoomed shearing case
+        if (new_size[d] > size(arr,d))
+            nz = Tuple(d == nd ? new_size[nd] : size(arr,nd) for nd=1:ndims(arr))
+            arr = collect(select_region(arr, new_size=nz))
+        end
+    # case of a list (or tuple) of zoom numbers
         if (isa(rel_zoom, Tuple) && isa(rel_zoom[1], Number)) || isa(rel_zoom, Number)
             my_zoom = rel_zoom[d]
             f_res = ift(arr, d)
@@ -219,9 +239,9 @@ function resample_czt(arr::AbstractArray{T,N}, rel_zoom; shear=nothing, shear_di
                 FourierTools.apply_shift_strength!(f_res, f_res, shifts, d, sd, -myshear, fix_nyquist)
             end
             if T<:Real
-                f_res = real(FourierTools.czt_1d(f_res, my_zoom, d))
+                f_res = real(FourierTools.czt_1d(f_res, my_zoom, d; remove_wrap=remove_wrap, pad_value=pad_value))
             else
-                f_res = T.(FourierTools.czt_1d(f_res, my_zoom, d))
+                f_res = FourierTools.czt_1d(f_res, my_zoom, d; remove_wrap=remove_wrap, pad_value=pad_value)
             end
             select_region!(f_res, arr) 
         # case of position dependent zoom functions
@@ -251,9 +271,9 @@ function resample_czt(arr::AbstractArray{T,N}, rel_zoom; shear=nothing, shear_di
                 end
                 f_res = let 
                     if T<:Real
-                        real(FourierTools.czt_1d(f_res, my_zoom, 1))
+                        real(FourierTools.czt_1d(f_res, my_zoom, 1; remove_wrap=remove_wrap, pad_value=pad_value))
                     else
-                        FourierTools.czt_1d(f_res, my_zoom, 1)
+                        FourierTools.czt_1d(f_res, my_zoom, 1; remove_wrap=remove_wrap, pad_value=pad_value)
                     end
                 end
                 select_region!(f_res, slice)
@@ -271,11 +291,12 @@ end
 """
     barrel_pin(arr, rel=0.5)
 
-emulates a barrel (`rel>0`) or a pincushion (`rel<0`) distortion. The distortions are calculated using `resample_czt()` with separable quadratic zooms.
+emulates a barrel (`rel>0`) or a pincushion (`rel<0`) distortion. The distortions are calculated 
+using `resample_czt()` with separable quadratic zooms.
 
 See also: `resample_czt()`
 # Examples
-```jdoctest
+```jldoctest
 julia> using TestImages, NDTools, View5D
 
 julia> a = Float32.(testimage("resolution"))
@@ -297,19 +318,23 @@ end
 """
     resample_nfft(img, new_pos, dst_size=nothing; pixel_coords=false, is_local_shift=false, is_src_coords=true, reltol=1e-9)
     
-resamples an ND-array to a set of new positions `new_pos` measured in either in pixels (`pixel_coords=true`) or relative (Fourier-) image coordinates (`pixel_coords=false`).
+resamples an ND-array to a set of new positions `new_pos` measured in either in pixels (`pixel_coords=true`) 
+or relative (Fourier-) image coordinates (`pixel_coords=false`).
 `new_pos` can be 
 + an array of `Tuples` specifying the zoom along each direction
-+ an `N+1` dimensional array (for `N`-dimensional imput data `img`) of destination postions, the last dimension enumerating the respective destination corrdinate dimension.
++ an `N+1` dimensional array (for `N`-dimensional imput data `img`) of destination postions, the last dimension 
+  enumerating the respective destination corrdinate dimension.
 + a function accepting a coordinate `Tuple` and yielding a destination position `Tuple`.
 
-`resample_nfft` can perform a large range of possible resamplings. Note that the default setting is `is_src_coords=true` which means that the source coordinates of each destination
-position have to be specified. This has the advantage that the result has usually less artefacts, but the positions may be more less convenient to specify.
+`resample_nfft` can perform a large range of possible resamplings. Note that the default setting is `is_src_coords=true` 
+which means that the source coordinates of each destination position have to be specified. This has the advantage that 
+the result has usually less artefacts, but the positions may be more less convenient to specify.
 
 # Arguements
 + `img`: the image to apply resampling to
 + `new_pos``: specifies the resampling. See description above.
-+ `dst_size`: this argument optionally defines the output size. If you require a different result size for `new_pos` being a function or with `is_src_coords=true`, state it here. By defaul (`dst_size=nothing`) the 
++ `dst_size`: this argument optionally defines the output size. If you require a different result size 
+              for `new_pos` being a function or with `is_src_coords=true`, state it here. By defaul (`dst_size=nothing`) the 
               destination size will be inferred form the argument `new_pos` or assumed to be `size(img)`.
 + `is_local_shift`: specifies, whether the resampling coordinates refer to a relative shift or absoluter coordinates
 + `is_in_pixels`: specifies whether the coordinates (or relative distances) are given in pixel pitch units (`is_in_pixels=true`) or in units relative to the array sizes (Fourier convention) 
@@ -318,7 +343,7 @@ position have to be specified. This has the advantage that the result has usuall
 
 See also: `resample`, `resample_czt`
 # Examples
-```julia-repl
+```jldoctest
 julia> using FourierTools, TestImages, NDTools, View5D, IndexFunArrays
 
 julia> a = Float32.(testimage("resolution"));
@@ -363,7 +388,9 @@ julia> f = resample_nfft(a, new_pos, is_src_coords=false);
 julia> @ve a e f
 ```
 """
-function resample_nfft(img::AbstractArray{T,D}, new_pos::AbstractArray{T2,D2}, dst_size=nothing; pad_value=nothing, is_in_pixels=false, is_local_shift=false, is_src_coords=true, reltol=1e-9)::AbstractArray{T,D} where {T,D,T2,D2} # 
+function resample_nfft(img::AbstractArray{T,D}, new_pos::AbstractArray{T2,D2}, dst_size=nothing; 
+                        pad_value=nothing, is_in_pixels=false, is_local_shift=false, is_src_coords=true, 
+                        reltol=1e-9)::AbstractArray{T,D} where {T,D,T2,D2} # 
 
     Fimg = let
         if is_src_coords
@@ -383,7 +410,9 @@ function resample_nfft(img::AbstractArray{T,D}, new_pos::AbstractArray{T2,D2}, d
     return img
 end
 
-function resample_nfft(img::AbstractArray{T,D}, new_pos_fkt::Function, dst_size=nothing; pad_value=nothing,  is_in_pixels=false, is_local_shift=false, is_src_coords=true, reltol=1e-9)::AbstractArray{T,D} where {T,D} # 
+function resample_nfft(img::AbstractArray{T,D}, new_pos_fkt::Function, dst_size=nothing; 
+                        pad_value=nothing,  is_in_pixels=false, is_local_shift=false, is_src_coords=true, 
+                        reltol=1e-9)::AbstractArray{T,D} where {T,D} # 
     Fimg = let
         if is_src_coords
             p = plan_nfft_nd(img, new_pos_fkt, dst_size; pad_value=pad_value, is_in_pixels=is_in_pixels, is_local_shift=is_local_shift, is_adjoint=false, reltol=reltol)
