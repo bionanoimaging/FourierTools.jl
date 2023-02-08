@@ -19,6 +19,5 @@ using NDTools # this is needed for the select_region! function below.
         # check if the remove_wrap works
         @test abs(czt(y,zoom; remove_wrap=true)[1,1]) == 0.0
         @test abs(iczt(y,zoom; remove_wrap=true)[1,1]) == 0.0
-        # @vt czt(y,zoom)  select_region(upsample2(ft(y), fix_center=true), new_size=size(y))
     end
 end

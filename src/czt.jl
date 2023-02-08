@@ -139,8 +139,8 @@ julia> zoomed = real.(ift(xft))
   0.0239759   -0.028264    0.0541186  -0.0116475   -0.261294   0.312719  -0.261294  -0.0116475    0.0541186  -0.028264
 ```
 """
-function czt(xin::Array{T,N}, scale, dims=1:length(size(xin)); 
-            remove_wrap=false)::Array{complex(T),N} where {T,N}
+function czt(xin::AbstractArray{T,N}, scale, dims=1:length(size(xin)); 
+            remove_wrap=false)::AbstractArray{complex(T),N} where {T,N}
     xout = xin
     if length(scale) != ndims(xin)
         error("Every of the $(ndims(xin)) dimension needs exactly one corresponding scale (zoom) factor, which should be equal to 1.0 for dimensions not contained in the dims argument.")
