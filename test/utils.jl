@@ -115,4 +115,26 @@
         @test_throws ArgumentError FourierTools.eltype_error(Float32, Float64)
         @test isnothing(FourierTools.eltype_error(Int, Int))
     end
+
+    @testset "odd_view, fourier_reverse!" begin
+        @test odd_view(a) == [4 5 6;7 8 9; 10 11 12]
+        fourier_reverse!(a)
+        @test a == [3 2 1;12 11 10;9 8 7;6 5 4]
+        a = [1 2 3;4 5 6;7 8 9;10 11 12]
+        b = copy(a);
+        fourier_reverse!(a,dims=1);
+        @test a[2:end,:] == b[end:-1:2,:]
+        a = [1 2 3 4;5 6 7 8;9 10 11 12 ;13 14 15 16]
+        b = copy(a);
+        fourier_reverse!(a);
+        @test a[2,2] == b[4,4]
+        @test a[2,3] == b[4,3]
+        fourier_reverse!(a);
+        @test a == b
+        fourier_reverse!(a;dims=1);
+        @test a[2:end,:] == b[end:-1:2,:]
+        @test sum(abs.(imag.(ift(fourier_reverse!(ft(rand(5,6,7))))))) < 1e-10
+        sz = (10,9,6)
+        @test sum(abs.(real.(ift(fourier_reverse!(ft(box((sz)))))) .- box(sz))) < 1e-10
+    end
 end

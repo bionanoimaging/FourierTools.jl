@@ -1,6 +1,8 @@
 export rft_size, fft_center, fftpos
 export expanddims, fourierspace_pixelsize, realspace_pixelsize
 export δ
+export odd_view, fourier_reverse!
+
 
  #get_RFT_scale(real_size) = 0.5 ./ (max.(real_size ./ 2, 1))  # The same as the FFT scale but for the full array in real space!
 
@@ -397,3 +399,60 @@ Base.@propagate_inbounds function Base.setindex!(A::PaddedView{T, N}, v, i::Vara
     return A
 end
  =#
+
+ """
+    odd_view(arr)
+
+creates a view of `arr` the for each even dimension excludes the
+starting index yielding a view of the array with only odd dimensions.
+This is useful for operations in Fourier-space which should leave the first index unaltered
+such as reverse!
+
+# Examples
+```jldoctest
+julia> odd_view([1 2 3; 4 5 6])
+1×3 view(::Matrix{Int64}, 2:2, 1:3) with eltype Int64:
+ 4  5  6
+```
+"""
+function odd_view(arr)
+    s_idx =  ntuple((d)->firstindex(arr,d) + iseven.(size(arr,d)), Val(ndims(arr)))
+    ids = ntuple((d)->s_idx[d]:lastindex(arr,d), Val(ndims(arr)))
+    return @view arr[ids...]
+end
+
+"""
+    fourier_reverse!(arr; dims=1:ndims(arr))
+
+reverses the dimensions of the input array `arr` in place. This effectively mirrors these array.
+Note that for even-sized dimensions the first index is excluded from the reverse operation along this dimensions. 
+
+# Example
+```jldoctest
+julia> a = [1 2 3;4 5 6;7 8 9;10 11 12]
+4×3 Matrix{Int64}:
+  1   2   3
+  4   5   6
+  7   8   9
+ 10  11  12
+
+julia> fourier_reverse!(a);
+
+julia> a
+4×3 Matrix{Int64}:
+  3   2   1
+ 12  11  10
+  9   8   7
+  6   5   4
+```
+"""
+function fourier_reverse!(arr; dims=ntuple((d)->d,Val(ndims(arr))))
+    reverse!(odd_view(arr),dims=dims)
+    for d = 1:ndims(arr)
+        if iseven(size(arr,d))
+            fv = slice(arr,d,firstindex(arr,d))
+            fourier_reverse!(fv; dims=dims)
+        end
+    end
+    return arr
+end
