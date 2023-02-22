@@ -117,6 +117,7 @@
     end
 
     @testset "odd_view, fourier_reverse!" begin
+        a = [1 2 3;4 5 6;7 8 9;10 11 12]
         @test odd_view(a) == [4 5 6;7 8 9; 10 11 12]
         fourier_reverse!(a)
         @test a == [3 2 1;12 11 10;9 8 7;6 5 4]
