@@ -1,7 +1,7 @@
 export rft_size, fft_center, fftpos
 export expanddims, fourierspace_pixelsize, realspace_pixelsize
 export δ
-export odd_view, fourier_reverse!
+export fourier_reverse!
 
 
  #get_RFT_scale(real_size) = 0.5 ./ (max.(real_size ./ 2, 1))  # The same as the FFT scale but for the full array in real space!
@@ -403,10 +403,11 @@ end
  """
     odd_view(arr)
 
-creates a view of `arr` the for each even dimension excludes the
+creates a view of `arr` that for each even dimension excludes the
 starting index yielding a view of the array with only odd dimensions.
 This is useful for operations in Fourier-space which should leave the first index unaltered
 such as reverse!
+Note that an array reversal can also be achieved by using two ffts instead of one fft and one ifft.
 
 # Examples
 ```jldoctest
