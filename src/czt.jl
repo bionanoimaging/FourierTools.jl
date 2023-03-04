@@ -416,5 +416,6 @@ julia> iczt(xft,(1.2,1.3))
 ```
 """
 function iczt(xin ,scale, dims=1:ndims(xin), dsize=size(xin); a=nothing, w=nothing, damp=ones(ndims(xin)), src_center=size(xin).÷2 .+1, dst_center=dsize.÷2 .+1, remove_wrap=false, pad_value=zero(eltype(xin)), fft_flags=FFTW.ESTIMATE)
-    conj(czt(conj(xin), scale, dims, dsize; a=a, w=w, damp=damp, src_center=src_center, dst_center=dst_center, remove_wrap=remove_wrap, pad_value=pad_value*prod(size(xin)), fft_flags=fft_flags)) / prod(size(xin))
+    factor = prod(size(xin)[[dims...]])
+    conj(czt(conj(xin), scale, dims, dsize; a=a, w=w, damp=damp, src_center=src_center, dst_center=dst_center, remove_wrap=remove_wrap, pad_value=pad_value*factor, fft_flags=fft_flags)) / factor
 end
