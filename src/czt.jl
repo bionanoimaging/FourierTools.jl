@@ -1,107 +1,305 @@
-export czt, iczt
+using NDTools, IndexFunArrays, FFTW
+export czt, iczt, plan_czt, CZTPlan_ND
+
+"""
+    get_kernel_1d(RT::Type, N::Integer, M::Integer; a= 1.0, w = cispi(-2/N), extra_phase=0.0, global_phase=0.0)
+
+calculates the kernel for the Bluestein algorithm. Note that the length depends on the destination size.
+Note the the resulting kernel-size is computed based on the minimum required length for the task.
+Use `size(result)` to know what to calculate with. The center of the resulting `kernel` is set to the standard
+convention position: 0 
+The code is based on Rabiner, Schafer & Rader  1969, IEEE Trans. on Audio and Electroacoustics, 17,86-92
+
+# Arguments
+    `RT`: the datatype of the array to transform
+    `N`: an integer for the length of the source array to transform.
+    `M`: an integer for the length of the destination array.
+    `a`: the (complex valued) phasor defining the start of the sampling in the source array
+    `w`: the (complex valued) phasor defining consecutive sample positions
+    `extra_phase`: a consecutive phase to apply to the final result, which enables to change the interpretation of the central source positon. 
+    `global_phase`: the start phase of the `extra_phase` to apply.
+    returns: a tuple of three arrays for the initial multiplication (A*W), the convolution (already fourier-transformed) and the post multiplication.
+"""
+function get_kernel_1d(RT::Type, N::Integer, M::Integer; a= 1.0, w = cispi(-2/N), extra_phase=0.0, global_phase=0.0)
+    # intorduce also sscale ??
+    # the size needed to avoid wrap
+    CT = (RT <: Real) ? Complex{RT} : RT
+    RT = real(CT)
+    # nowrap_size = N + ceil(N÷2)
+    # the maximal size where the convolution does not yield zero 
+    # max_size = 2*N-1
+    # the minimum size needed for the convolution
+    # kernel-size for the deconvolution
+    L = N + M -1 # max(min(max_size, dsize), nowrap_size)
+    
+    #Note that the source size ssz is used here
+     # W of the source for FFTs. 
+    n = (0:N-1)
+    # pre-calculate the product of a.^(-n) and w to be later multiplied with the input x
+    # late casting is important, since the rounding errors are overly large if the original calculations are done in Float32.
+    aw = CT.((a .^ (-n)) .* w .^ ((n .^ 2) ./ 2))
+
+    conv_kernel = zeros(CT, L) # Array{CT}(undef, L)
+    m = (0:M-1)
+    conv_kernel[1:M] .= w .^ (-(m .^ 2) ./ 2)
+    right_start = L-N+1
+    n = (1:N-1)
+    conv_kernel[L:-1:right_start+1] .= w .^ (.-(n .^ 2) ./ 2)
+    # calculate W^(k^2/2), we can reuse the conv_kernel definition 1..M and just invert it 
+    #
+    # The extra_phase accounts for the nominal center position of the source array. Note that this is 
+    # by default selected to be the geometric center and not the Fourier-center result in a real array upon zooming a symmetric even array.
+    wd = (abs(w)≈1.0) ? CT.(conj.(conv_kernel[1:M]) .* global_phase .* extra_phase.^m) : CT.(inv.(conv_kernel[1:M]) .* global_phase .* extra_phase.^m)
+    return aw, fft(conv_kernel), wd
+end
+
+# type for planning. The arrays are 1D but oriented
+"""
+    CZTPlan_1D{CT, D} # <: AbstractArray{T,D}
+
+type used for the onedimensional plan of the chirp Z transformation (CZT).
+containing
+# Members:
+    `d`: dimension (only one!) to transform with this plan
+    `pad_value`: the value to pad wrapped data with (zero is already handled by the `wd` term, if wanted). 
+    `pad_ranges` :: tuple of two ranges of invalid positions, which can be replaced by pad values
+    `aw`: factor to multiply input with
+    `fft_fv`: fourier-transform (FFTW) of the convolutio kernel
+    `wd`: factor to multiply the result of the convolution by
+    `fftw_plan`: plan for the forward FFTW of the convolution kernel
+    `ifftw_plan`: plan for the inverse FFTW of the convolution kernel
+"""
+struct CZTPlan_1D{CT, PT, D} # <: AbstractArray{T,D}
+    d :: Int
+    pad_value :: PT
+    pad_ranges :: NTuple{2,UnitRange{Int64}}
+    aw :: Array{CT, D}
+    fft_fv :: Array{CT, D}
+    wd :: Array{CT, D}
+    fftw_plan :: FFTW.cFFTWPlan
+    ifftw_plan :: AbstractFFTs.ScaledPlan
+    # dimension of this transformation
+    # as :: Array{T, D} # not needed since it is just the conjugate of ws
+end
+
+"""
+    CZTPlan_ND{CT, D} # <: AbstractArray{T,D}
+
+type used for the onedimensional plan of the chirp Z transformation (CZT).
+containing
+# Members:
+    `plans`: vector of CZTPlan_1D for each of the directions of the ND array to transform
+"""
+struct CZTPlan_ND{CT, D} # <: AbstractArray{T,D}
+    plans :: Vector{CZTPlan_1D{CT,D}}
+end
+
+function get_invalid_ranges(sz, scaled, dsize, dst_center)
+    start_range = 1:0
+    stop_range = 1:0
+    if (scaled*sz < dsize)
+        ceil(Int64, scaled * sz)
+        valid_start = floor(Int, dst_center - (scaled * sz)/2)
+        valid_end = ceil(Int, dst_center + (scaled * sz)/2)
+        start_range = let  
+            if valid_start > 1
+                if valid_end <= dsize
+                    1:valid_start-1
+                else
+                    1+valid_end - dsize:valid_start-1
+                end
+            else
+                1:0
+            end
+        end
+        stop_range = let 
+            if valid_end < dsize
+                if valid_start < 1
+                    valid_end+1:dsize+valid_start-1
+                else
+                    valid_end+1:dsize
+                end
+            else
+                1:0
+            end
+        end
+    end
+    return (start_range, stop_range)
+end
+
+"""
+    plan_czt_1d(xin, scaled, d, dsize=size(xin,d); a=nothing, w=nothing, damp=1.0, src_center=(size(xin,d)+1)/2, dst_center=dsize÷2+1, remove_wrap=false, fft_flags=FFTW.ESTIMATE)
+
+creates a plan for an one-dimensional chirp z-transformation (CZT). The generated plan is then applied via muliplication. For details about the arguments, see czt_1d().
+"""
+function plan_czt_1d(xin, scaled, d, dsize=size(xin,d); a=nothing, w=nothing, damp=1.0, src_center=(size(xin,d)+1)/2, dst_center=dsize÷2+1, remove_wrap=false, pad_value=zero(eltype(xin)), fft_flags=FFTW.ESTIMATE)
+
+    a = isnothing(a) ? exp.(-1im*(dst_center-1)*2pi/(scaled*size(xin,d))) : a
+    w = isnothing(w) ? cispi(-2/(scaled*size(xin,d))) : w
+    
+    w = w * damp 
+    extra_phase = exp(1im*2pi*(src_center-1)/(scaled*size(xin,d)))
+    global_phase = a ^ (src_center-1)
+
+    aw, fft_fv, wd = get_kernel_1d(eltype(xin), size(xin, d), dsize; a=a, w=w, extra_phase=extra_phase, global_phase=global_phase)
+
+    start_range = 1:0
+    end_range = 1:0
+    if remove_wrap
+        start_range, stop_range = get_invalid_ranges(size(xin, d), scaled, dsize, dst_center)
+        wd[start_range] .= zero(eltype(wd))
+        wd[stop_range] .= zero(eltype(wd))
+    end
+
+    nsz = ntuple((dd) -> (d==dd) ? size(fft_fv, 1) : size(xin, dd), Val(ndims(xin))) 
+    y = Array{eltype(aw), ndims(xin)}(undef, nsz)
+
+    fft_p = plan_fft(y, (d,); flags=fft_flags)
+    ifft_p = plan_ifft(y, (d,); flags=fft_flags) # inv(fft_p)
+    
+    plan = CZTPlan_1D(d, pad_value, (start_range, end_range), reorient(aw, d, Val(ndims(xin))), reorient(fft_fv, d, Val(ndims(xin))), reorient(wd, d, Val(ndims(xin))), fft_p, ifft_p)
+    return plan
+end
+
+"""
+    plan_czt(xin, scale, dims, dsize=size(xin); a=nothing, w=nothing, damp=ones(ndims(xin)), src_center=size(xin).÷2 .+1, dst_center=dsize.÷2 .+1, remove_wrap=false, fft_flags=FFTW.ESTIMATE)
+
+creates a plan for an N-dimensional chirp z-transformation (CZT). The generated plan is then applied via muliplication. For details about the arguments, see czt().
+"""
+function plan_czt(xin, scale, dims, dsize=size(xin); a=nothing, w=nothing, damp=ones(ndims(xin)), src_center=size(xin).÷2 .+1, dst_center=dsize.÷2 .+1, remove_wrap=false, fft_flags=FFTW.ESTIMATE)
+    CT = (eltype(xin) <: Real) ? Complex{eltype(xin)} : eltype(xin)
+    D = ndims(xin)
+    plans =  [] # Vector{CZT1DPlan{CT,D}}
+    sz = size(xin)
+    for d in dims
+        xin = Array{eltype(xin)}(undef, sz)
+        p = plan_czt_1d(xin, scale[d], d, dsize[d]; a=a, w=w, damp=damp[d], src_center=src_center[d], dst_center=dst_center[d], remove_wrap=remove_wrap, fft_flags=fft_flags)
+        sz = ntuple((dd)-> (dd==d) ? dsize[d] : sz[dd], ndims(xin))
+        push!(plans, p)
+    end
+    return CZTPlan_ND{CT, D}(plans)
+end
+
+function Base.:*(p::CZTPlan_ND, xin::AbstractArray{U,D}; kargs...) where {U,D} # Complex{U}
+    xout = xin
+    for pd in p.plans
+        xout = czt_1d(xout, pd)
+    end
+    return xout
+end
+
+# for being called with the less stringent (real) datatype
+# function Base.:*(p::CZTPlan_ND, f::AbstractArray{RT,D}; kargs...) where {RT <: Real, D}
+#         return p * f
+# end
+
 
 """
     czt_1d(xin , scaled , d; remove_wrap=false, pad_value=zero(eltype(xin)))
 
-Chirp z transform along a single direction d of an ND array `xin` into the ND array 'xout'.
-Note that xin and xout can be the same array for inplace operations.
+Chirp z transform along a single direction d of an ND array `xin`.
 Note that the result type is defined by `eltype(xin)` and not by `scales`.
 
-# References: Rabiner, Schafer, Rader, The Cirp z-Transform Algorithm, IEEE Trans AU 17(1969) p. 86
-This code is loosely based on a 2D Matlab version of the CZT, written by N.G. Worku & H. Gross
-with their consent (28. Oct. 2020) to make it openly available.
+The code is based on Rabiner, Schafer & Rader  1969, IEEE Trans. on Audio and Electroacoustics, 17,86-92
 
 # Arguments:
 + `xin`: array to transform
 + `scaled`: factor to zoom into during the 1-dimensional czt. 
 + `d`: single dimension to transform (as a tuple)
-+ `remove_wrap`: if true, the wrapped places will be set to pad_value
-+ `pad_value`: the value that the wrap-around will be set to if `remove_wrap` is `true`. 
++ `dsize`: size of the destination array
++ `a`: defines the starting phase of the result CZT. This relates to the where the center of the destination array should be.
+       The default is `nothing` which means it is calculated from the `src_center` argument.
++ `w`: defines the consecutive phases of the result array, i.e. the zoom. It is (default `nothing`) usually automatically calculated from the `scaled` and the `damp` argument.
+       You only need to state it, if you want to use the low-level interface (e.g. for the Laplace transform).
++ `damp`: a multiplicative factor to apply as a damping coefficient to `w`.
++ `src_center`: position of the nominal central (zero-position) pixel in the source array. By default the Fourier-center `size(src).÷2 .+1` is used.
++ `dst_center`: the center (zero-position) of the destination array. By default the Fourier-center `size(dst).÷2 .+1` is used.
++ `remove_wrap`: if true, the positions that represent a wrap-around will be set to zero
++ `pad_value`: the value to pad wrapped data with. 
+"""
+function czt_1d(xin, scaled, d, dsize=size(xin,d); a=nothing, w=nothing, damp=1.0, src_center=size(xin,d)÷2+1, dst_center=dsize÷2+1, remove_wrap=false, pad_value=zero(eltype(xin)), fft_flags=FFTW.ESTIMATE)
+    plan = plan_czt_1d(xin, scaled, d, dsize; a=a, w=w, damp, src_center=src_center, dst_center=dst_center, remove_wrap=remove_wrap, pad_value=pad_value, fft_flags=fft_flags);
+    return plan * xin
+end
+
+function Base.:*(p::CZTPlan_1D, xin::AbstractArray{U,D}; kargs...) where {U,D}        # Complex{U}
+    return czt_1d(xin, p)
+end
+
+# for being called with the less stringent (real) datatype
+# function Base.:*(p::CZTPlan_1D, f::AbstractArray{RT,D}; kargs...) where {RT <: Real, D}
+#         return p * f
+# end
+
 
 """
-function czt_1d(xin, scaled, d; remove_wrap=false, pad_value=zero(eltype(xin)))
-    sz=size(xin)
-    # returns the real datatype
-    rtype = real(eltype(xin))  
-    scaled = rtype(scaled)
-    dsize = sz[d]
-    nn = (0:dsize-1)
-    # 2N +1 new k-space positions
-    kk = ((-dsize+1):(dsize-1)) 
-    kk2 = rtype.((kk .^ 2) ./ 2)
-    
-    # scalar factor  
-    w = cispi(-2/(dsize*scaled)) 
-    # this is needed to center the array according to the center pixel convention
-    half_pix_shift = (2*(dsize÷2))/dsize 
-    # scalar factor. The correction factor to the right was introduced to be centered correctly on the pixel as ft is.
-    a = cispi(-1/scaled * half_pix_shift) 
-    ww = w .^ kk2
-    aa = a .^ (-nn)
-    # is a 1d list of factors. This defines the shift in Fourier space (centering of frequencies)
-    aa .*= ww[dsize .+ nn]
-    to_fft = NDTools.select_region(1 ./ ww[1:(2*dsize-1)], new_size=(2*dsize,), center=(dsize+1,))
-    # return tofft
-    # is always 1d (small array)
-    fv = fft(to_fft)
+    czt_1d(xin , plan::CZTPlan_1D)
 
-    y = xin .* reorient(aa, d, Val(ndims(xin)))
-    # twice the size along direction d
-    nsz = sz .* NDTools.single_dim_size(Val(d),2,Val(length(sz))) 
-    to_fft = NDTools.select_region(y, new_size=nsz, center=nsz.÷2 .+1)
-    # convolve on a larger grid along one dimension
-    g = ifft(fft(to_fft, d) .* reorient(fv, d, Val(ndims(xin))), d)
-    # return g
-    oldctr = sz[d]÷2 + 1
-    newctr = size(g) .÷ 2 .+1
-    ctr = ntuple(md -> (md == d) ? newctr[md] + oldctr - 2 : newctr[md], length(newctr))
+Chirp z transform along a single direction d of an ND array `xin`.
+Note that the result type is defined by `eltype(xin)` and not by `scales`.
+The plan can also be applied via multiplication with `xin`.
 
-    # This is to deal with a strange phase shift appearing for odd-sized arrays
-    if isodd(dsize) 
-        extra_phase = (2*dsize-2)/(2*dsize) # 5: 12 / 15, 7: 12/14, 9: 16/18, 11: 20/22
-    else
-        extra_phase = 1
-    end
-    # is a 1d list of factors
-    fak =  ww[dsize:(2*dsize-1)] .* cispi.(ramp(rtype,1,dsize, scale=1/scaled * extra_phase))
-    # return select_region(g, new_size=sz,center=ctr)
-    xout = select_region(g, new_size=sz,center=ctr) .* reorient(fak, d, Val(ndims(xin)))
+The code is based on Rabiner, Schafer & Rader  1969, IEEE Trans. on Audio and Electroacoustics, 17,86-92
 
-    # this is a fix to deal with the problem that imaginary numbers are appearing for even-sized arrays, caused by the first entry
-    if iseven(dsize) && (scaled>1.0) 
-        # a `scaled` of one meas this is an ordinary Fourier-transformation without zoom, which needs to keep the highes frequency value
-        midp = dsize÷2+1
-        for o in 1+mod(midp,2):2:dsize
-            NDTools.slice(xout,d, o) .-= NDTools.slice(xin,d, 1) .* (1im).^mod(o-midp,4)
-        end
+# Arguments
+    `plan`:   A plan created via plan_czt_1d()
+"""
+function czt_1d(xin, plan::CZTPlan_1D)
+    # destination position
+    # cispi(-1/scaled * half_pix_shift) 
+    #
+    # The extra_phase accounts for the nominal center position of the source array.
+    # Note that the default for src_center is the Fourier-center
+    # which (intentionally) leads to non-real results for even-sized arrays at non-unit zoom
+
+    L = size(plan.fft_fv, plan.d)
+    nsz = ntuple((dd) -> (dd==plan.d) ? L : size(xin, dd), Val(ndims(xin))) 
+    # append zeros
+    y = zeros(eltype(plan.aw), nsz)
+    myrange = ntuple((dd) -> (1:size(xin,dd)), Val(ndims(xin))) 
+    y[myrange...] = xin .* plan.aw
+    # corner = ntuple((x)->1, Val(ndims(xin)))
+    # select_region(xin .* plan.aw, new_size=nsz, center=corner, dst_center=corner) 
+
+    # g = ifft(fft(y, d) .* plan.fft_fv, d)
+    g = plan.ifftw_plan * (plan.fftw_plan * y .* plan.fft_fv)
+    # dsz = ntuple((dd) -> (d==dd) ? dsize : size(xin), Val(ndims(xin))) 
+    # return only the wanted (valid) part
+    myrange = ntuple((dd) -> (dd==plan.d) ? (1:size(plan.wd,plan.d)) : (1:size(xin, dd)), Val(ndims(xin))) 
+    res = g[myrange...] .* plan.wd
+    # pad_value=0 means that it is either already handled by plan.wd or no padding is wanted.
+    if plan.pad_value != 0
+        myrange = ntuple((dd) -> (dd==plan.d) ? plan.pad_ranges[1] : Colon(), Val(ndims(xin))) 
+        res[myrange...] .= plan.pad_value
+        myrange = ntuple((dd) -> (dd==plan.d) ? plan.pad_ranges[2] : Colon(), Val(ndims(xin))) 
+        res[myrange...] .= plan.pad_value
     end
-    if remove_wrap && (scaled < 1.0)
-        nsz = Tuple(d == nd ? ceil(Int64, scaled * size(xin,d)) : size(xin,nd) for nd=1:ndims(xin))
-        return select_region(select_region(xout, new_size=nsz), new_size=size(xout), pad_value=pad_value)
-    else
-        return xout
-    end
-    # xout .= g[dsize:(2*dsize-1)] .* reorient(fak, d, Val(ndims(xin)))
+    return res
 end
 
 """
-    czt(xin , scale, dims=1:length(size(xin)), remove_wrap=false)
+    czt(xin, scale, dims=1:ndims(xin), dsize=size(xin,d); a=nothing, w=nothing, damp=ones(ndims(xin)), src_center=size(xin,d)÷2+1, dst_center=dsize÷2+1, remove_wrap=false, fft_flags=FFTW.ESTIMATE)
 
 Chirp z transform of the ND array `xin`
-This code is based on a 2D Matlab version of the CZT, written by H. Gross.
 The tuple `scale` defines the zoom factors in the Fourier domain. Each has to be bigger than one.
 
 # See also: `iczt`, `czt_1d`
-    
-# References: Rabiner, Schafer, Rader, The Cirp z-Transform Algorithm, IEEE Trans AU 17(1969) p. 86
+The code is based on Rabiner, Schafer & Rader  1969, IEEE Trans. on Audio and Electroacoustics, 17,86-92
 
 # Arguments:
 + `xin`: array to transform
 + `scale`: a tuple of factors (one for each dimension) to zoom into during the czt. 
    Note that a factor of nothing (or 1.0) needs to be provided, if a dimension is not transformed.
 + `dims`: a tuple of dimensions over which to apply the czt.
-+ `remove_wrap`: if true, the wrapped places will be set to zero. 
-   Note that the `pad_value` argument is only allowed for czt_1d to not cause confusion.
++ `dsize`: a tuple specifying the destination size
++ `a`: defines the starting phase of the result CZT. This relates to the where the center of the destination array should be.
+       The default is `nothing` which means it is calculated from the `src_center` argument.
++ `w`: defines the consecutive phases of the result array, i.e. the zoom. It is (default `nothing`) usually automatically calculated from the `scaled` and the `damp` argument.
+       You only need to state it, if you want to use the low-level interface (e.g. for the Laplace transform).
++ `damp`: a multiplicative factor to apply as a damping coefficient to `w`.
++ `src_center`: position of the nominal central (zero-position) pixel in the source array. By default the Fourier-center `size(src).÷2 .+1` is used.
++ `dst_center`: the center (zero-position) of the destination array. By default the Fourier-center `size(dst).÷2 .+1` is used.
++ `remove_wrap`: if true, the positions that represent a wrap-around will be set to zero
 
 # Example:
 
@@ -139,8 +337,8 @@ julia> zoomed = real.(ift(xft))
   0.0239759   -0.028264    0.0541186  -0.0116475   -0.261294   0.312719  -0.261294  -0.0116475    0.0541186  -0.028264
 ```
 """
-function czt(xin::AbstractArray{T,N}, scale, dims=1:length(size(xin)); 
-            remove_wrap=false)::AbstractArray{complex(T),N} where {T,N}
+function czt(xin::AbstractArray{T,N}, scale, dims=1:ndims(xin), dsize=size(xin); 
+            a=nothing, w=nothing, damp=ones(ndims(xin)), src_center=size(xin).÷2 .+1, dst_center=dsize.÷2 .+1, remove_wrap=false, pad_value=zero(eltype(xin)), fft_flags=FFTW.ESTIMATE)::AbstractArray{complex(T),N} where {T,N}
     xout = xin
     if length(scale) != ndims(xin)
         error("Every of the $(ndims(xin)) dimension needs exactly one corresponding scale (zoom) factor, which should be equal to 1.0 for dimensions not contained in the dims argument.")
@@ -151,27 +349,32 @@ function czt(xin::AbstractArray{T,N}, scale, dims=1:length(size(xin));
         end
     end
     for d in dims
-        xout = czt_1d(xout, scale[d], d; remove_wrap=remove_wrap)
+        xout = czt_1d(xout, scale[d], d, dsize[d]; a=a, w=w, damp=damp[d], src_center=src_center[d], dst_center=dst_center[d], remove_wrap=remove_wrap, pad_value=pad_value, fft_flags=fft_flags)
     end
     return xout
 end
 
 """
-    iczt(xin , scale, dims=1:length(size(xin)); remove_wrap=false)
+    iczt(xin ,scale, dims=1:length(size(xin)), dsize=size(xin,d); a=nothing, w=nothing, damp=1.0, src_center=size(xin,d)÷2+1, dst_center=dsize÷2+1, remove_wrap=false, fft_flags=FFTW.ESTIMATE)
 
 Inverse chirp z transform of the ND array `xin`
-This code is based on a 2D Matlab version of the CZT, written by H. Gross.
-The tuple `scale` defines the zoom factors in the Fourier domain. Each has to be bigger than one.
-    
-# References: Rabiner, Schafer, Rader, The Cirp z-Transform Algorithm, IEEE Trans AU 17(1969) p. 86
+The tuple `scale` defines the zoom factors in the Fourier domain. Each has to be bigger than one.    
+The code is based on Rabiner, Schafer & Rader  1969, IEEE Trans. on Audio and Electroacoustics, 17,86-92
 
 # Arguments:
 + `xin`: array to transform
-+ `scale`: a tuple of factors (one for each dimension) of the the inverse czt. 
-   Note that a factor of nothing (or 1.0) needs to be provided, if a dimension is not transformed.
-+ `dims`: a tuple of dimensions over which to apply the inverse czt.
-+ `remove_wrap`: if true, the wrapped places will be set to zero. 
-                 Note that the `pad_value` argument is only allowed for 1d czts to not cause confusion.
++ `scaled`: factor to zoom into during the 1-dimensional czt. 
++ `d`: single dimension to transform (as a tuple)
++ `dsize`: size of the destination array
++ `a`: defines the starting phase of the result CZT. This relates to the where the center of the destination array should be.
+       The default is `nothing` which means it is calculated from the `src_center` argument.
++ `w`: defines the consecutive phases of the result array, i.e. the zoom. It is (default `nothing`) usually automatically calculated from the `scaled` and the `damp` argument.
+       You only need to state it, if you want to use the low-level interface (e.g. for the Laplace transform).
++ `damp`: a multiplicative factor to apply as a damping coefficient to `w`.
++ `src_center`: position of the nominal central (zero-position) pixel in the source array. By default the Fourier-center `size(src).÷2 .+1` is used.
++ `dst_center`: the center (zero-position) of the destination array. By default the Fourier-center `size(dst).÷2 .+1` is used.
++ `remove_wrap`: if true, the positions that represent a wrap-around will be set to zero
++ `pad_value`: the value to pad wrapped data with. 
 
 See also: `czt`, `czt_1d`
 
@@ -212,6 +415,6 @@ julia> iczt(xft,(1.2,1.3))
  -0.0965531+0.0404296im  -0.159713+0.0637132im    0.48095+0.0775406im    0.67753-0.263814im        0.77553-0.121603im    0.660335-0.00736904im   0.495205-0.135059im   -0.163859+0.125535im
 ```
 """
-function iczt( xin , scale, dims=1:length(size(xin)); remove_wrap=false)
-    conj(czt(conj(xin), scale, dims; remove_wrap=remove_wrap)) / prod(size(xin))
+function iczt(xin ,scale, dims=1:ndims(xin), dsize=size(xin); a=nothing, w=nothing, damp=ones(ndims(xin)), src_center=size(xin).÷2 .+1, dst_center=dsize.÷2 .+1, remove_wrap=false, pad_value=zero(eltype(xin)), fft_flags=FFTW.ESTIMATE)
+    conj(czt(conj(xin), scale, dims, dsize; a=a, w=w, damp=damp, src_center=src_center, dst_center=dst_center, remove_wrap=remove_wrap, pad_value=pad_value*prod(size(xin)), fft_flags=fft_flags)) / prod(size(xin))
 end
