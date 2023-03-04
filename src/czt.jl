@@ -90,8 +90,8 @@ containing
 # Members:
     `plans`: vector of CZTPlan_1D for each of the directions of the ND array to transform
 """
-struct CZTPlan_ND{CT, D} # <: AbstractArray{T,D}
-    plans :: Vector{CZTPlan_1D{CT,D}}
+struct CZTPlan_ND{CT, PT, D} # <: AbstractArray{T,D}
+    plans :: Vector{CZTPlan_1D{CT,PT, D}}
 end
 
 function get_invalid_ranges(sz, scaled, dsize, dst_center)
@@ -166,18 +166,18 @@ end
 
 creates a plan for an N-dimensional chirp z-transformation (CZT). The generated plan is then applied via muliplication. For details about the arguments, see czt().
 """
-function plan_czt(xin, scale, dims, dsize=size(xin); a=nothing, w=nothing, damp=ones(ndims(xin)), src_center=size(xin).÷2 .+1, dst_center=dsize.÷2 .+1, remove_wrap=false, fft_flags=FFTW.ESTIMATE)
+function plan_czt(xin, scale, dims, dsize=size(xin); a=nothing, w=nothing, damp=ones(ndims(xin)), src_center=size(xin).÷2 .+1, dst_center=dsize.÷2 .+1, remove_wrap=false, pad_value=zero(eltype(xin)), fft_flags=FFTW.ESTIMATE)
     CT = (eltype(xin) <: Real) ? Complex{eltype(xin)} : eltype(xin)
     D = ndims(xin)
     plans =  [] # Vector{CZT1DPlan{CT,D}}
     sz = size(xin)
     for d in dims
         xin = Array{eltype(xin)}(undef, sz)
-        p = plan_czt_1d(xin, scale[d], d, dsize[d]; a=a, w=w, damp=damp[d], src_center=src_center[d], dst_center=dst_center[d], remove_wrap=remove_wrap, fft_flags=fft_flags)
+        p = plan_czt_1d(xin, scale[d], d, dsize[d]; a=a, w=w, damp=damp[d], src_center=src_center[d], dst_center=dst_center[d], remove_wrap=remove_wrap, pad_value=pad_value, fft_flags=fft_flags)
         sz = ntuple((dd)-> (dd==d) ? dsize[d] : sz[dd], ndims(xin))
         push!(plans, p)
     end
-    return CZTPlan_ND{CT, D}(plans)
+    return CZTPlan_ND{CT, typeof(pad_value),D}(plans)
 end
 
 function Base.:*(p::CZTPlan_ND, xin::AbstractArray{U,D}; kargs...) where {U,D} # Complex{U}

@@ -18,6 +18,8 @@ using NDTools # this is needed for the select_region! function below.
 
         # for uneven sizes this works:
         @test ≈(czt(y[1:5,1:5],zoom, (1,2), (10,10)),  upsample2(ft(y[1:5,1:5]), fix_center=true), rtol=1e-5)
+        p_czt = plan_czt(y, zoom, (1,2), (11,12))
+        @test ≈(p_czt * y, czt(y, zoom, (1,2), (11,12)))
         # zoom smaller 1.0 causes wrap around:
         zoom = (0.5,2.0)
         @test abs(czt(y,zoom)[1,1]) > 1e-5
