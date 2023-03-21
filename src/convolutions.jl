@@ -207,15 +207,6 @@ function p_conv_aux(P, P_inv, u, v_ft)
     return (P_inv.p * ((P * u) .* v_ft .* P_inv.scale))
 end
 
-function ChainRulesCore.rrule(::typeof(p_conv_aux), P, P_inv, u, v)
-    Y = p_conv_aux(P, P_inv, u, v) 
-    function conv_pullback(barx)
-        z = zero(eltype(u))
-        ∇ = p_conv_aux(P, P_inv, barx, conj(v))
-        return NoTangent(), z, z, ∇, z
-    end 
-    return Y, conv_pullback
-end
 
 """
     fft_or_rfft(T)
