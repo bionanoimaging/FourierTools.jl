@@ -73,7 +73,7 @@
         @test fftpos(1, 4, CenterMiddle) ≈ -0.375:0.25:0.375 
         @test fftpos(1, 4, CenterFirst) ≈ 0.0:0.25:0.75 
         @test fftpos(1, 4) ≈ 0.0:0.25:0.75 
-        @test fftpos(1, 4, 2) ≈ -0.25:0.25:0.5 
+        @test fftpos(1f0, 4, 2) ≈ -0.25f0:0.25f0:0.5f0
 
 
         function f(l, N)

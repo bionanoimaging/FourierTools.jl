@@ -128,14 +128,17 @@ Another `fftpos` method where the range is constructed
 around `around`. `around` is here a number indicating
 the index position around the range is constructed
 """
-function fftpos(l, N, around::Number)
+function fftpos(l::AbstractFloat, N, around::Number)
     dx = l / N
-    fraction = (around - 1) / (N - 1)
+    fraction = typeof(l)(around - 1) / (N - 1)
     return range(0 - (l-dx) * fraction, 
                  0 + (l-dx) * (1-fraction),
                  length=N)
 end
 
+function fftpos(l::Integer, N, around::Number)
+    fftpos(Float64(l), N, around)
+end
 
 """
     fft_center(x)
