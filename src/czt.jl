@@ -19,7 +19,7 @@ with their consent (28. Oct. 2020) to make it openly available.
 + `pad_value`: the value that the wrap-around will be set to if `remove_wrap` is `true`. 
 
 """
-function czt_1d(xin, scaled, d; remove_wrap=false, pad_value=zero(eltype(xin)))
+function czt_1d(xin, scaled, d; remove_wrap=false, pad_value=zero(eltype(xin)), optional_cast=ifelse(isa(xin, CuArray), CuArray, identity))
     sz=size(xin)
     # returns the real datatype
     rtype = real(eltype(xin))  
@@ -28,7 +28,7 @@ function czt_1d(xin, scaled, d; remove_wrap=false, pad_value=zero(eltype(xin)))
     nn = (0:dsize-1)
     # 2N +1 new k-space positions
     kk = ((-dsize+1):(dsize-1)) 
-    kk2 = rtype.((kk .^ 2) ./ 2)
+    kk2 = rtype.((optional_cast(kk).^2) ./ 2)
     
     # scalar factor  
     w = cispi(-2/(dsize*scaled)) 
@@ -37,7 +37,7 @@ function czt_1d(xin, scaled, d; remove_wrap=false, pad_value=zero(eltype(xin)))
     # scalar factor. The correction factor to the right was introduced to be centered correctly on the pixel as ft is.
     a = cispi(-1/scaled * half_pix_shift) 
     ww = w .^ kk2
-    aa = a .^ (-nn)
+    aa = a .^ optional_cast((-nn))
     # is a 1d list of factors. This defines the shift in Fourier space (centering of frequencies)
     aa .*= ww[dsize .+ nn]
     to_fft = NDTools.select_region(1 ./ ww[1:(2*dsize-1)], new_size=(2*dsize,), center=(dsize+1,))
@@ -50,7 +50,16 @@ function czt_1d(xin, scaled, d; remove_wrap=false, pad_value=zero(eltype(xin)))
     nsz = sz .* NDTools.single_dim_size(Val(d),2,Val(length(sz))) 
     to_fft = NDTools.select_region(y, new_size=nsz, center=nsz.÷2 .+1)
     # convolve on a larger grid along one dimension
-    g = ifft(fft(to_fft, d) .* reorient(fv, d, Val(ndims(xin))), d)
+    g = let 
+        # due to some bug in the CuArray fft we need to switch dimensions
+        if isa(xin, CuArray) && d>1
+            pdims = Tuple(ifelse(n==d, 1, ifelse(n==1, d, n)) for n=1:ndims(to_fft))
+            tmp=permutedims(to_fft, pdims)
+            permutedims(ifft(fft(tmp, 1) .* fv, 1), pdims)
+        else
+            ifft(fft(to_fft, d) .* reorient(fv, d, Val(ndims(xin))), d)
+        end
+    end
     # return g
     oldctr = sz[d]÷2 + 1
     newctr = size(g) .÷ 2 .+1
@@ -63,9 +72,11 @@ function czt_1d(xin, scaled, d; remove_wrap=false, pad_value=zero(eltype(xin)))
         extra_phase = 1
     end
     # is a 1d list of factors
-    fak =  ww[dsize:(2*dsize-1)] .* cispi.(ramp(rtype,1,dsize, scale=1/scaled * extra_phase))
+    fak =  ww[dsize:(2*dsize-1)] .* cispi.(optional_cast(ramp(rtype,1,dsize, scale=1/scaled * extra_phase)))
     # return select_region(g, new_size=sz,center=ctr)
-    xout = select_region(g, new_size=sz,center=ctr) .* reorient(fak, d, Val(ndims(xin)))
+    tmp1 = NDTools.select_region(g, new_size=sz, center=ctr)
+    tmp2 = reorient(fak, d, Val(ndims(xin)))
+    xout = tmp1 .* tmp2
 
     # this is a fix to deal with the problem that imaginary numbers are appearing for even-sized arrays, caused by the first entry
     if iseven(dsize) && (scaled>1.0) 
@@ -77,7 +88,7 @@ function czt_1d(xin, scaled, d; remove_wrap=false, pad_value=zero(eltype(xin)))
     end
     if remove_wrap && (scaled < 1.0)
         nsz = Tuple(d == nd ? ceil(Int64, scaled * size(xin,d)) : size(xin,nd) for nd=1:ndims(xin))
-        return select_region(select_region(xout, new_size=nsz), new_size=size(xout), pad_value=pad_value)
+        return NDTools.select_region(NDTools.select_region(xout, new_size=nsz), new_size=size(xout), pad_value=pad_value)
     else
         return xout
     end

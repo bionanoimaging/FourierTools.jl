@@ -103,10 +103,10 @@ function shift_by_1D_FT!(arr::TA, shifts; soft_fraction=0, take_real=false, fix_
         # in even case, set one value to real
         if iseven(size(arr, d))
             s = size(arr, d) ÷ 2 + 1
-            ϕ[s] = take_real ? real(ϕ[s]) : ϕ[s]
-            invr = 1 / ϕ[s]
+            CUDA.@allowscalar ϕ[s] = take_real ? real(ϕ[s]) : ϕ[s]
+            CUDA.@allowscalar invr = 1 / ϕ[s]
             invr = isinf(invr) ? 0 : invr
-            ϕ[s] = fix_nyquist_frequency ? invr : ϕ[s]
+            CUDA.@allowscalar ϕ[s] = fix_nyquist_frequency ? invr : ϕ[s]
         end
         # go to fourier space and apply ϕ
         fft!(arr, d)
@@ -157,10 +157,10 @@ function shift_by_1D_RFT!(arr::TA, shifts; soft_fraction=0, fix_nyquist_frequenc
         end
         if iseven(size(arr, d))
             # take real and maybe fix nyquist frequency
-            ϕ[s] = take_real ? real(ϕ[s]) : ϕ[s]
-            invr = 1 / ϕ[s]
+            CUDA.@allowscalar ϕ[s] = take_real ? real(ϕ[s]) : ϕ[s]
+            CUDA.@allowscalar invr = 1 / ϕ[s]
             invr = isinf(invr) ? 0 : invr
-            ϕ[s] = fix_nyquist_frequency ? invr : ϕ[s]
+            CUDA.@allowscalar ϕ[s] = fix_nyquist_frequency ? invr : ϕ[s]
         end
         arr_ft .*= ϕ
         # since we now did a single rfft dim, we can switch to the complex routine

@@ -20,7 +20,9 @@ function optional_collect(csa::ShiftedArrays.CircShiftedArray)
     if all(iszero.(csa.shifts))
         return optional_collect(parent(csa))
     else
-        return collect(csa)
+        # this slightly more complicated version is used instead of collect(csa), because it is faster
+        # and because it works with CUDA
+        return circshift(parent(csa), csa.shifts) 
     end
 end
 

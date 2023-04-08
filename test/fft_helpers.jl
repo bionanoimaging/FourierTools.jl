@@ -1,7 +1,7 @@
 @testset "test fft_helpers" begin
 
     @testset "Optional collect" begin
-        y = [1,2,3]
+        y = opt_cu([1,2,3],use_cuda)
         x = fftshift_view(y, (1))
         @test fftshift(y) == FourierTools.optional_collect(x)
     end
@@ -17,7 +17,7 @@
         for dim = 1:4
             for _ in 1:3
                 s = ntuple(_ -> rand(1:13), dim)
-                arr = randn(ComplexF32, s)
+                arr = opt_cu(randn(ComplexF32, s), use_cuda)
                 dims = 1:dim
                 testft(arr, dims)
                 testift(arr, dims)

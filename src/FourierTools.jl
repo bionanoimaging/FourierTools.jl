@@ -8,9 +8,10 @@ using LinearAlgebra
 using IndexFunArrays
 using ChainRulesCore
 using NDTools
+# to have the CuArray type accesible
+using CUDA
 @reexport using NFFT
 FFTW.set_num_threads(4)
-
 
 
 include("utils.jl")
