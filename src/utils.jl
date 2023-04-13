@@ -471,11 +471,13 @@ using ShiftedArrays
 # end
 
 # Base.BroadcastStyle(::Type{<:ShiftedArrays.CircShiftedArray}) = Broadcast.ArrayStyle{ShiftedArrays.CircShiftedArray}()
-Base.BroadcastStyle(::Type{<:ShiftedArrays.CircShiftedArray}) = Broadcast.ArrayStyle{ShiftedArrays.CircShiftedArray}()
 
-function Base.similar(bc::Broadcast.Broadcasted{Broadcast.ArrayStyle{ShiftedArrays.CircShiftedArray}}, ::Type{ElType}) where ElType
-    CUDA.similar(CuArray{ElType}, axes(bc))
-end
+## should only be specific to CUDA types!
+# Base.BroadcastStyle(::Type{<:ShiftedArrays.CircShiftedArray}) = Broadcast.ArrayStyle{ShiftedArrays.CircShiftedArray}()
+
+# function Base.similar(bc::Broadcast.Broadcasted{Broadcast.ArrayStyle{ShiftedArrays.CircShiftedArray}}, ::Type{ElType}) where ElType
+#     CUDA.similar(CuArray{ElType}, axes(bc))
+# end
 
 # Base.BroadcastStyle(::Broadcast.Style{ShiftedArrays.CircShiftedArray}, b::Broadcast.Style{CuArray}) = b #Broadcast.DefaultArrayStyle{CuArray}()
 # Base.BroadcastStyle(::Broadcast.Style{ShiftedArrays.CircShiftedArray}, b::Broadcast.Style{CuArray}) = b #Broadcast.DefaultArrayStyle{CuArray}()
