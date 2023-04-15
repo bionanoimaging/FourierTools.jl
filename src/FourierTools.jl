@@ -15,6 +15,8 @@ FFTW.set_num_threads(4)
 
 
 include("utils.jl")
+include("circ_shifted_arrrays.jl")
+
 include("nfft_nd.jl")
 include("resampling.jl")
 include("custom_fourier_types.jl")
