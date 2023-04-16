@@ -65,16 +65,24 @@ Base.IndexStyle(::Type{<:CircShiftedArray}) = IndexLinear()
 Base.Broadcast.materialize!(dest::CircShiftedArray{T,N,A,S}, csa::CircShiftedArray{T2,N2,A2,S}) where {T,N,A,S,T2,N2,A2} = Base.Broadcast.materialize!(dest.parent, csa.parent)
 
 # remove all the circ-shift part if all shifts are the same
+function Base.Broadcast.materialize!(dest::CircShiftedArray{T,N,A,S}, bc::Base.Broadcast.Broadcasted{CircShiftedArrayStyle{N,S}}) where {T,N,A,S}
+    invoke(Base.Broadcast.materialize!, Tuple{CircShiftedArray{T,N,A,S}, Base.Broadcast.Broadcasted}, dest, bc)
+end
+# we cannot specialize the Broadcast style here, since the rhs may not contain a CircShiftedArray and still wants to be assigned
 function Base.Broadcast.materialize!(dest::CircShiftedArray{T,N,A,S}, bc::Base.Broadcast.Broadcasted) where {T,N,A,S}
-    # function Base.Broadcast.materialize!(dest::CircShiftedArray{T,N,A,S}, bc::Base.Broadcast.Broadcasted{CircShiftedArrayStyle}) where {T,N,A,S}
+@show bc
     @show "materialize! cs"
+    @show only_shifted(bc)
     if only_shifted(bc)
         # bcn = Base.Broadcast.Broadcasted{CircShiftedArrayStyle{N,S}}(bc.f, bc.args, bc.axes)
         # fall back to standard assignment
-        Base.Broadcast.materialize!(dest.parent, bc)
+        @show "use raw"
+        # to avoid calling the method defined below, we need to use `invoke`:
+        invoke(Base.Broadcast.materialize!, Tuple{AbstractArray, Base.Broadcast.Broadcasted}, dest, bc) 
     else
         # get all not-shifted arrays and apply the materialize operations piecewise using array views
-        materialize_checkerboard!(dest.parent, bc, Tuple(1:N), csa_shift(dest))
+        materialize_checkerboard!(dest.parent, bc, Tuple(1:N), wrapshift(size(dest) .- csa_shift(dest), size(dest)), true)
+        # materialize_checkerboard!(dest.parent, bc, Tuple(1:N), csa_shift(dest), true)
     end
     return dest
 end
@@ -84,7 +92,9 @@ function Base.Broadcast.materialize!(dest::AbstractArray, bc::Base.Broadcast.Bro
     # function Base.Broadcast.materialize!(dest::CircShiftedArray{T,N,A,S}, bc::Base.Broadcast.Broadcasted{CircShiftedArrayStyle}) where {T,N,A,S}
     @show "materialize! cs into normal array "
     @show to_tuple(S)
-    materialize_checkerboard!(dest, bc, Tuple(1:N), to_tuple(S))
+    # materialize_checkerboard!(dest, bc, Tuple(1:N), wrapshift(to_tuple(S), size(dest)), true)
+    # materialize_checkerboard!(dest, bc, Tuple(1:N), wrapshift(size(dest) .- to_tuple(S), size(dest)), false)
+    materialize_checkerboard!(dest, bc, Tuple(1:N), to_tuple(S), false)
     return dest
 end
 
@@ -103,25 +113,32 @@ this function calls itself recursively to subdivide the array into tiles, which 
    |---------|
 
 """
-function materialize_checkerboard!(dest, bc, dims, myshift) 
+function materialize_checkerboard!(dest, bc, dims, myshift, dest_is_cs_array=true) 
     mydim = dims[1]
+    @show myshift
     s = myshift[mydim]
     # obtain a broadcast where all arrays are replaced by SubArrays
-    ax_dst = Tuple(ifelse(d==mydim, firstindex(dest,d):firstindex(dest,d)+s, axes(dest)[d]) for d=1:ndims(dest))
-    ax_src = Tuple(ifelse(d==mydim, lastindex(dest,d)-s:lastindex(dest,d), axes(dest)[d]) for d=1:ndims(dest))
+    ax_dst = Tuple(ifelse(d==mydim, firstindex(dest,d):firstindex(dest,d)+s-1, axes(dest)[d]) for d=1:ndims(dest))
+    ax_src =Tuple(ifelse(d==mydim, lastindex(dest,d)-s+1:lastindex(dest,d), axes(dest)[d]) for d=1:ndims(dest))
     bc1 = split_array_broadcast(bc, ax_src, ax_dst)
+    dst_view =  ifelse(dest_is_cs_array, (@view dest[ax_dst...]), (@view dest[ax_src...]))
     if length(dims)>1
-        materialize_checkerboard!((@view dest[ax_dst...]), bc1, dims[2:end], myshift)
+        materialize_checkerboard!(dst_view, bc1, dims[2:end], myshift, dest_is_cs_array)
     else
-        Base.Broadcast.materialize!((@view dest[ax_dst...]), bc1)
+        @show ax_dst
+        @show ax_src
+        Base.Broadcast.materialize!(dst_view, bc1)
     end
-    ax_dst = Tuple(ifelse(d==mydim, firstindex(dest,d)+s+1:lastindex(dest,d), axes(dest)[d]) for d=1:ndims(dest))
-    ax_src = Tuple(ifelse(d==mydim, firstindex(dest,d):lastindex(dest,d)-s-1, axes(dest)[d]) for d=1:ndims(dest))
+    ax_dst = Tuple(ifelse(d==mydim, firstindex(dest,d)+s:lastindex(dest,d), axes(dest)[d]) for d=1:ndims(dest))
+    ax_src = Tuple(ifelse(d==mydim, firstindex(dest,d):lastindex(dest,d)-s, axes(dest)[d]) for d=1:ndims(dest))
     bc2 = split_array_broadcast(bc, ax_src, ax_dst)
+    dst_view = ifelse(dest_is_cs_array, (@view dest[ax_dst...]), (@view dest[ax_src...]))
     if length(dims)>1
-        materialize_checkerboard!((@view dest[ax_dst...]), bc2, dims[2:end], myshift)
+        materialize_checkerboard!(dst_view, bc2, dims[2:end], myshift, dest_is_cs_array)
     else
-        Base.Broadcast.materialize!((@view dest[ax_dst...]), bc2)
+        @show ax_dst
+        @show ax_src
+        Base.Broadcast.materialize!(dst_view, bc2)
     end
 end
 
@@ -133,7 +150,7 @@ only_shifted(bc::Base.Broadcast.Broadcasted) = all(only_shifted.(bc.args))
 
 split_array_broadcast(bc::Number, src_rng, dst_rng) = bc
 split_array_broadcast(bc::AbstractArray, src_rng, dst_rng) = @view bc[src_rng...]
-split_array_broadcast(bc::CircShiftedArray, src_rng, dst_rng)  = @view bc[dst_rng...]
+split_array_broadcast(bc::CircShiftedArray, src_rng, dst_rng)  = @view bc.parent[dst_rng...]
 function split_array_broadcast(bc::Base.Broadcast.Broadcasted, src_rng, dst_rng)
     # Ref below protects the argument from broadcasting
     bc_modified = split_array_broadcast.(bc.args, Ref(src_rng), Ref(dst_rng))
@@ -212,15 +229,13 @@ function Base.similar(arr::CircShiftedArray)
     similar(arr.parent)
 end
 
-function Base.similar(arr::CircShiftedArray)
-    @show "Similar"
-    similar(arr.parent)
+function Base.show(io::IO, mm::MIME"text/plain", cs::CircShiftedArray) 
+    CUDA.@allowscalar invoke(Base.show, Tuple{IO, typeof(mm), AbstractArray}, io, mm, cs) 
 end
-
-function Base.display(cs::CircShiftedArray)
-    print("CircShiftedArray: ")
-    Base.display(collect(cs)) 
-end
+# CUDA.@allowscalar 
+# function Base.show(cs::CircShiftedArray)
+#     return show(stdout, cs)
+# end
 
 # two similarly shifted arrays should remain a shifted array
 # Base.Broadcast.broadcasted(::typeof(Base.circshift), csa::CircShiftedArray{T,N,A}, shift::NTuple) where {T,N,A<:AbstractArray{T,N}} =
