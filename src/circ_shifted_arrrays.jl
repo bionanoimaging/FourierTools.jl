@@ -66,21 +66,29 @@ Base.Broadcast.materialize!(dest::CircShiftedArray{T,N,A,S}, csa::CircShiftedArr
 
 # remove all the circ-shift part if all shifts are the same
 function Base.Broadcast.materialize!(dest::CircShiftedArray{T,N,A,S}, bc::Base.Broadcast.Broadcasted) where {T,N,A,S}
-# function Base.Broadcast.materialize!(dest::CircShiftedArray{T,N,A,S}, bc::Base.Broadcast.Broadcasted{CircShiftedArrayStyle}) where {T,N,A,S}
-@show "materialize! cs"
-# @show typeof(bc)
-    # @show os = only_shifted(bc)
+    # function Base.Broadcast.materialize!(dest::CircShiftedArray{T,N,A,S}, bc::Base.Broadcast.Broadcasted{CircShiftedArrayStyle}) where {T,N,A,S}
+    @show "materialize! cs"
     if only_shifted(bc)
         # bcn = Base.Broadcast.Broadcasted{CircShiftedArrayStyle{N,S}}(bc.f, bc.args, bc.axes)
         # fall back to standard assignment
         Base.Broadcast.materialize!(dest.parent, bc)
-        return dest
     else
         # get all not-shifted arrays and apply the materialize operations piecewise using array views
         materialize_checkerboard!(dest.parent, bc, Tuple(1:N), csa_shift(dest))
     end
+    return dest
 end
 
+# NOT WORKING !
+function Base.Broadcast.materialize!(dest::AbstractArray, bc::Base.Broadcast.Broadcasted{CircShiftedArrayStyle{N,S}}) where {N,S}
+    # function Base.Broadcast.materialize!(dest::CircShiftedArray{T,N,A,S}, bc::Base.Broadcast.Broadcasted{CircShiftedArrayStyle}) where {T,N,A,S}
+    @show "materialize! cs into normal array "
+    @show to_tuple(S)
+    materialize_checkerboard!(dest, bc, Tuple(1:N), to_tuple(S))
+    return dest
+end
+
+    
 """
     materialize_checkerboard!(dest, bc, dims, myshift) 
 
