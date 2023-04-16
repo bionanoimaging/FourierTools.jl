@@ -94,6 +94,7 @@ function Base.Broadcast.materialize!(dest::AbstractArray, bc::Base.Broadcast.Bro
     @show to_tuple(S)
     # materialize_checkerboard!(dest, bc, Tuple(1:N), wrapshift(to_tuple(S), size(dest)), true)
     # materialize_checkerboard!(dest, bc, Tuple(1:N), wrapshift(size(dest) .- to_tuple(S), size(dest)), false)
+    # materialize_checkerboard!(dest, bc, Tuple(1:N), 0 .* to_tuple(S), false)
     materialize_checkerboard!(dest, bc, Tuple(1:N), to_tuple(S), false)
     return dest
 end
@@ -119,7 +120,8 @@ function materialize_checkerboard!(dest, bc, dims, myshift, dest_is_cs_array=tru
     s = myshift[mydim]
     # obtain a broadcast where all arrays are replaced by SubArrays
     ax_dst = Tuple(ifelse(d==mydim, firstindex(dest,d):firstindex(dest,d)+s-1, axes(dest)[d]) for d=1:ndims(dest))
-    ax_src =Tuple(ifelse(d==mydim, lastindex(dest,d)-s+1:lastindex(dest,d), axes(dest)[d]) for d=1:ndims(dest))
+    ax_src = Tuple(ifelse(d==mydim, lastindex(dest,d)-s+1:lastindex(dest,d), axes(dest)[d]) for d=1:ndims(dest))
+    # bc1 = ifelse(dest_is_cs_array, split_array_broadcast(bc, ax_src, ax_dst),split_array_broadcast(bc, ax_dst, ax_src))
     bc1 = split_array_broadcast(bc, ax_src, ax_dst)
     dst_view =  ifelse(dest_is_cs_array, (@view dest[ax_dst...]), (@view dest[ax_src...]))
     if length(dims)>1
@@ -131,10 +133,11 @@ function materialize_checkerboard!(dest, bc, dims, myshift, dest_is_cs_array=tru
     end
     ax_dst = Tuple(ifelse(d==mydim, firstindex(dest,d)+s:lastindex(dest,d), axes(dest)[d]) for d=1:ndims(dest))
     ax_src = Tuple(ifelse(d==mydim, firstindex(dest,d):lastindex(dest,d)-s, axes(dest)[d]) for d=1:ndims(dest))
+    # bc2 = ifelse(dest_is_cs_array, split_array_broadcast(bc, ax_src, ax_dst), split_array_broadcast(bc, ax_dst, ax_src))
     bc2 = split_array_broadcast(bc, ax_src, ax_dst)
     dst_view = ifelse(dest_is_cs_array, (@view dest[ax_dst...]), (@view dest[ax_src...]))
     if length(dims)>1
-        materialize_checkerboard!(dst_view, bc2, dims[2:end], myshift, dest_is_cs_array)
+        materialize_checkerboard!( dst_view, bc2, dims[2:end], myshift, dest_is_cs_array)
     else
         @show ax_dst
         @show ax_src
