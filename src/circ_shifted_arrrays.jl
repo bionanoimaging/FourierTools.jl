@@ -180,8 +180,8 @@ only_shifted(bc::Base.Broadcast.Broadcasted) = all(only_shifted.(bc.args))
 # These functions remove the CircShiftArray in a broadcast and replace each by a view into the original array 
 split_array_broadcast(bc::Number, noshift_rng, shift_rng) = bc
 split_array_broadcast(bc::AbstractArray, noshift_rng, shift_rng) = @view bc[noshift_rng...]
-split_array_broadcast(bc::CircShiftedArray, noshift_rng, shift_rng)  = @view bc.parent[shift_rng...]
-split_array_broadcast(bc::CircShiftedArray{N,S}, noshift_rng, shift_rng)  where {N,S<:NTuple{M,0}} where {M}= @view bc.parent[noshift_rng...]
+split_array_broadcast(bc::CircShiftedArray, noshift_rng, shift_rng) = @view bc.parent[shift_rng...]
+split_array_broadcast(bc::CircShiftedArray{T,N,A,NTuple{N,0}}, noshift_rng, shift_rng)  where {T,N,A} =  @view bc.parent[noshift_rng...]
 function split_array_broadcast(v::SubArray{T,N,P,I,L}, noshift_rng, shift_rng) where {T,N,P<:CircShiftedArray,I,L}    
     new_cs = refine_view(v)
     new_shift_rng = refine_shift_rng(v, shift_rng)
@@ -310,7 +310,8 @@ function Base.similar(arr::CircShiftedArray, eltype::Type{T} = eltype(array), di
     return ifelse(size(arr)==dims, na, CircShiftedArray(na, csa_shift(arr)))
 end
 
-remove_csa_style(bc) = Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{ndims(bc)}}(bc.f, bc.args, bc.axes) 
+remove_csa_style(bc::Base.Broadcast.Broadcasted{CircShiftedArrayStyle{N,S}}) where {N,S} = Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{N}}(bc.f, bc.args, bc.axes) 
+remove_csa_style(bc::Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{N}}) where {N} = bc
 
 function Base.similar(bc::Base.Broadcast.Broadcasted{CircShiftedArrayStyle{N,S},Ax,F,Args}, et::ET, dims::Any) where {N,S,ET,Ax,F,Args}
     @show "Similar Bc"
