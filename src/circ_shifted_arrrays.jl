@@ -98,7 +98,6 @@ function Base.Broadcast.materialize!(dest::CircShiftedArray{T,N,A,S}, bc::Base.B
     return dest
 end
 
-# NOT WORKING !
 function Base.Broadcast.materialize!(dest::AbstractArray, bc::Base.Broadcast.Broadcasted{CircShiftedArrayStyle{N,S}}) where {N,S}
     # function Base.Broadcast.materialize!(dest::CircShiftedArray{T,N,A,S}, bc::Base.Broadcast.Broadcasted{CircShiftedArrayStyle}) where {T,N,A,S}
     @show "materialize! cs into normal array "
@@ -230,6 +229,11 @@ function Base.Broadcast.materialize!(dest::CircShiftedArray{T,N,A,S}, src::CircS
     Base.Broadcast.materialize!(dest.parent, src.parent)
 end
 
+function Base.Broadcast.copyto!(dest::AbstractArray, bc::Base.Broadcast.Broadcasted{CircShiftedArrayStyle{N,S}}) where {N,S}
+    # @show "my own copyto!"
+    return Base.Broadcast.materialize!(dest, bc)
+end
+
 # function copy(CircShiftedArray)
 #     collect(CircShiftedArray)
 # end
@@ -289,14 +293,13 @@ end
 #     CircShiftedArray(f(csa1.parent, csa2.parent), to_tuple(S))
 # end
 
-
-
 function Base.similar(arr::CircShiftedArray)
     similar(arr.parent)
 end
 
+
 function Base.similar(bc::Base.Broadcast.Broadcasted{CircShiftedArrayStyle{N,S},Ax,F,Args}, et::ET, dims::Any) where {N,S,ET,Ax,F,Args}
-    @show "Similar Bc"
+    # @show "Similar Bc"
     # remove the CircShiftedArrayStyle from broadcast to call the original "similar" function 
     bc_type = Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{N},Ax,F,Args}
     bc_tmp = Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{N}}(bc.f, bc.args, bc.axes)
