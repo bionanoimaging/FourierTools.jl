@@ -108,6 +108,11 @@ function Base.Broadcast.materialize!(dest::CircShiftedArray{T,N,A,S}, bc::Base.B
     return dest
 end
 
+# function copy(bc::Base.Broadcast.Broadcasted{CircShiftedArrayStyle{N,S}}) where {N,S}
+#     @show "copy here"
+#     return 0
+# end
+
 function Base.Broadcast.materialize!(dest::AbstractArray, bc::Base.Broadcast.Broadcasted{CircShiftedArrayStyle{N,S}}) where {N,S}
     # function Base.Broadcast.materialize!(dest::CircShiftedArray{T,N,A,S}, bc::Base.Broadcast.Broadcasted{CircShiftedArrayStyle}) where {T,N,A,S}
     @show "materialize! cs into normal array "
@@ -176,7 +181,7 @@ only_shifted(bc::Base.Broadcast.Broadcasted) = all(only_shifted.(bc.args))
 split_array_broadcast(bc::Number, noshift_rng, shift_rng) = bc
 split_array_broadcast(bc::AbstractArray, noshift_rng, shift_rng) = @view bc[noshift_rng...]
 split_array_broadcast(bc::CircShiftedArray, noshift_rng, shift_rng)  = @view bc.parent[shift_rng...]
-# split_array_broadcast(bc::CircShiftedArray{N,S}, noshift_rng, shift_rng)  where {N,S<:Tuple{zeros(Int,Val(N))...}} = @view bc.parent[noshift_rng...]
+split_array_broadcast(bc::CircShiftedArray{N,S}, noshift_rng, shift_rng)  where {N,S<:NTuple{M,0}} where {M}= @view bc.parent[noshift_rng...]
 function split_array_broadcast(v::SubArray{T,N,P,I,L}, noshift_rng, shift_rng) where {T,N,P<:CircShiftedArray,I,L}    
     new_cs = refine_view(v)
     new_shift_rng = refine_shift_rng(v, shift_rng)
@@ -298,8 +303,11 @@ end
 #     Base.broadcasted(f, other, circshifted_parent)
 # end
 
-function Base.similar(arr::CircShiftedArray)
-    similar(arr.parent)
+function Base.similar(arr::CircShiftedArray, eltype::Type{T} = eltype(array), dims::Tuple{Int64, Vararg{Int64, N}} = size(array)) where {T,N}
+    @show "Similar arr"
+    na = similar(arr.parent, eltype, dims)
+    # the results-type depends on whether the result size is the same or not.
+    return ifelse(size(arr)==dims, na, CircShiftedArray(na, csa_shift(arr)))
 end
 
 remove_csa_style(bc) = Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{ndims(bc)}}(bc.f, bc.args, bc.axes) 

@@ -1,5 +1,6 @@
 @testset "Convolution methods" begin
     # a = reshape(1:1000000,(1000,1000)) .+ 0
+    # CUDA.allowscalar(false);
     sz = (15,12)
     myshift = (4,3)
     a = reshape(1:prod(sz),sz) .+ 0
@@ -31,15 +32,10 @@
     # try a complicated broadcast expression
     @test ca.+ 2 .* sin.(ca) == collect(c.+2 .*sin.(c))
 
-    function bar(x)
-        x
-    end
-
-    function foo(x)
-        sum(bar.(x), dims=1)
-    end
-
-    @test sum(a, dims=1) != sum(c,dims=1)
-    @test sum(circshift(a,myshift),dims=1) == sum(c,dims=1)
+    #@run foo(c)
+    @test sum(a, dims=1) != collect(sum(c,dims=1))
+    @test sum(ca,dims=1) == collect(sum(c,dims=1))
+    @test sum(a, dims=2) != collect(sum(c,dims=2))
+    @test sum(ca,dims=2) == collect(sum(c,dims=2))
 
 end
