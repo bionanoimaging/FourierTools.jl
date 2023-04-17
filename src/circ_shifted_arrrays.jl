@@ -47,6 +47,13 @@ Base.Broadcast.BroadcastStyle(::Type{T}) where (T<: CircShiftedArray) = CircShif
 Base.Broadcast.BroadcastStyle(::Type{SubArray{T,N,P,I,L}}) where {T,N,P<:CircShiftedArray,I,L} = CircShiftedArrayStyle{ndims(P), csa_shift(P)}()
 # Base.Broadcast.BroadcastStyle(::Type{T}) where (T2,N,P,I,L, T <: SubArray{T2,N,P,I,L})= CircShiftedArrayStyle{ndims(P), csa_shift(p)}()
 Base.Broadcast.BroadcastStyle(::CircShiftedArrayStyle{N,S}, ::Base.Broadcast.DefaultArrayStyle{M}) where {N,S,M} = CircShiftedArrayStyle{max(N,M),S}() #Broadcast.DefaultArrayStyle{CuArray}()
+function Base.Broadcast.BroadcastStyle(::CircShiftedArrayStyle{N,S1}, ::CircShiftedArrayStyle{M,S2}) where {N,S1,M,S2}
+    if S1 != S2
+        # maybe one could force materialization at this point instead.
+        error("You currently cannot mix CircShiftedArray of different shifts in a broadcasted expression.")
+    end
+    CircShiftedArrayStyle{max(N,M),S1}() #Broadcast.DefaultArrayStyle{CuArray}()
+end
 #Base.Broadcast.BroadcastStyle(::CircShiftedArrayStyle{0,S}, ::Base.Broadcast.DefaultArrayStyle{M}) where {S,M} = CircShiftedArrayStyle{M,S} #Broadcast.DefaultArrayStyle{CuArray}()
 
 Base.size(csa::CircShiftedArray) = size(csa.parent)
@@ -79,7 +86,10 @@ Base.Broadcast.materialize!(dest::CircShiftedArray{T,N,A,S}, csa::CircShiftedArr
 
 # remove all the circ-shift part if all shifts are the same
 function Base.Broadcast.materialize!(dest::CircShiftedArray{T,N,A,S}, bc::Base.Broadcast.Broadcasted{CircShiftedArrayStyle{N,S}}) where {T,N,A,S}
-    invoke(Base.Broadcast.materialize!, Tuple{CircShiftedArray{T,N,A,S}, Base.Broadcast.Broadcasted}, dest, bc)
+    # invoke(Base.Broadcast.materialize!, Tuple{CircShiftedArray{T,N,A,S}, Base.Broadcast.Broadcasted}, dest, bc)
+    # Base.Broadcast.materialize!(dest.parent, bc)
+    invoke(Base.Broadcast.materialize!, Tuple{A, Base.Broadcast.Broadcasted}, dest.parent, remove_csa_style(bc))
+    return dest
 end
 # we cannot specialize the Broadcast style here, since the rhs may not contain a CircShiftedArray and still wants to be assigned
 function Base.Broadcast.materialize!(dest::CircShiftedArray{T,N,A,S}, bc::Base.Broadcast.Broadcasted) where {T,N,A,S}
@@ -137,7 +147,7 @@ this function calls itself recursively to subdivide the array into tiles, which 
 
 """
 function materialize_checkerboard!(dest, bc, dims, myshift, dest_is_cs_array=true) 
-
+    @show "materialize_checkerboard"
     dest = refine_view(dest)
     # gets Tuples of Tuples of 1D ranges (low and high) for each dimension
     cs_rngs, ns_rngs = generate_shift_ranges(dest, myshift)
@@ -166,6 +176,7 @@ only_shifted(bc::Base.Broadcast.Broadcasted) = all(only_shifted.(bc.args))
 split_array_broadcast(bc::Number, noshift_rng, shift_rng) = bc
 split_array_broadcast(bc::AbstractArray, noshift_rng, shift_rng) = @view bc[noshift_rng...]
 split_array_broadcast(bc::CircShiftedArray, noshift_rng, shift_rng)  = @view bc.parent[shift_rng...]
+# split_array_broadcast(bc::CircShiftedArray{N,S}, noshift_rng, shift_rng)  where {N,S<:Tuple{zeros(Int,Val(N))...}} = @view bc.parent[noshift_rng...]
 function split_array_broadcast(v::SubArray{T,N,P,I,L}, noshift_rng, shift_rng) where {T,N,P<:CircShiftedArray,I,L}    
     new_cs = refine_view(v)
     new_shift_rng = refine_shift_rng(v, shift_rng)
@@ -287,23 +298,24 @@ end
 #     Base.broadcasted(f, other, circshifted_parent)
 # end
 
-# two times the same shift
-# function Base.Broadcast.broadcasted(f::Function, csa1::CircShiftedArray{T1,N1,A1,S}, csa2::CircShiftedArray{T2,N2,A2,S}) where {T1,N1,A1,S, T2,N2,A2} # AbstractArray...
-#     @show "Good1"
-#     CircShiftedArray(f(csa1.parent, csa2.parent), to_tuple(S))
-# end
-
 function Base.similar(arr::CircShiftedArray)
     similar(arr.parent)
 end
 
+remove_csa_style(bc) = Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{ndims(bc)}}(bc.f, bc.args, bc.axes) 
 
 function Base.similar(bc::Base.Broadcast.Broadcasted{CircShiftedArrayStyle{N,S},Ax,F,Args}, et::ET, dims::Any) where {N,S,ET,Ax,F,Args}
-    # @show "Similar Bc"
+    @show "Similar Bc"
     # remove the CircShiftedArrayStyle from broadcast to call the original "similar" function 
     bc_type = Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{N},Ax,F,Args}
-    bc_tmp = Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{N}}(bc.f, bc.args, bc.axes)
-    return invoke(Base.Broadcast.similar, Tuple{bc_type,ET,Any}, bc_tmp, et, dims)
+    bc_tmp = remove_csa_style(bc) #Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{N}}(bc.f, bc.args, bc.axes)
+    res = invoke(Base.Broadcast.similar, Tuple{bc_type,ET,Any}, bc_tmp, et, dims)
+    if only_shifted(bc)
+        # @show "only shifted"
+        return CircShiftedArray(res, to_tuple(S))
+    else
+        return res
+    end
 end
 
 function Base.show(io::IO, mm::MIME"text/plain", cs::CircShiftedArray) 
