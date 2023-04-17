@@ -156,7 +156,7 @@ function upsample2(mat::AbstractArray{T, N}; dims=1:N, fix_center=false, keep_si
     return res
 end
 
-function upsample2(mat::ShiftedArrays.CircShiftedArray{T,N,T2}; dims=1:N, fix_center=false, keep_singleton=false) where {T,N,T2 <: CuArray}
+function upsample2(mat::CircShiftedArrays.CircShiftedArray{T,N,T2}; dims=1:N, fix_center=false, keep_singleton=false) where {T,N,T2 <: CuArray}
     # in the case of a shifted cuda array we need to collect (i.e. copy) here. 
     upsample2(copy(mat); dims=dims, fix_center=fix_center, keep_singleton=keep_singleton)
 end

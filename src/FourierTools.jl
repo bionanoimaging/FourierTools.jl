@@ -1,8 +1,9 @@
 module FourierTools
 
-
 using Reexport
-using PaddedViews, ShiftedArrays
+using PaddedViews
+using CircShiftedArrays
+# using ShiftedArrays # replaced by CircShiftedArrays
 @reexport using FFTW
 using LinearAlgebra
 using IndexFunArrays
@@ -15,7 +16,6 @@ FFTW.set_num_threads(4)
 
 
 include("utils.jl")
-include("circ_shifted_arrrays.jl")
 
 include("nfft_nd.jl")
 include("resampling.jl")
