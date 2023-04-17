@@ -1,4 +1,3 @@
-module CircShiftedArrays
 export CircShiftedArray
 using Base
 using CUDA
@@ -24,7 +23,7 @@ struct CircShiftedArray{T, N, A<:AbstractArray{T,N}, myshift<:Tuple} <: Abstract
     end
     function CircShiftedArray(parent::CircShiftedArray{T,N,A,S}, myshift::NTuple{N,Int}) where {T,N,A,S}
         ws = wrapshift(myshift .+ to_tuple(csa_shift(typeof(parent))), size(parent))
-        new{T,N,A, Tuple{ws...}}(parent)
+        new{T,N,A, Tuple{ws...}}(parent.parent)
     end
     # function CircShiftedArray(parent::CircShiftedArray{T,N,A,S}, myshift::NTuple{N,Int}) where {T,N,A,S==myshift}
     #     parent
@@ -277,6 +276,4 @@ end
 
 function Base.show(io::IO, mm::MIME"text/plain", cs::CircShiftedArray) 
     CUDA.@allowscalar invoke(Base.show, Tuple{IO, typeof(mm), AbstractArray}, io, mm, cs) 
-end
-
 end
