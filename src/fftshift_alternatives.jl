@@ -39,7 +39,7 @@ Result is semantically equivalent to `fftshift(A, dims)` but returns
 a view instead. 
 """
 function fftshift_view(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
-    ShiftedArrays.circshift(mat, ft_center_diff(size(mat), dims))
+    CircShiftedArrays.circshift(mat, ft_center_diff(size(mat), dims))
 end
 
 
@@ -51,7 +51,7 @@ a view instead.
 """
 function ifftshift_view(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
     diff = .-(ft_center_diff(size(mat), dims))
-    return ShiftedArrays.circshift(mat, diff)
+    return CircShiftedArrays.circshift(mat, diff)
 end
 
 
@@ -62,7 +62,7 @@ Shifts the frequencies to the center expect for `dims[1]` because there os no ne
 and positive frequency.
 """
 function rfftshift_view(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
-    ShiftedArrays.circshift(mat, rft_center_diff(size(mat), dims))
+    CircShiftedArrays.circshift(mat, rft_center_diff(size(mat), dims))
 end
 
 
@@ -74,7 +74,7 @@ Shifts the frequencies back to the corner except for `dims[1]` because there os 
 and positive frequency.
 """
 function irfftshift_view(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
-    ShiftedArrays.circshift(mat ,.-(rft_center_diff(size(mat), dims)))
+    CircShiftedArrays.circshift(mat ,.-(rft_center_diff(size(mat), dims)))
 end
 
 """
