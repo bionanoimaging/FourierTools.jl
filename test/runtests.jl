@@ -1,4 +1,3 @@
-using Random, Test, FFTW
 using FourierTools
 using ImageTransformations
 using IndexFunArrays
@@ -8,6 +7,7 @@ using LinearAlgebra # for the assigned nfft function LinearAlgebra.mul!
 using FractionalTransforms
 using TestImages
 using CUDA
+using Random, Test, FFTW
 
 Random.seed!(42)
 

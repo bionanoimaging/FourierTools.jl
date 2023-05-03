@@ -3,7 +3,7 @@
   
     @testset "Complex and real shear produce similar results" begin
         function f(a, b, Δ)
-            x = randn((30, 24, 13))
+            x = opt_cu(randn((30, 24, 13)), use_cuda)
             xc = 0im .+ x
             xc2 = 1im  .* x
             @test shear(x, Δ, a, b) ≈ real(shear(xc, Δ, a, b))
@@ -18,8 +18,8 @@
 
     @testset "Test that in-place works in-place" begin
         function f(a, b, Δ)
-            x = randn((30, 24, 13))
-            xc = randn(ComplexF32, (30, 24, 13)) 
+            x = opt_cu(randn((30, 24, 13)), use_cuda)
+            xc = opt_cu(randn(ComplexF32, (30, 24, 13)), use_cuda)
             xc2 = 1im  .* x
             @test shear!(x, Δ, a, b) ≈ x 
             @test shear!(xc, Δ, a, b) ≈ xc 
@@ -39,7 +39,7 @@
     end
 
     @testset "assign_shear_wrap!" begin
-        q = ones((10,11))
+        q = opt_cu(ones((10,11)), use_cuda)
         assign_shear_wrap!(q, 10)
         @test q[:,1] == [0,0,0,0,0,1,1,1,1,1]
     end

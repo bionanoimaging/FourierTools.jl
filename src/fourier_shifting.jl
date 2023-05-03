@@ -73,10 +73,11 @@ end
 function soft_shift(freqs, shift, fraction=eltype(freqs)(0.1); corner=false)
     rounded_shift = round.(shift);
     if corner
-        w = window_half_cos(size(freqs),border_in=2.0-2*fraction, border_out=2.0, offset=CtrCorner)
+        w = window_half_cos(size(freqs), border_in=2.0-2*fraction, border_out=2.0, offset=CtrCorner)
     else
-        w = ifftshift_view(window_half_cos(size(freqs),border_in=1.0-fraction, border_out=1.0))
+        w = ifftshift_view(window_half_cos(size(freqs), border_in=1.0-fraction, border_out=1.0))
     end
+    w = cond_instantiate(freqs, w)
     return cispi.(-freqs .* 2 .* (w .* shift + (1.0 .-w).* rounded_shift))
 end
 
@@ -128,6 +129,7 @@ function shift_by_1D_FT!(arr::TA, shifts; soft_fraction=0, take_real=false, fix_
     
     return arr
 end
+
 
 # the idea is the following:
 # rfft(x, 1) -> exp shift -> fft(x, 2) -> exp shift ->  fft(x, 3) -> exp shift -> ifft(x, [2,3]) -> irfft(x, 1)
