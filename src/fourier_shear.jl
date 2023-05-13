@@ -61,7 +61,7 @@ function shear!(arr::TA, Δ, shear_dir_dim=1, shear_dim=2; fix_nyquist=false, as
 end
 
 function shear!(arr::TA, Δ, shear_dir_dim=1, shear_dim=2; fix_nyquist=false, assign_wrap=false, pad_value=zero(eltype(arr))) where {N, TA<:AbstractArray{<:Real, N}}
-    p = plan_rfft(arr, shear_dir_dim)
+    p = new_plan_rfft(arr, shear_dir_dim)
     arr_ft = p * arr 
 
     # stores the maximum amount of shift
@@ -110,11 +110,12 @@ function assign_shear_wrap!(arr, Δ, shear_dir_dim=1, shear_dim=2, pad_value=zer
     end
 end
 
+
 function apply_shift_strength!(arr::TA, arr_orig, shift, shear_dir_dim, shear_dim, Δ, fix_nyquist=false) where {T, N, TA<:AbstractArray{T, N}}
     #applies the strength to each slice
     # The TR trick does not seem to work for the code below due to a call with a PaddedArray.
     shift_strength = similar(arr, real(eltype(arr)), select_sizes(arr, shear_dim))
-    shift_strength .= (real(eltype(TA))).(reorient(fftpos(1, size(arr, shear_dim), CenterFT), shear_dim, Val(N)))
+    shift_strength .= reorient(fftpos(1, size(arr, shear_dim), CenterFT), shear_dim, Val(N)) # (real(eltype(TA))).
  
     # do the exp multiplication in place
     e = cispi.(2 .* Δ .* shift .* shift_strength)
@@ -124,8 +125,7 @@ function apply_shift_strength!(arr::TA, arr_orig, shift, shear_dir_dim, shear_di
         r = real.(view(e, inds...))
         if fix_nyquist
             inv_r = 1 ./ r
-            inv_r = map(x -> (isinf(x) ? 0 : x), inv_r)
-            e[inds...] .= inv_r 
+            e[inds...] .= map(x -> (isinf(x) ? zero(eltype(inv_r)) : x), inv_r)
         else
             e[inds...] .= r 
         end

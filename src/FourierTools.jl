@@ -16,7 +16,7 @@ FFTW.set_num_threads(4)
 
 
 include("utils.jl")
-include("fix_cufft.jl")
+# include("fix_cufft.jl")
 
 include("nfft_nd.jl")
 include("resampling.jl")

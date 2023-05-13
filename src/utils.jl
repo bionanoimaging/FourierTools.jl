@@ -448,6 +448,7 @@ julia> a
 ```
 """
 function fourier_reverse!(arr; dims=ntuple((d)->d,Val(ndims(arr))))
+    @show typeof(odd_view(arr))
     do_reverse!(odd_view(arr); dims=dims)
     for d = 1:ndims(arr)
         if iseven(size(arr,d))
@@ -463,13 +464,28 @@ end
 # new_ranges = (ifelse(d in dims, lastindex(arr,d):-1:firstindex(arr,d), Colon()) for d in 1:ndims(arr))
 # arr .= arr[new_ranges...]
 # is slower than multiple calls
-function do_reverse!(arr::Union{CuArray, SubArray{T1, T2, CuArray{T1, T2, T3}} where {T1,T2,T3}}; dims=1:ndims(arr))
+# function Base.reverse!(arr::Union{CuArray, SubArray{T1, T2, CuArray{T1, T2, T3}} where {T1,T2,T3}, CircShiftedArray{T1,T2,T3} where {T1,T2,T3}}; dims=1:ndims(arr))
+function do_reverse!(arr; dims=ntuple((x)->x, ndims(arr)))
+    @show "reverse!"
+    @show typeof(arr)
     if isa(dims, Colon)
         dims = 1:ndims(arr)
     end
     for d in dims
         reverse!(arr; dims=d)
     end
+    return arr
+end
+
+function do_reverse(arr; dims=ntuple((x)->x, ndims(arr)))
+    @show typeof(arr)
+    if isa(dims, Colon)
+        dims = 1:ndims(arr)
+    end
+    for d in dims
+        arr = reverse(arr; dims=d)
+    end
+    return arr
 end
 
 """
@@ -486,7 +502,7 @@ function cond_instantiate(myref::CuArray, ifa)
 end
 
 
-do_reverse!(arr; dims=:) = reverse!(arr; dims=dims)
+# do_reverse!(arr; dims=:) = reverse!(arr; dims=dims)
 
 # These modifications are needed since the ShiftedArray type has problems with CUDA.jl
 export collect, copy, display, materialize!
