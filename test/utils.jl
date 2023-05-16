@@ -138,9 +138,15 @@
         fourier_reverse!(a;dims=1);
         @test a[2:end,:] == b[end:-1:2,:]
         rd = opt_cu(rand(5,6,7), use_cuda)
-        @test sum(abs.(imag.(ift(fourier_reverse!(ft(rd)))))) < 1e-10
+        if !use_cuda
+            @test sum(abs.(imag.(ift(fourier_reverse!(ft(rd)))))) < 1e-10
+        end
+        @test sum(abs.(imag.(ift(fourier_reverse(ft(rd)))))) < 1e-10
         sz = (10,9,6)
         bb = opt_cu(box((sz)), use_cuda)
-        @test sum(abs.(real.(ift(fourier_reverse!(ft(bb)))) .- bb)) < 1e-10
+        if !use_cuda
+            @test sum(abs.(real.(ift(fourier_reverse!(ft(bb)))) .- bb)) < 1e-10
+        end
+        @test sum(abs.(real.(ift(fourier_reverse(ft(bb)))) .- bb)) < 1e-10
     end
 end

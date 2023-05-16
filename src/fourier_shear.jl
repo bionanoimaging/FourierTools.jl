@@ -61,7 +61,7 @@ function shear!(arr::TA, Δ, shear_dir_dim=1, shear_dim=2; fix_nyquist=false, as
 end
 
 function shear!(arr::TA, Δ, shear_dir_dim=1, shear_dim=2; fix_nyquist=false, assign_wrap=false, pad_value=zero(eltype(arr))) where {N, TA<:AbstractArray{<:Real, N}}
-    p = new_plan_rfft(arr, shear_dir_dim)
+    p = plan_rfft(arr, shear_dir_dim)
     arr_ft = p * arr 
 
     # stores the maximum amount of shift

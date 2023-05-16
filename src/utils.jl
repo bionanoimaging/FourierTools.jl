@@ -1,7 +1,7 @@
 export rft_size, fft_center, fftpos
 export expanddims, fourierspace_pixelsize, realspace_pixelsize
 export δ
-export fourier_reverse!
+export fourier_reverse!, fourier_reverse
 
 
  #get_RFT_scale(real_size) = 0.5 ./ (max.(real_size ./ 2, 1))  # The same as the FFT scale but for the full array in real space!
@@ -448,8 +448,13 @@ julia> a
 ```
 """
 function fourier_reverse!(arr; dims=ntuple((d)->d,Val(ndims(arr))))
-    @show typeof(odd_view(arr))
-    do_reverse!(odd_view(arr); dims=dims)
+    #@show typeof(odd_view(arr))
+    if isa(arr, CircShiftedArray) && isa(arr.parent, CuArray)
+        throw(ArgumentError("fourier_reverse! is currently not supported for CircShiftedArrays of CuArray Type. Try fourier_reverse.")) 
+    end
+    reverse!(odd_view(arr); dims=dims)
+    # odd_view_r(reverse!(arr; dims=dims))
+    # now do the appropritate operations for the first index of the orininal array
     for d = 1:ndims(arr)
         if iseven(size(arr,d))
             fv = slice(arr,d,firstindex(arr,d))
@@ -459,34 +464,45 @@ function fourier_reverse!(arr; dims=ntuple((d)->d,Val(ndims(arr))))
     return arr
 end
 
-# This is needed to replace reverse!() as long as the Cuda Version does not support multiple dimensions in dim
-# using ranges:
-# new_ranges = (ifelse(d in dims, lastindex(arr,d):-1:firstindex(arr,d), Colon()) for d in 1:ndims(arr))
-# arr .= arr[new_ranges...]
-# is slower than multiple calls
-# function Base.reverse!(arr::Union{CuArray, SubArray{T1, T2, CuArray{T1, T2, T3}} where {T1,T2,T3}, CircShiftedArray{T1,T2,T3} where {T1,T2,T3}}; dims=1:ndims(arr))
-function do_reverse!(arr; dims=ntuple((x)->x, ndims(arr)))
-    @show "reverse!"
-    @show typeof(arr)
-    if isa(dims, Colon)
-        dims = 1:ndims(arr)
+function fourier_reverse(arr; dims=ntuple((d)->d,Val(ndims(arr))))
+    #@show typeof(odd_view(arr))
+    if isa(arr, CircShiftedArray) 
+        arr = collect(arr)
+    else
+        arr = copy(arr)
     end
-    for d in dims
-        reverse!(arr; dims=d)
-    end
+    fourier_reverse!(arr; dims=dims)
     return arr
 end
 
-function do_reverse(arr; dims=ntuple((x)->x, ndims(arr)))
-    @show typeof(arr)
-    if isa(dims, Colon)
-        dims = 1:ndims(arr)
-    end
-    for d in dims
-        arr = reverse(arr; dims=d)
-    end
-    return arr
-end
+# # This is needed to replace reverse!() as long as the Cuda Version does not support multiple dimensions in dim
+# # using ranges:
+# # new_ranges = (ifelse(d in dims, lastindex(arr,d):-1:firstindex(arr,d), Colon()) for d in 1:ndims(arr))
+# # arr .= arr[new_ranges...]
+# # is slower than multiple calls
+# # function Base.reverse!(arr::Union{CuArray, SubArray{T1, T2, CuArray{T1, T2, T3}} where {T1,T2,T3}, CircShiftedArray{T1,T2,T3} where {T1,T2,T3}}; dims=1:ndims(arr))
+# function do_reverse!(arr; dims=ntuple((x)->x, ndims(arr)))
+#     @show "reverse!"
+#     @show typeof(arr)
+#     if isa(dims, Colon)
+#         dims = 1:ndims(arr)
+#     end
+#     for d in dims
+#         reverse!(arr; dims=d)
+#     end
+#     return arr
+# end
+
+# function do_reverse(arr; dims=ntuple((x)->x, ndims(arr)))
+#     @show typeof(arr)
+#     if isa(dims, Colon)
+#         dims = 1:ndims(arr)
+#     end
+#     for d in dims
+#         arr = reverse(arr; dims=d)
+#     end
+#     return arr
+# end
 
 """
     cond_instantiate(myref, ifa)
