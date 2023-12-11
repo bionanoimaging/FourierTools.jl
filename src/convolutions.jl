@@ -74,18 +74,6 @@ function conv_psf(u::AbstractArray{T, N}, psf::AbstractArray{D, M}, dims=ntuple(
     return conv(u, ifftshift(psf, dims), dims)
 end
 
- # define custom adjoint for conv
- # so far only defined for the derivative regarding the first component
-function ChainRulesCore.rrule(::typeof(conv), u::AbstractArray{T, N}, v::AbstractArray{D, M},
-                              dims=ntuple(+, min(N, M))) where {T, D, N, M}
-    Y = conv(u, v, dims)
-    function conv_pullback(barx)
-        z = zero(eltype(u))
-        return NoTangent(), conv(barx, conj(v), dims), z, z
-    end 
-    return Y, conv_pullback
-end
-
 
 
 """
@@ -219,15 +207,6 @@ function p_conv_aux(P, P_inv, u, v_ft)
     return (P_inv.p * ((P * u) .* v_ft .* P_inv.scale))
 end
 
-function ChainRulesCore.rrule(::typeof(p_conv_aux), P, P_inv, u, v)
-    Y = p_conv_aux(P, P_inv, u, v) 
-    function conv_pullback(barx)
-        z = zero(eltype(u))
-        ∇ = p_conv_aux(P, P_inv, barx, conj(v))
-        return NoTangent(), z, z, ∇, z
-    end 
-    return Y, conv_pullback
-end
 
 """
     fft_or_rfft(T)
