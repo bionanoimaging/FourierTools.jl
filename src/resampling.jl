@@ -114,9 +114,9 @@ function upsample2_1D(mat::AbstractArray{T, N}, dim=1, fix_center=false, keep_si
         return mat
     end
     newsize = Tuple((d==dim) ? 2*size(mat,d) : size(mat,d) for d in 1:N)
-    res = zeros(eltype(mat), newsize)
+    res = similar(mat, newsize)
     if fix_center && isodd(size(mat,dim))
-        selectdim(res,dim,2:2:size(res,dim)) .= mat  
+        selectdim(res,dim,2:2:size(res,dim)) .= mat
         shifts = Tuple((d==dim) ? 0.5 : 0.0 for d in 1:N)
         selectdim(res,dim,1:2:size(res,dim)) .= shift(mat, shifts, take_real=true) # this is highly optimized and all fft of zero-shift directions are automatically avoided
     else
@@ -154,6 +154,11 @@ function upsample2(mat::AbstractArray{T, N}; dims=1:N, fix_center=false, keep_si
         res = upsample2_1D(res,d, fix_center, keep_singleton)
     end
     return res
+end
+
+function upsample2(mat::CircShiftedArray{T,N,T2}; dims=1:N, fix_center=false, keep_singleton=false) where {T,N,T2 <: CuArray}
+    # in the case of a shifted cuda array we need to collect (i.e. copy) here. 
+    upsample2(copy(mat); dims=dims, fix_center=fix_center, keep_singleton=keep_singleton)
 end
 
 """

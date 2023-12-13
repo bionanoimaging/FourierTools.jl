@@ -2,7 +2,7 @@ using NDTools # this is needed for the select_region! function below.
 
 @testset "chirp z-transformation" begin
     @testset "czt" begin
-        x = randn(ComplexF32, (5,6,7))
+        x = opt_cu(randn(ComplexF32, (5,6,7)), use_cuda)
         @test eltype(czt(x, (2.0,2.0,2.0))) == ComplexF32
         @test eltype(czt(x, (2f0,2f0,2f0))) == ComplexF32
         @test ≈(czt(x, (1.0,1.0,1.0), (1,3)), ft(x, (1,3)), rtol=1e-5)

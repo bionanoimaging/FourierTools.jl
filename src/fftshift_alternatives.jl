@@ -55,7 +55,6 @@ function ifftshift_view(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N)))
 end
 
 
-
 """
     rfftshift_view(A, dims)
 

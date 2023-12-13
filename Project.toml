@@ -4,6 +4,8 @@ authors = ["Felix Wechsler (roflmaostc) <fxw+git@mailbox.org>", "rheintzmann <he
 version = "0.4.2"
 
 [deps]
+Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
+CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
 ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
 FFTW = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
 IndexFunArrays = "613c443e-d742-454e-bfc6-1d7f8dd76566"
@@ -15,7 +17,6 @@ Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 ShiftedArrays = "1277b4bf-5013-50f5-be3d-901d8477a67a"
 
 [compat]
-
 ChainRulesCore = "1, 1.0, 1.1"
 FFTW = "1.5"
 ImageTransformations = "0.9"
@@ -24,7 +25,6 @@ NDTools = "0.5.1"
 NFFT = "0.11, 0.12, 0.13"
 PaddedViews = "0.5"
 Reexport = "1"
-ShiftedArrays = "2"
 Zygote = "0.6"
 julia = "1, 1.6, 1.7, 1.8"
 
