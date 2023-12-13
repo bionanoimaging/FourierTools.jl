@@ -17,15 +17,19 @@ optional_collect(a::Array) = a
 # no need to collect
 optional_collect(a::CuArray) = a 
 
-# for CircShiftedArray we only need collect if shifts is non-zero
+# for CircShiftedArray we only need to collect if shifts are non-zero
 function optional_collect(csa::CircShiftedArray)
-    if all(iszero.(shifts(csa)))
-        return optional_collect(parent(csa))
-    else
+    @show "OptionalCollect"
+    @show typeof(csa)
+    res = optional_collect(parent(csa))
+    @show typeof(res)
+    if !all(iszero.(shifts(csa)))
         # this slightly more complicated version is used instead of collect(csa), because it is faster
         # and because it works with CUDA
-        return circshift(parent(csa), shifts(csa)) 
+        res = circshift(res, shifts(csa)) 
     end
+    @show typeof(res)
+    return res
 end
 
 
