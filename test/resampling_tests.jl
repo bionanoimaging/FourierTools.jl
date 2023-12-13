@@ -4,15 +4,14 @@
             for _ in 1:5
                 s_small = ntuple(_ -> rand(1:13), dim)
                 s_large = ntuple(i -> max.(s_small[i], rand(10:16)), dim)
-                
-                
-                x = randn(Float32, (s_small))
+                                
+                x = opt_cu(randn(Float32, (s_small)), use_cuda)
                 @test x == resample(x, s_small)
                 @test Float32.(x) ≈ Float32.(resample(resample(x, s_large), s_small))
                 @test x ≈ resample_by_FFT(resample_by_FFT(x, s_large), s_small)
                 @test Float32.(x) ≈ Float32.(resample_by_RFFT(resample_by_RFFT(x, s_large), s_small))
                 @test x ≈ FourierTools.resample_by_1D(FourierTools.resample_by_1D(x, s_large), s_small)
-                x = randn(ComplexF32, (s_small))
+                x = opt_cu(randn(ComplexF32, (s_small)), use_cuda)
                 @test x ≈ resample(resample(x, s_large), s_small)
                 @test x ≈ resample_by_FFT(resample_by_FFT(x, s_large), s_small)
                 @test x ≈ resample_by_FFT(resample_by_FFT(real(x), s_large), s_small) + 1im .* resample_by_FFT(resample_by_FFT(imag(x), s_large), s_small) 
@@ -27,7 +26,7 @@
                 s_small = ntuple(_ -> rand(1:13), dim)
                 s_large = ntuple(i -> max.(s_small[i], rand(10:16)), dim)
                 
-                x = randn(Float32, (s_small))
+                x = opt_cu(randn(Float32, (s_small)), use_cuda)
                 @test ≈(FourierTools.resample(x, s_large), FourierTools.resample_by_1D(x, s_large))
             end
         end
@@ -39,7 +38,7 @@
                 s_small = ntuple(_ -> rand(1:13), dim)
                 s_large = ntuple(i -> max.(s_small[i], rand(10:16)), dim)
                 
-                x = randn(Float32, (s_small))
+                x = opt_cu(randn(Float32, (s_small)), use_cuda)
                 @test Float32.(resample(x, s_large)) ≈ Float32.(real(resample(ComplexF32.(x), s_large)))
                 @test FourierTools.resample_by_1D(x, s_large) ≈ real(FourierTools.resample_by_1D(ComplexF32.(x), s_large))
             end
@@ -49,7 +48,7 @@
 
     @testset "Tests that resample_by_FFT is purely real" begin
         function test_real(s_1, s_2)
-            x = randn(Float32, (s_1))
+            x = opt_cu(randn(Float32, (s_1)), use_cuda)
             y = resample_by_FFT(x, s_2)
             @test all(( imag.(y) .+ 1 .≈ 1))
             y = FourierTools.resample_by_1D(x, s_2)
@@ -85,8 +84,8 @@
 	    x_min = 0.0
 	    x_max = 16π
 	    
-	    xs_low = range(x_min, x_max, length=N_low+1)[1:N_low]
-	    xs_high = range(x_min, x_max, length=N)[1:end-1]
+	    xs_low = opt_cu(range(x_min, x_max, length=N_low+1)[1:N_low], use_cuda)
+	    xs_high = opt_cu(range(x_min, x_max, length=N)[1:end-1], use_cuda)
 	    f(x) = sin(0.5*x) + cos(x) + cos(2 * x) + sin(0.25*x)
 	    arr_low = f.(xs_low)
 	    arr_high = f.(xs_high)
@@ -108,10 +107,10 @@
 
     @testset "Upsample2 compared to resample" begin
     for sz in ((10,10),(5,8,9),(20,5,4))
-        a = rand(sz...)
+        a = opt_cu(rand(sz...), use_cuda)
         @test ≈(upsample2(a),resample(a,sz.*2))
         @test ≈(upsample2_abs2(a),abs2.(resample(a,sz.*2)))
-        a = rand(ComplexF32, sz...)
+        a = opt_cu(rand(ComplexF32, sz...), use_cuda)
         @test ≈(upsample2(a),resample(a,sz.*2))
         @test ≈(upsample2_abs2(a),abs2.(resample(a,sz.*2)))
         s2 = (d == 2 ? sz[d]*2 : sz[d] for d in 1:length(sz))
@@ -127,7 +126,7 @@
 	    x_min = 0.0
 	    x_max = 16π
 	    
-	    xs_low = range(x_min, x_max, length=N_low+1)[1:N_low]
+	    xs_low = opt_cu(range(x_min, x_max, length=N_low+1)[1:N_low], use_cuda)
 	    f(x) = sin(0.5*x) + cos(x) + cos(2 * x) + sin(0.25*x)
 	    arr_low = f.(xs_low)
 
@@ -155,8 +154,8 @@
     
     
         function test_2D(in_s, out_s)
-            x = range(-10.0, 10.0, length=in_s[1] + 1)[1:end-1]
-            y = range(-10.0, 10.0, length=in_s[2] + 1)[1:end-1]'
+            x = opt_cu(range(-10.0, 10.0, length=in_s[1] + 1)[1:end-1], use_cuda)
+            y = opt_cu(range(-10.0, 10.0, length=in_s[2] + 1)[1:end-1]', use_cuda)
     	    arr = abs.(x) .+ abs.(y) .+ sinc.(sqrt.(x .^2 .+ y .^2))
     	    arr_interp = resample(arr[1:end, 1:end], out_s);
     	    arr_ds = resample(arr_interp, in_s)
@@ -174,9 +173,9 @@
         test_2D((129, 128), (129, 153))
     
     
-        x = range(-10.0, 10.0, length=129)[1:end-1]
-        x2 = range(-10.0, 10.0, length=130)[1:end-1]
-        x_exact = range(-10.0, 10.0, length=2049)[1:end-1]
+        x = opt_cu(range(-10.0, 10.0, length=129)[1:end-1], use_cuda)
+        x2 = opt_cu(range(-10.0, 10.0, length=130)[1:end-1], use_cuda)
+        x_exact = opt_cu(range(-10.0, 10.0, length=2049)[1:end-1], use_cuda)
         y = x'
         y2 = x2'
         y_exact = x_exact'
@@ -202,8 +201,8 @@
     @testset "FFT resample 2D for a complex signal" begin
     
         function test_2D(in_s, out_s)
-        	x = range(-10.0, 10.0, length=in_s[1] + 1)[1:end-1]
-        	y = range(-10.0, 10.0, length=in_s[2] + 1)[1:end-1]'
+        	x = opt_cu(range(-10.0, 10.0, length=in_s[1] + 1)[1:end-1], use_cuda)
+        	y = opt_cu(range(-10.0, 10.0, length=in_s[2] + 1)[1:end-1]', use_cuda)
         	f(x, y) = 1im * (abs(x) + abs(y) + sinc(sqrt(x ^2 + y ^2)))
         	f2(x, y) =  abs(x) + abs(y) + sinc(sqrt((x - 5) ^2 + (y - 5)^2))
         
@@ -231,8 +230,8 @@
     
     @testset "FFT resample in 2D for a purely imaginary signal" begin
         function test_2D(in_s, out_s)
-        	x = range(-10.0, 10.0, length=in_s[1] + 1)[1:end-1]
-        	y = range(-10.0, 10.0, length=in_s[2] + 1)[1:end-1]'
+        	x = opt_cu(range(-10.0, 10.0, length=in_s[1] + 1)[1:end-1], use_cuda)
+        	y = opt_cu(range(-10.0, 10.0, length=in_s[2] + 1)[1:end-1]', use_cuda)
         	f(x, y) = 1im * (abs(x) + abs(y) + sinc(sqrt(x ^2 + y ^2)))
         
         	arr = f.(x, y)
@@ -256,9 +255,9 @@
     end
 
     @testset "test select_region_ft" begin
-        x = [1,2,3,4]
+        x = opt_cu([1,2,3,4], use_cuda)
         @test select_region_ft(ffts(x), (5,)) == ComplexF64[-1.0 + 0.0im, -2.0 - 2.0im, 10.0 + 0.0im, -2.0 + 2.0im, -1.0 + 0.0im]
-        x = [3.1495759241275225 0.24720770605505335 -1.311507800204285 -0.3387627167144301; -0.7214121984874265 -0.02566249380406308 0.687066447881175 -0.09536748694092163; -0.577092696986848 -0.6320809680268722 -0.09460071173365793 0.7689715736798227; 0.4593837753047561 -1.0204193548690512 -0.28474772376166907 1.442443602597533]
+        x = opt_cu([3.1495759241275225 0.24720770605505335 -1.311507800204285 -0.3387627167144301; -0.7214121984874265 -0.02566249380406308 0.687066447881175 -0.09536748694092163; -0.577092696986848 -0.6320809680268722 -0.09460071173365793 0.7689715736798227; 0.4593837753047561 -1.0204193548690512 -0.28474772376166907 1.442443602597533], use_cuda)
         @test select_region_ft(ffts(x), (7, 7)) == ComplexF64[0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im; 0.0 + 0.0im 0.32043577156395486 + 0.0im 2.321469443190397 + 0.7890379226962572im 0.38521287113798636 + 0.0im 2.321469443190397 - 0.7890379226962572im 0.32043577156395486 + 0.0im 0.0 + 0.0im; 0.0 + 0.0im 1.3691035744780353 + 0.16703621316206385im 2.4110077589815555 - 0.16558718095884828im 2.2813159163314163 - 0.7520360306228049im 7.47614366018844 - 4.139633109911205im 1.3691035744780353 + 0.16703621316206385im 0.0 + 0.0im; 0.0 + 0.0im 0.4801675770812479 + 0.0im 3.3142445917764407 - 3.2082400832669373im 1.6529948781166373 + 0.0im 3.3142445917764407 + 3.2082400832669373im 0.4801675770812479 + 0.0im 0.0 + 0.0im; 0.0 + 0.0im 1.3691035744780353 - 0.16703621316206385im 7.47614366018844 + 4.139633109911205im 2.2813159163314163 + 0.7520360306228049im 2.4110077589815555 + 0.16558718095884828im 1.3691035744780353 - 0.16703621316206385im 0.0 + 0.0im; 0.0 + 0.0im 0.32043577156395486 + 0.0im 2.321469443190397 + 0.7890379226962572im 0.38521287113798636 + 0.0im 2.321469443190397 - 0.7890379226962572im 0.32043577156395486 + 0.0im 0.0 + 0.0im; 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im]
     end
 
@@ -266,7 +265,7 @@
         dim =2
         s_small = (12,16) # ntuple(_ -> rand(1:13), dim)
         s_large = (20,18) # ntuple(i -> max.(s_small[i], rand(10:16)), dim)
-        dat = select_region(randn(Float32, (5,6)), new_size= s_small)
+        dat = select_region(opt_cu(randn(Float32, (5,6)), use_cuda), new_size= s_small)
         rs1 = FourierTools.resample(dat, s_large)
         rs1b = select_region(rs1, new_size=size(dat))
         rs2 = FourierTools.resample_czt(dat, s_large./s_small, do_damp=false)
@@ -286,7 +285,7 @@
         dim =2
         s_small = (12,16) # ntuple(_ -> rand(1:13), dim)
         s_large = (20,18) # ntuple(i -> max.(s_small[i], rand(10:16)), dim)
-        dat = select_region(randn(Float32, (5,6)), new_size= s_small)
+        dat = select_region(opt_cu(randn(Float32, (5,6)), use_cuda), new_size= s_small)
         rs1 = FourierTools.resample(dat, s_large)
         rs1b = select_region(rs1, new_size=size(dat))
         mymap = (t) -> t .* s_small ./ s_large  

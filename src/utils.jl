@@ -1,7 +1,7 @@
 export rft_size, fft_center, fftpos
 export expanddims, fourierspace_pixelsize, realspace_pixelsize
 export δ
-export fourier_reverse!
+export fourier_reverse!, fourier_reverse
 
 
  #get_RFT_scale(real_size) = 0.5 ./ (max.(real_size ./ 2, 1))  # The same as the FFT scale but for the full array in real space!
@@ -451,7 +451,13 @@ julia> a
 ```
 """
 function fourier_reverse!(arr; dims=ntuple((d)->d,Val(ndims(arr))))
-    reverse!(odd_view(arr),dims=dims)
+    #@show typeof(odd_view(arr))
+    if isa(arr, CircShiftedArray) && isa(arr.parent, CuArray)
+        throw(ArgumentError("fourier_reverse! is currently not supported for CircShiftedArrays of CuArray Type. Try fourier_reverse.")) 
+    end
+    reverse!(odd_view(arr); dims=dims)
+    # odd_view_r(reverse!(arr; dims=dims))
+    # now do the appropritate operations for the first index of the orininal array
     for d = 1:ndims(arr)
         if iseven(size(arr,d))
             fv = slice(arr,d,firstindex(arr,d))
@@ -460,3 +466,149 @@ function fourier_reverse!(arr; dims=ntuple((d)->d,Val(ndims(arr))))
     end
     return arr
 end
+
+function fourier_reverse(arr; dims=ntuple((d)->d,Val(ndims(arr))))
+    #@show typeof(odd_view(arr))
+    if isa(arr, CircShiftedArray) 
+        arr = collect(arr)
+    else
+        arr = copy(arr)
+    end
+    fourier_reverse!(arr; dims=dims)
+    return arr
+end
+
+# # This is needed to replace reverse!() as long as the Cuda Version does not support multiple dimensions in dim
+# # using ranges:
+# # new_ranges = (ifelse(d in dims, lastindex(arr,d):-1:firstindex(arr,d), Colon()) for d in 1:ndims(arr))
+# # arr .= arr[new_ranges...]
+# # is slower than multiple calls
+# # function Base.reverse!(arr::Union{CuArray, SubArray{T1, T2, CuArray{T1, T2, T3}} where {T1,T2,T3}, CircShiftedArray{T1,T2,T3} where {T1,T2,T3}}; dims=1:ndims(arr))
+# function do_reverse!(arr; dims=ntuple((x)->x, ndims(arr)))
+#     @show "reverse!"
+#     @show typeof(arr)
+#     if isa(dims, Colon)
+#         dims = 1:ndims(arr)
+#     end
+#     for d in dims
+#         reverse!(arr; dims=d)
+#     end
+#     return arr
+# end
+
+# function do_reverse(arr; dims=ntuple((x)->x, ndims(arr)))
+#     @show typeof(arr)
+#     if isa(dims, Colon)
+#         dims = 1:ndims(arr)
+#     end
+#     for d in dims
+#         arr = reverse(arr; dims=d)
+#     end
+#     return arr
+# end
+
+"""
+    cond_instantiate(myref, ifa)
+
+instantiates an IndexFunArray depending on the first reference array being a CuArray 
+"""
+cond_instantiate(myref::AbstractArray, ifa) = ifa
+function cond_instantiate(myref::CuArray, ifa)
+    c = CuArray{eltype(ifa)}(undef, size(ifa))
+    # This in-place assignment seems to be reasonaly fast
+    c .= ifa
+    return c
+end
+
+
+# do_reverse!(arr; dims=:) = reverse!(arr; dims=dims)
+
+# These modifications are needed since the ShiftedArray type has problems with CUDA.jl
+export collect, copy, display, materialize!
+
+using Base
+# using Base.Broadcast
+using ShiftedArrays
+
+# function Base.materialize(bc::Base.Broadcast.Broadcasted{S, N, T, Tuple{ShiftedArrays.CircShiftedArray, I}}) where {S,N,T,I}
+#     bc = circshift(parent(bc.f), bc.f.shifts) 
+#     Base.materialize(bc)
+# end
+
+# Base.BroadcastStyle(::Type{<:ShiftedArrays.CircShiftedArray}) = Broadcast.ArrayStyle{ShiftedArrays.CircShiftedArray}()
+
+## should only be specific to CUDA types!
+# Base.BroadcastStyle(::Type{<:ShiftedArrays.CircShiftedArray}) = Broadcast.ArrayStyle{ShiftedArrays.CircShiftedArray}()
+
+# function Base.similar(bc::Broadcast.Broadcasted{Broadcast.ArrayStyle{ShiftedArrays.CircShiftedArray}}, ::Type{ElType}) where ElType
+#     CUDA.similar(CuArray{ElType}, axes(bc))
+# end
+
+# Base.BroadcastStyle(::Broadcast.Style{ShiftedArrays.CircShiftedArray}, b::Broadcast.Style{CuArray}) = b #Broadcast.DefaultArrayStyle{CuArray}()
+# Base.BroadcastStyle(::Broadcast.Style{ShiftedArrays.CircShiftedArray}, b::Broadcast.Style{CuArray}) = b #Broadcast.DefaultArrayStyle{CuArray}()
+# Base.BroadcastStyle(a::Broadcast.ArrayStyle{ShiftedArrays.CircShiftedArray}, b::CUDA.CuArrayStyle) = b #Broadcast.DefaultArrayStyle{CuArray}()
+# Base.BroadcastStyle(::Type{<:ShiftedArrays.CircShiftedArray}, b::Type{<:Broadcast.DefaultArrayStyle{CuArray}}) = b #Broadcast.DefaultArrayStyle{CuArray}()
+
+
+# Base.similar(::Broadcasted{ArrayConflict}, ::Type{ElType}, dims) where ElType =
+#     similar(Array{ElType}, dims)
+
+# Base.showarg(io::IO, A::ShiftedArrays.CircShiftedArray, toplevel) = print(io, typeof(A), " with content '", copy(A), "'")
+
+# broadcasted(::Broadcast.ArrayStyle{ShiftedArrays.CircShiftedArray}, ::T, args...) = broadcast(copy(args[1]))
+
+# function Base.collect(cs::ShiftedArrays.CircShiftedArray)
+#     circshift(parent(cs), cs.shifts) 
+# end
+
+# function Base.copy(cs::ShiftedArrays.CircShiftedArray)
+#     circshift(parent(cs), cs.shifts) 
+# end
+
+# function Base.collect(cs::ShiftedArrays.CircShiftedArray)
+#     circshift(parent(cs), cs.shifts) 
+# end
+
+# dest is CuArray, because similar creates a CuArray
+# function Base.copyto!(dest::CuArray, bc::Broadcast.Broadcasted{<:Broadcast.ArrayStyle{ShiftedArrays.CircShiftedArray}})
+#     # initiate a collect for each argument which is a shifted Cuda array 
+#     args = Tuple(ifelse(typeof(a) <: ShiftedArrays.CircShiftedArray, copy(a), a) for a in bc.args)
+#     @show typeof(args)
+#     # create a new Broadcasted object to hand over to standard CuArray processing
+#     bc = Broadcast.Broadcasted{CUDA.CuArrayStyle}(bc.f, args)
+#     @show typeof(bc)
+#     res = Base.copyto!(dest, bc)
+#     @show typeof(res)
+#     res
+# end
+
+# @inline function Base.Broadcast.materialize!(dest::ShiftedArrays.CircShiftedVector{T, CuArray}, 
+#     bc::Base.Broadcast.Broadcasted{Style}) where {T, Style}
+#     materialize!(copy(dest), bc)
+# end
+
+# @inline function Base.Broadcast.materialize(bc::Base.Broadcast.Broadcasted{CUDA.CuArrayStyle})
+#     materialize(copy(bc.f))
+# end
+
+# @inline function Base.Broadcast.materialize!(dest, bc::Base.Broadcast.Broadcasted{Style}) where {Style}
+#     return materialize!(combine_styles(dest, bc), dest, bc)
+# end
+# @inline function Base.Broadcast.materialize!(::Base.Broadcast.BroadcastStyle, dest, bc::Base.Broadcast.Broadcasted{Style}) where {Style}
+#     return copyto!(dest, instantiate(Base.Broadcast.Broadcasted{Style}(bc.f, bc.args, axes(dest))))
+# end
+
+# function Base.show(io::IOContext, unused, cs::ShiftedArrays.CircShiftedArray)
+#     Base.show(io, unused, collect(cs)) 
+# end
+# function Base.show(tty::Base.TTY, unused, cs::ShiftedArrays.CircShiftedArray)
+#     Base.show(tty, unused, collect(cs)) 
+# end
+# function Base.display(cs::ShiftedArrays.CircShiftedArray)
+#     Base.display(collect(cs)) 
+# end
+
+
+# using Adapt
+## adapt(CuArray, ::ShiftedArrays.CircShiftedArray{Array})::ShiftedArrays.CircShiftedArray{CuArray}
+# Adapt.adapt_structure(to, x::ShiftedArrays.CircShiftedArray) = ShiftedArrays.CircShiftedArray(adapt(to, parent(x)))

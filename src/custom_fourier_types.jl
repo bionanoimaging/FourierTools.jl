@@ -45,6 +45,52 @@ Base.size(A::FourierSplit) = size(parent(A))
     end
 end
 
+# This is some mild type-piracy to enable the PaddedView to be collected in a CuArray.
+function collect(A::PaddedView)
+    @show "collect Padded"
+    pA = let
+        if parent(A)==A
+            A
+        else
+            collect(parent(A))
+        end
+    end
+
+    res = similar(pA, A.indices)
+    ids = ntuple((d)->firstindex(pA,d):lastindex(pA,d),ndims(pA))
+    res[ids...] .= pA
+    for d =1:ndims(A)
+        oids = ntuple((d2)->ifelse(d==d2, lastindex(pA,d2)+1:lastindex(A,d2), Colon()),ndims(pA))
+        res[oids...] .= A.fillvalue
+    end
+    return res
+end
+
+function collect(A::FourierSplit{T,N, <:AbstractArray}) where {T,N}
+    @show "collect Split"
+    if A.do_split
+        res = let
+            if parent(A)==A
+                @show typeof(res)
+                @show "collect copy"
+                copy(parent(A))
+            else
+                @show typeof(res)
+                @show "collect collect"
+                collect(parent(A))
+            end
+        end
+        @show typeof(res)
+        src_ids = ntuple((d)->ifelse(d==A.D, A.L1:A.L1, Colon()), ndims(A))
+        dst_ids = ntuple((d)->ifelse(d==A.D, A.L2:A.L2, Colon()), ndims(A))
+        res[dst_ids...] .= res[src_ids...] ./ 2
+        res[src_ids...] ./= 2
+        return res
+    else
+        return collect(parent(A))
+    end
+end
+
 """
     FourierJoin{T,N, AA<:AbstractArray{T, N}} <: AbstractArray{T, N}
 
@@ -90,3 +136,21 @@ Base.size(A::FourierJoin) = size(parent(A))
     end
 end
 
+function collect(A::FourierJoin{T,N, <:AbstractArray}) where {T,N}
+    @show "collect Join"
+    if A.do_join
+        res = let
+            if parent(A)==A
+                copy(parent(A))
+            else
+                collect(parent(A))
+            end
+        end
+        dst_ids = ntuple((d)->ifelse(d==A.D, A.L1:A.L1, Colon()), ndims(A))
+        src_ids = ntuple((d)->ifelse(d==A.D, A.L2:A.L2, Colon()), ndims(A))
+        res[dst_ids...] .+= res[src_ids...]  
+        return res
+    else
+        return parent(A)
+    end
+end

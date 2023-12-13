@@ -1,7 +1,7 @@
 @testset "test fft_helpers" begin
 
     @testset "Optional collect" begin
-        y = [1,2,3]
+        y = opt_cu([1,2,3],use_cuda)
         x = fftshift_view(y, (1))
         @test fftshift(y) == FourierTools.optional_collect(x)
     end
@@ -14,10 +14,11 @@
         testiffts(arr, dims) = @test(iffts(arr, dims) ≈ ifft(ifftshift(arr, dims), dims))
         testrft(arr, dims) = @test(rffts(arr, dims) ≈ fftshift(rfft(arr, dims), dims[2:end]))
         testirft(arr, dims, d) = @test(irffts(arr, d, dims) ≈ irfft(ifftshift(arr, dims[2:end]), d, dims))
-        for dim = 1:4
+        maxdim = ifelse(use_cuda, 3, 4)
+        for dim = 1:maxdim
             for _ in 1:3
                 s = ntuple(_ -> rand(1:13), dim)
-                arr = randn(ComplexF32, s)
+                arr = opt_cu(randn(ComplexF32, s), use_cuda)
                 dims = 1:dim
                 testft(arr, dims)
                 testift(arr, dims)
@@ -33,7 +34,7 @@
 
 
     @testset "Test 2d fft helpers" begin
-        arr = randn((6,7,8))
+        arr = opt_cu(randn((6,7,8)), use_cuda)
         dims = [1,2]
         d = 6
         @test(ft2d(arr) == fftshift(fft(ifftshift(arr, (1,2)), (1,2)), dims))
@@ -50,7 +51,7 @@
         @test(fftshift2d_view(arr) == fftshift_view(arr, (1,2)))
         @test(ifftshift2d_view(arr) == ifftshift_view(arr, (1,2)))
 
-        arr = randn(ComplexF32, (4,7,8))
+        arr = opt_cu(randn(ComplexF32, (4,7,8)), use_cuda)
         @test(irffts2d(arr, d) == irfft(ifftshift(arr, dims[2:2]), d, (1,2)))
         @test(irft2d(arr, d) == irft(arr, d, (1,2))) 
         @test(irfft2d(arr, d) == irfft(arr, d, (1,2))) 
@@ -60,24 +61,26 @@
     @testset "Test ft, ift, rft and irft real space centering" begin
         szs = ((10,10),(11,10),(100,101),(101,101))
         for sz in szs
-            @test ft(ones(sz)) ≈ prod(sz) .* delta(sz)
-            @test ft(delta(sz)) ≈ ones(sz)
-            @test rft(ones(sz)) ≈ prod(sz) .* delta(rft_size(sz), offset=CtrRFT)
-            @test rft(delta(sz)) ≈ ones(rft_size(sz))
-            @test ift(ones(sz)) ≈ delta(sz)
-            @test ift(delta(sz)) ≈ ones(sz) ./ prod(sz)
-            @test irft(ones(rft_size(sz)),sz[1]) ≈ delta(sz)
-            @test irft(delta(rft_size(sz),offset=CtrRFT),sz[1]) ≈ ones(sz) ./ prod(sz)
+            my_ones = opt_cu(ones(sz), use_cuda)
+            my_delta = opt_cu(collect(delta(sz)), use_cuda)
+            @test ft(my_ones) ≈ prod(sz) .* my_delta
+            @test ft(my_delta) ≈ my_ones
+            @test rft(my_ones) ≈ prod(sz) .* opt_cu(delta(rft_size(sz), offset=CtrRFT), use_cuda)
+            @test rft(my_delta) ≈ opt_cu(ones(rft_size(sz)), use_cuda)
+            @test ift(my_ones) ≈ my_delta
+            @test ift(my_delta) ≈ my_ones ./ prod(sz)
+            # needing to specify Complex datatype. Is a CUDA bug for irfft (!!!)
+            @test irft(opt_cu(ones(ComplexF64, rft_size(sz)), use_cuda), sz[1]) ≈ my_delta
+            @test irft(opt_cu(delta(ComplexF64, rft_size(sz), offset=CtrRFT), use_cuda), sz[1]) ≈ my_ones ./ prod(sz)
         end
     end
 
 
     @testset "Test in place methods" begin
-        x = randn(ComplexF32, (5,3,10))
+        x = opt_cu(randn(ComplexF32, (5,3,10)), use_cuda)
         dims = (1,2)
         @test fftshift(fft(x, dims), dims) ≈ ffts!(copy(x), dims)
         @test ffts2d!(copy(x)) ≈ ffts!(copy(x), (1,2))
     end
-
 
 end

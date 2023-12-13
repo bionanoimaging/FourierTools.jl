@@ -1,19 +1,23 @@
 module FourierTools
 
-
 using Reexport
-using PaddedViews, ShiftedArrays
+using PaddedViews
+# using CircShiftedArrays
+using ShiftedArrays # optionally replaced by CircShiftedArrays
 @reexport using FFTW
 using LinearAlgebra
 using IndexFunArrays
 using ChainRulesCore
 using NDTools
+# to have the CuArray type accesible
+using CUDA
 @reexport using NFFT
 FFTW.set_num_threads(4)
 
 
-
 include("utils.jl")
+# include("fix_cufft.jl")
+
 include("nfft_nd.jl")
 include("resampling.jl")
 include("custom_fourier_types.jl")
