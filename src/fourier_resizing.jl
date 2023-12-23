@@ -94,7 +94,7 @@ function select_region_rft(mat, old_size, new_size)
 end
 
 """
-    select_region(mat,new_size)
+    select_region(mat; new_size)
 
 performs the necessary Fourier-space operations of resampling
 in the space of ft (meaning the already circshifted version of fft).

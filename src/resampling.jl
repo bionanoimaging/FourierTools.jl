@@ -322,19 +322,19 @@ resamples an ND-array to a set of new positions `new_pos` measured in either in 
 or relative (Fourier-) image coordinates (`pixel_coords=false`).
 `new_pos` can be 
 + an array of `Tuples` specifying the zoom along each direction
-+ an `N+1` dimensional array (for `N`-dimensional imput data `img`) of destination postions, the last dimension 
-  enumerating the respective destination corrdinate dimension.
++ an `N+1` dimensional array (for `N`-dimensional input data `img`) of destination positions, the last dimension 
+  enumerating the respective destination coordinate dimension.
 + a function accepting a coordinate `Tuple` and yielding a destination position `Tuple`.
 
 `resample_nfft` can perform a large range of possible resamplings. Note that the default setting is `is_src_coords=true` 
 which means that the source coordinates of each destination position have to be specified. This has the advantage that 
 the result has usually less artefacts, but the positions may be more less convenient to specify.
 
-# Arguements
+# Arguments
 + `img`: the image to apply resampling to
 + `new_pos``: specifies the resampling. See description above.
 + `dst_size`: this argument optionally defines the output size. If you require a different result size 
-              for `new_pos` being a function or with `is_src_coords=true`, state it here. By defaul (`dst_size=nothing`) the 
+              for `new_pos` being a function or with `is_src_coords=true`, state it here. By default (`dst_size=nothing`) the 
               destination size will be inferred form the argument `new_pos` or assumed to be `size(img)`.
 + `is_local_shift`: specifies, whether the resampling coordinates refer to a relative shift or absoluter coordinates
 + `is_in_pixels`: specifies whether the coordinates (or relative distances) are given in pixel pitch units (`is_in_pixels=true`) or in units relative to the array sizes (Fourier convention) 
@@ -368,7 +368,7 @@ julia> @ve a b c c2 # visualize distortion and x-shrinks.
 # define a rotation operation
 julia> rot_alpha(a, t) = (cosd(a)*t[1] + sind(a)*t[2], -sind(a)*t[1]+cosd(a)*t[2])
 
-# postions as an array of tuples
+# positions as an array of tuples
 julia> new_pos = rot_alpha.(10.0, idx(a, scale=ScaFT))
 
 # lets do the resampling, this time by specifying the destination coordinates:
