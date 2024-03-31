@@ -15,12 +15,11 @@ Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 ShiftedArrays = "1277b4bf-5013-50f5-be3d-901d8477a67a"
 
 [compat]
-
 ChainRulesCore = "1, 1.0, 1.1"
 FFTW = "1.5"
 ImageTransformations = "0.9"
 IndexFunArrays = "0.2"
-NDTools = "0.5.1"
+NDTools = "0.5.1, 0.6"
 NFFT = "0.11, 0.12, 0.13"
 PaddedViews = "0.5"
 Reexport = "1"
