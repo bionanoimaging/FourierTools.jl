@@ -290,7 +290,11 @@ function czt_1d(xin::AbstractArray{U,D}, plan::CZTPlan_1D)::AbstractArray{comple
     res = y[myrange...] .* plan.wd
     # pad_value=0 means that it is either already handled by plan.wd or no padding is wanted.
     if plan.pad_value != 0
-        myrange = ntuple((dd) -> (dd==plan.d) ? plan.pad_ranges[plan.d] : Colon(), Val(D)) 
+        # before the start position
+        myrange = ntuple((dd) -> (dd==plan.d) ? plan.pad_ranges[1] : Colon(), Val(D)) 
+        res[myrange...] .= plan.pad_value
+        # after the stop position
+        myrange = ntuple((dd) -> (dd==plan.d) ? plan.pad_ranges[2] : Colon(), Val(D)) 
         res[myrange...] .= plan.pad_value
     end
     return res
@@ -375,7 +379,7 @@ function czt(xin::AbstractArray{T,D}, scale, dims=1:D, dsize=size(xin);
     end
     xout = czt_1d(xin, scale[dims[1]], dims[1], dsize[dims[1]]; a=a, w=w, damp=damp[dims[1]], src_center=src_center[dims[1]], dst_center=dst_center[dims[1]], remove_wrap=remove_wrap, pad_value=pad_value, fft_flags=fft_flags)
     for d in dims[2:end]
-        xout .= czt_1d(xout, scale[d], d, dsize[d]; a=a, w=w, damp=damp[d], src_center=src_center[d], dst_center=dst_center[d], remove_wrap=remove_wrap, pad_value=pad_value, fft_flags=fft_flags)
+        xout = czt_1d(xout, scale[d], d, dsize[d]; a=a, w=w, damp=damp[d], src_center=src_center[d], dst_center=dst_center[d], remove_wrap=remove_wrap, pad_value=pad_value, fft_flags=fft_flags)
     end
     return xout
 end
