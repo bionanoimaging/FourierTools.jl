@@ -1,7 +1,7 @@
 name = "FourierTools"
 uuid = "b18b359b-aebc-45ac-a139-9c0ccbb2871e"
 authors = ["Felix Wechsler (roflmaostc) <fxw+git@mailbox.org>", "Rainer Heintzmann (rheintzmann) <heintzmann@gmail.com>"]
-version = "0.4.3"
+version = "0.4.4"
 
 [deps]
 ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
@@ -19,7 +19,7 @@ ChainRulesCore = "1, 1.0, 1.1"
 FFTW = "1.5"
 ImageTransformations = "0.9"
 IndexFunArrays = "0.2"
-NDTools = "0.5.1, 0.6"
+NDTools = "0.5.1, 0.6, 0.7"
 NFFT = "0.11, 0.12, 0.13"
 PaddedViews = "0.5"
 Reexport = "1"
