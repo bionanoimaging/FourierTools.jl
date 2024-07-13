@@ -1,7 +1,7 @@
 export czt, iczt, plan_czt
 
 """
-    get_kernel_1d(RT::Type, N::Integer, M::Integer; a= 1.0, w = cispi(-2/N), extra_phase=0.0, global_phase=0.0)
+    get_kernel_1d(arr::AbstractArray{T,D}, N::Integer, M::Integer; a= 1.0, w = cispi(-2/N), extra_phase=0.0, global_phase=0.0) where {T,D}
 
 calculates the kernel for the Bluestein algorithm. Note that the length depends on the destination size.
 Note the the resulting kernel-size is computed based on the minimum required length for the task.
@@ -21,11 +21,15 @@ The code is based on Rabiner, Schafer & Rader  1969, IEEE Trans. on Audio and El
     returns: a tuple of three arrays for the initial multiplication (A*W), the convolution 
              (already fourier-transformed) and the post multiplication.
 """
-function get_kernel_1d(RT::Type, N::Integer, M::Integer; a= 1.0, w = cispi(-2/N), extra_phase=0.0, global_phase=0.0)
+function get_kernel_1d(arr::AT, N::Integer, M::Integer; a= 1.0, w = cispi(-2/N), extra_phase=0.0, global_phase=0.0) where {T,D, AT <: AbstractArray{T,D}}
     # intorduce also sscale ??
     # the size needed to avoid wrap
+    RT = real(T)
     CT = (RT <: Real) ? Complex{RT} : RT
     RT = real(CT)
+
+    tmp = similar(arr, RT, (1,)) # converts ShiftedArrays.CircShiftedArray into a plain array type
+    RAT = real_arr_type(typeof(tmp), Val(1))
     # nowrap_size = N + ceil(N÷2)
     # the maximal size where the convolution does not yield zero 
     # max_size = 2*N-1
@@ -35,13 +39,15 @@ function get_kernel_1d(RT::Type, N::Integer, M::Integer; a= 1.0, w = cispi(-2/N)
     
     #Note that the source size ssz is used here
      # W of the source for FFTs. 
-    n = (0:N-1)
+    n = RAT(0:N-1)
     # pre-calculate the product of a.^(-n) and w to be later multiplied with the input x
     # late casting is important, since the rounding errors are overly large if the original calculations are done in Float32.
     aw = CT.((a .^ (-n)) .* w .^ ((n .^ 2) ./ 2))
 
-    conv_kernel = zeros(CT, L) # Array{CT}(undef, L)
-    m = (0:M-1)
+    conv_kernel = similar(arr, CT, L) # Array{CT}(undef, L)
+    fill!(conv_kernel, zero(CT))
+
+    m = RAT(0:M-1)
     conv_kernel[1:M] .= w .^ (-(m .^ 2) ./ 2)
     right_start = L-N+1
     n = (1:N-1)
@@ -77,10 +83,10 @@ struct CZTPlan_1D{CT, PT, D} # <: AbstractArray{T,D}
     d :: Int
     pad_value :: PT
     pad_ranges :: NTuple{2,UnitRange{Int64}}
-    aw :: Array{CT, D}
-    fft_fv :: Array{CT, D}
-    wd :: Array{CT, D}
-    fftw_plan :: FFTW.cFFTWPlan
+    aw :: AbstractArray{CT, D}
+    fft_fv :: AbstractArray{CT, D}
+    wd :: AbstractArray{CT, D}
+    fftw_plan :: AbstractFFTs.Plan
     ifftw_plan :: AbstractFFTs.ScaledPlan
     # dimension of this transformation
     # as :: Array{T, D} # not needed since it is just the conjugate of ws
@@ -138,8 +144,8 @@ end
 creates a plan for an one-dimensional chirp z-transformation (CZT). The generated plan is then applied via 
 muliplication. For details about the arguments, see `czt_1d()`.
 """
-function plan_czt_1d(xin, scaled, d, dsize=size(xin,d); a=nothing, w=nothing, extra_phase=nothing, global_phase=nothing, damp=1.0, src_center=(size(xin,d)+1)/2, 
-                     dst_center=dsize÷2+1, remove_wrap=false, pad_value=zero(eltype(xin)), fft_flags=FFTW.ESTIMATE)
+function plan_czt_1d(xin::AT, scaled, d, dsize=size(xin,d); a=nothing, w=nothing, extra_phase=nothing, global_phase=nothing, damp=1.0, src_center=(size(xin,d)+1)/2, 
+                     dst_center=dsize÷2+1, remove_wrap=false, pad_value=zero(eltype(xin)), fft_flags=FFTW.ESTIMATE) where {AT}
 
     a = isnothing(a) ? exp(-1im*(dst_center-1)*2pi/(scaled*size(xin,d))) : a
     w = isnothing(w) ? cispi(-2/(scaled*size(xin,d))) : w
@@ -148,7 +154,7 @@ function plan_czt_1d(xin, scaled, d, dsize=size(xin,d); a=nothing, w=nothing, ex
     extra_phase = isnothing(extra_phase) ? exp(1im*2pi*(src_center-1)/(scaled*size(xin,d))) : extra_phase
     global_phase = isnothing(global_phase) ? a ^ (src_center-1) : global_phase
 
-    aw, fft_fv, wd = get_kernel_1d(eltype(xin), size(xin, d), dsize; a=a, w=w, extra_phase=extra_phase, global_phase=global_phase)
+    aw, fft_fv, wd = get_kernel_1d(xin, size(xin, d), dsize; a=a, w=w, extra_phase=extra_phase, global_phase=global_phase)
 
     start_range = 1:0
     end_range = 1:0
@@ -159,10 +165,10 @@ function plan_czt_1d(xin, scaled, d, dsize=size(xin,d); a=nothing, w=nothing, ex
     end
 
     nsz = ntuple((dd) -> (d==dd) ? size(fft_fv, 1) : size(xin, dd), Val(ndims(xin))) 
-    y = Array{eltype(aw), ndims(xin)}(undef, nsz)
+    y = similar(xin, eltype(aw), nsz) # Array{eltype(aw), ndims(xin)}(undef, nsz)
 
-    fft_p = plan_fft(y, (d,); flags=fft_flags)
-    ifft_p = plan_ifft(y, (d,); flags=fft_flags) # inv(fft_p)
+    fft_p = (typeof(y) <: Array) ? plan_fft(y, (d,); flags=fft_flags) : plan_fft(y, (d,))
+    ifft_p = (typeof(y) <: Array) ? plan_ifft(y, (d,); flags=fft_flags) : plan_ifft(y, (d,)) # inv(fft_p)
     
     plan = CZTPlan_1D(d, pad_value, (start_range, end_range), reorient(aw, d, Val(ndims(xin))), reorient(fft_fv, d, Val(ndims(xin))), reorient(wd, d, Val(ndims(xin))), fft_p, ifft_p)
     return plan
@@ -269,9 +275,13 @@ function czt_1d(xin, plan::CZTPlan_1D)
     L = size(plan.fft_fv, plan.d)
     nsz = ntuple((dd) -> (dd==plan.d) ? L : size(xin, dd), Val(ndims(xin))) 
     # append zeros
-    y = zeros(eltype(plan.aw), nsz)
-    myrange = ntuple((dd) -> (1:size(xin,dd)), Val(ndims(xin))) 
-    y[myrange...] = xin .* plan.aw
+    tmp = eltype(plan.aw).(xin .* plan.aw)
+    y = NDTools.select_region(tmp, nsz; center=size(tmp).÷2 .+1, dst_center=size(tmp).÷2 .+1)
+
+    # y = zeros(eltype(plan.aw), nsz)
+    # myrange = ntuple((dd) -> (1:size(xin,dd)), Val(ndims(xin))) 
+    # y[myrange...] = xin .* plan.aw
+
     # corner = ntuple((x)->1, Val(ndims(xin)))
     # select_region(xin .* plan.aw, new_size=nsz, center=corner, dst_center=corner) 
 
