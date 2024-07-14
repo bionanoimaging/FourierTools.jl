@@ -23,7 +23,7 @@ using NDTools # this is needed for the select_region! function below.
         # @test ≈(czt(y,zoom, src_center=(size(y).+1)./2), select_region(upsample2(ft(y), fix_center=true), new_size=size(y)), rtol=1e-5)
 
         # for uneven sizes this works:
-        @test ≈(czt(y[1:5,1:5],zoom, (1,2), (10,10)),  upsample2(ft(y[1:5,1:5]), fix_center=true), rtol=1e-5)
+        @test ≈(czt(y[1:5,1:5], zoom, (1,2), (10,10)),  upsample2(ft(y[1:5,1:5]), fix_center=true), rtol=1e-5)
         p_czt = plan_czt(y, zoom, (1,2), (11,12))
         @test ≈(p_czt * y, czt(y, zoom, (1,2), (11,12)))
         # zoom smaller 1.0 causes wrap around:
@@ -31,9 +31,9 @@ using NDTools # this is needed for the select_region! function below.
         @test abs(czt(y,zoom)[1,1]) > 1e-5
         zoom = (2.0, 0.5)
         # check if the remove_wrap works
-        @test abs(czt(y,zoom; remove_wrap=true)[1,1]) == 0.0
-        @test abs(iczt(y,zoom; remove_wrap=true)[1,1]) == 0.0
-        @test abs(czt(y,zoom; pad_value=0.2, remove_wrap=true)[1,1]) == 0.2f0
-        @test abs(iczt(y,zoom; pad_value=0.5f0, remove_wrap=true)[1,1]) == 0.5f0
+        @test abs(czt(y, zoom; remove_wrap=true)[1,1]) == 0.0
+        @test abs(iczt(y, zoom; remove_wrap=true)[1,1]) == 0.0
+        @test abs(czt(y, zoom; pad_value=0.2, remove_wrap=true)[1,1]) == 0.2f0
+        @test abs(iczt(y, zoom; pad_value=0.5f0, remove_wrap=true)[1,1]) == 0.5f0
     end
 end
