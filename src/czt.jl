@@ -65,7 +65,7 @@ end
 
 # type for planning. The arrays are 1D but oriented
 """
-    CZTPlan_1D{CT, D} # <: AbstractArray{T,D}
+    CZTPlan_1D{CT<:Complex, D<:Integer, AT<:AbstractArray{CT, D}, PT<:Number, PFFT<:AbstractFFTs.Plan, PIFFT<:AbstractFFTs.ScaledPlan} 
 
 type used for the onedimensional plan of the chirp Z transformation (CZT).
 containing
@@ -79,17 +79,15 @@ containing
     `fftw_plan!`: plan for the forward FFTW of the convolution kernel
     `ifftw_plan!`: plan for the inverse FFTW of the convolution kernel
 """
-struct CZTPlan_1D{CT, PT, D} # <: AbstractArray{T,D}
+struct CZTPlan_1D{CT<:Complex, AT<:AbstractArray{CT}, PT<:Number, PFFT<:AbstractFFTs.Plan, PIFFT<:AbstractFFTs.ScaledPlan}
     d :: Int
     pad_value :: PT
-    pad_ranges :: NTuple{2,UnitRange{Int64}}
-    aw :: AbstractArray{CT, D}
-    fft_fv :: AbstractArray{CT, D}
-    wd :: AbstractArray{CT, D}
-    fftw_plan! :: AbstractFFTs.Plan
-    ifftw_plan! :: AbstractFFTs.ScaledPlan
-    # dimension of this transformation
-    # as :: Array{T, D} # not needed since it is just the conjugate of ws
+    pad_ranges :: NTuple{2, UnitRange{Int64}}
+    aw :: AT 
+    fft_fv :: AT 
+    wd :: AT 
+    fftw_plan! :: PFFT 
+    ifftw_plan! :: PIFFT 
 end
 
 """
@@ -100,8 +98,8 @@ containing
 # Members:
     `plans`: vector of CZTPlan_1D for each of the directions of the ND array to transform
 """
-struct CZTPlan_ND{CT, PT, D} # <: AbstractArray{T,D}
-    plans :: Vector{CZTPlan_1D{CT,PT, D}}
+struct CZTPlan_ND{CT<:Complex, AT<:AbstractArray{CT}, PT<:Number, PFFT<:AbstractFFTs.Plan, PIFFT<:AbstractFFTs.ScaledPlan} 
+    plans :: Vector{CZTPlan_1D{CT, AT, PT, PFFT, PIFFT}}
 end
 
 function get_invalid_ranges(sz, scaled, dsize, dst_center)
@@ -187,15 +185,24 @@ muliplication. For details about the arguments, see `czt()`.
 function plan_czt(xin::AbstractArray{U,D}, scale, dims, dsize=size(xin); a=nothing, w=nothing, damp=ones(ndims(xin)),
                   src_center=size(xin).÷2 .+1, dst_center=dsize.÷2 .+1, remove_wrap=false, pad_value=zero(eltype(xin)), fft_flags=FFTW.ESTIMATE) where {U,D}
     CT = (eltype(xin) <: Real) ? Complex{eltype(xin)} : eltype(xin)
-    plans =  [] # Vector{CZT1DPlan{CT,D}}
     sz = size(xin)
-    for d in dims
+    xin = Array{eltype(xin)}(undef, sz)
+
+    d = dims[1]
+    p = plan_czt_1d(xin, scale[d], d, dsize[d]; a=a, w=w, damp=damp[d], src_center=src_center[d], dst_center=dst_center[d], remove_wrap=remove_wrap, pad_value=pad_value, fft_flags=fft_flags)
+    plans =  Vector{typeof(p)}(undef, length(dims))
+    sz = ntuple((dd)-> (dd==d) ? dsize[d] : sz[dd], ndims(xin))
+    n=1
+    plans[n]=p 
+    n+=1
+    for d in dims[2:end]
         xin = Array{eltype(xin)}(undef, sz)
         p = plan_czt_1d(xin, scale[d], d, dsize[d]; a=a, w=w, damp=damp[d], src_center=src_center[d], dst_center=dst_center[d], remove_wrap=remove_wrap, pad_value=pad_value, fft_flags=fft_flags)
         sz = ntuple((dd)-> (dd==d) ? dsize[d] : sz[dd], ndims(xin))
-        push!(plans, p)
+        plans[n]=p 
+        n += 1
     end
-    return CZTPlan_ND{CT, typeof(pad_value), D}(plans)
+    return CZTPlan_ND(plans)
 end
 
 function Base.:*(p::CZTPlan_ND, xin::AbstractArray{U,D}; kargs...)::AbstractArray{complex(U),D} where {U,D} 
