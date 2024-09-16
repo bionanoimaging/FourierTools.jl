@@ -22,14 +22,14 @@ Random.seed!(42)
     @testset "Gaussian filter real" begin
         sz = (21, 22)
         x = randn(Float32, sz)
-        sigma = (1.1,2.2)
+        sigma = (1.1, 2.2)
         gf = filter_gaussian(x, sigma, real_space_kernel=true)
         # Note that this is not the same, since one kernel is generated in real space and one in Fourier space!
         # with sizes around 10, the difference is huge!
         k = gaussian(sz, sigma=sigma)
         k = k./sum(k) # different than "normal".
         gf2 = conv_psf(x, k)
-        @test ≈(gf,gf2, rtol=1e-2) # it is realatively inaccurate due to the kernel being generated in different places
+        @test ≈(gf, gf2, rtol=1e-2) # it is realatively inaccurate due to the kernel being generated in different places
         gf2 = filter_gaussian(zeros(sz), sigma, real_space_kernel=true)
         @test ≈(gf2, zeros(sz)) # it can be debated how to best normalize a Gaussian filter
     end

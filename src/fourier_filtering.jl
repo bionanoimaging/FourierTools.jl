@@ -193,7 +193,9 @@ function fourier_filter_by_1D_RFT!(arr::TA, fct=window_gaussian; dims=(1:ndims(a
         end
     end
     arr_ft .*= win
-    fourier_filter_by_1D_FT!(arr_ft, fct;  dims=dims[2:end], transform_win=transform_win, kwargs...)
+
+    # hand over to the fft-based routines for all other dimensions
+    fourier_filter_by_1D_FT!(arr_ft, fct;  dims=dims[2:end], transform_win=transform_win, keep_integral=keep_integral, kwargs...)
     # go back to real space now and return because shift_by_1D_FT processed
     # the other dimensions already
     mul!(arr, inv(p), arr_ft)
