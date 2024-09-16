@@ -90,7 +90,7 @@ function fourier_filter(arr, fct=window_gaussian;  kwargs...)
     return fourier_filter!(copy(arr), fct; kwargs...)
 end
 
-function fourier_filter_by_1D_FT!(arr::TA, wins::AbstractVector; transform_win=false, dims=(1:ndims(arr))) where {N, TA <: AbstractArray{<:Complex, N}}
+function fourier_filter_by_1D_FT!(arr::TA, wins::AbstractVector; transform_win=false, keep_integral=false, dims=(1:ndims(arr))) where {N, TA <: AbstractArray{<:Complex, N}}
     if isempty(dims)
         return arr
     end
@@ -100,9 +100,21 @@ function fourier_filter_by_1D_FT!(arr::TA, wins::AbstractVector; transform_win=f
         fft!(arr, d)
         arr .*= let 
             if transform_win
-                fft(wins[d], d)
+                tmp = fft(wins[d], d)
+                if (keep_integral)
+                    if (tmp[1] != 0 && tmp[1] != 1)
+                        tmp ./= tmp[1]
+                    end
+                end    
+                tmp
             else
-                wins[d]
+                if (keep_integral)
+                    if (tmp[1] != 0 && tmp[1] != 1)
+                        wins[d] ./ wins[d][1]
+                    end
+                else
+                    wins[d]
+                end    
             end        
         end
     end
@@ -110,7 +122,7 @@ function fourier_filter_by_1D_FT!(arr::TA, wins::AbstractVector; transform_win=f
     return arr
 end
 
-function fourier_filter_by_1D_FT!(arr::TA, fct=window_gaussian; dims=(1:ndims(arr)), transform_win=false, kwargs...) where {N, TA <: AbstractArray{<:Complex, N}}
+function fourier_filter_by_1D_FT!(arr::TA, fct=window_gaussian; dims=(1:ndims(arr)), transform_win=false, keep_integral=false, kwargs...) where {N, TA <: AbstractArray{<:Complex, N}}
     if isempty(dims)
         return arr
     end
@@ -124,7 +136,7 @@ function fourier_filter_by_1D_FT!(arr::TA, fct=window_gaussian; dims=(1:ndims(ar
         win .= fct(real(eltype(arr)), select_sizes(arr, d); kwargs...)
         wins[d] = ifftshift(win)
     end
-    return fourier_filter_by_1D_FT!(arr, wins; transform_win=transform_win, dims=dims)
+    return fourier_filter_by_1D_FT!(arr, wins; transform_win=transform_win, keep_integral=keep_integral, dims=dims)
 end
 
 function fourier_filter_by_1D_RFT!(arr::TA, wins::AbstractVector; dims=(1:ndims(arr)), transform_win=false, kwargs...) where {T<:Real, N, TA<:AbstractArray{T, N}}
@@ -154,7 +166,7 @@ function fourier_filter_by_1D_RFT!(arr::TA, wins::AbstractVector; dims=(1:ndims(
 end
 
 # transforms the first dim as rft and then hands over to the fft-based routines.
-function fourier_filter_by_1D_RFT!(arr::TA, fct=window_gaussian; dims=(1:ndims(arr)), transform_win=false, kwargs...) where {T<:Real, N, TA<:AbstractArray{T, N}}
+function fourier_filter_by_1D_RFT!(arr::TA, fct=window_gaussian; dims=(1:ndims(arr)), transform_win=false, keep_integral=false, kwargs...) where {T<:Real, N, TA<:AbstractArray{T, N}}
     if isempty(dims)
         return arr
     end
@@ -173,6 +185,11 @@ function fourier_filter_by_1D_RFT!(arr::TA, fct=window_gaussian; dims=(1:ndims(a
             win = similar(arr, real(eltype(arr_ft)), select_sizes(arr_ft,d))
             # win = TR(fct(real(eltype(arr)), select_sizes(arr_ft,d), offset=CtrRFFT, scale=2 ./size(arr,d); kwargs...))
             win .= fct(real(eltype(arr)), select_sizes(arr_ft,d), offset=CtrRFFT, scale=2 ./size(arr,d); kwargs...)
+        end
+    end
+    if (keep_integral)
+        if (win[1] != 0 && win[1] != 1)
+            win ./= win[1]
         end
     end
     arr_ft .*= win
@@ -310,9 +327,7 @@ See also `filter_gaussian()` and `fourier_filter!()`.
 """
 function filter_gaussian!(arr, sigma=eltype(arr)(1); real_space_kernel=true, border_in=(real(eltype(arr)))(0), border_out=(real(eltype(arr))).(2 ./ (pi .* sigma)), kwargs...)
     if real_space_kernel
-        mysum = sum(arr)
-        fourier_filter!(arr, gaussian; transform_win=true, sigma=sigma, kwargs...)
-        arr .*= (mysum/sum(arr))
+        fourier_filter!(arr, gaussian; transform_win=true, keep_integral=true, sigma=sigma, kwargs...)
         return arr
     else
         return fourier_filter!(arr; border_in=border_in, border_out=border_out, kwargs...)
