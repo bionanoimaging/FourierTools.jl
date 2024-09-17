@@ -36,5 +36,9 @@ Random.seed!(42)
     @testset "Other filters" begin
         @test filter_hamming(FourierTools.delta(Float32, (3,)), border_in=0.0, border_out=1.0) ≈ [0.23,0.54, 0.23]
         @test filter_hann(FourierTools.delta(Float32, (3,)), border_in=0.0, border_out=1.0) ≈ [0.25,0.5, 0.25]
+        @test FourierTools.fourier_filter_by_1D_FT!(ones(ComplexF64, 6), [ones(ComplexF64, 6)]; transform_win=true, normalize_win=false) ≈ 6 .* ones(ComplexF64, 6)
+        @test FourierTools.fourier_filter_by_1D_FT!(ones(ComplexF64, 6), [ones(ComplexF64, 6)]; transform_win=true, normalize_win=true) ≈ ones(ComplexF64, 6)
+        @test FourierTools.fourier_filter_by_1D_RFT!(ones(6), [ones(6)]; transform_win=true, normalize_win=false) ≈ 6 .* ones(6)
+        @test FourierTools.fourier_filter_by_1D_RFT!(ones(6), [ones(6)]; transform_win=true, normalize_win=true) ≈ ones(6)
     end
 end
