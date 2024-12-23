@@ -171,15 +171,33 @@ function updatestate(state::SDFTState, method, x)
         return nothing
     end
     nextdatapoint, nextdatastate = nextiter
-    dft = state.dft
     dfthistory = state.dfthistory
     fragment = state.fragment
     n = windowlength(method)
-    statedata = StateData(dfthistory, fragment, nextdatapoint, n, state.iteration)
-    updatedft!(dft, x, method, statedata)
-    updatedfthistory!(dfthistory, dft, n, state.iteration)
-    updatefragment!(fragment, nextdatapoint, state.iteration)
+    # explicit fft of shifted fragment until dfthistory is complete
+    if dfthistory !== nothing && state.iteration <= maximum(dftback(method))
+        updatefragment!(fragment, nextdatapoint, state.iteration)
+        dft = shiftedfft(fragment, state.iteration)
+    else
+        dft = state.dft
+        statedata = StateData(dfthistory, fragment, nextdatapoint, n, state.iteration)
+        updatedft!(dft, x, method, statedata)
+        updatefragment!(fragment, nextdatapoint, state.iteration)
+    end
+    updatedfthistory!(dfthistory, dft, n, state.iteration + 1)
     return SDFTState(dft, dfthistory, fragment, nextdatastate, state.iteration + 1)
+end
+
+function shiftedfft(x, delay)
+    n = length(x)
+    y = fft(x)
+    delayfactor = exp(2π*im*delay/n)
+    updatedfactor = one(delayfactor)
+    for k in eachindex(y)
+        y[k] *= updatedfactor
+        updatedfactor *= delayfactor
+    end
+    return y
 end
 
 function updatedfthistory!(dfthistory, dft, n, iteration)
