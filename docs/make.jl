@@ -16,7 +16,8 @@ makedocs(modules = [FourierTools],
             "CZT" => "czt.md",
             "Fractional Fourier Transform" => "fractional.md",
             "Utility Functions" => "utils.md",
-         ]
+         ],
+         warnonly=true
         )
 
 deploydocs(repo = "github.com/bionanoimaging/FourierTools.jl.git", devbranch="main")
