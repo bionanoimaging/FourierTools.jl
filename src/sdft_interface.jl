@@ -167,7 +167,7 @@ end
 # Return the updated state of the iterator, or `nothing` if the data series is consumed.
 function updatestate(state::SDFTState, method, x)
     nextiter = iterate(x, state.nextdatastate)
-    if nextiter === nothing
+    if isnothing(nextiter)
         return nothing
     end
     nextdatapoint, nextdatastate = nextiter
@@ -175,7 +175,7 @@ function updatestate(state::SDFTState, method, x)
     fragment = state.fragment
     n = windowlength(method)
     # explicit fft of shifted fragment until dfthistory is complete
-    if dfthistory !== nothing && state.iteration <= maximum(dftback(method))
+    if !isnothing(dfthistory) && state.iteration <= maximum(dftback(method))
         updatefragment!(fragment, nextdatapoint, state.iteration)
         dft = shiftedfft(fragment, state.iteration)
     else
@@ -269,7 +269,7 @@ function iterate(itr::SDFTIterator, state)
     method = getmethod(itr)
     x = getdata(itr)
     newstate = updatestate(state, method, x)
-    if newstate === nothing
+    if isnothing(newstate)
         return nothing
     end
     dft = newstate.dft
@@ -282,7 +282,7 @@ function initialize(itr)
     x = getdata(itr)
     n = windowlength(getmethod(itr))
     firstiteration = iterate(x)
-    if firstiteration === nothing
+    if isnothing(firstiteration)
         throw(ErrorException("insufficient data to compute a sliding DFT of window length = $n"))
     end
     datapoint, datastate = firstiteration
@@ -290,7 +290,7 @@ function initialize(itr)
     i = 1
     while i < n
         iteration = iterate(x, datastate)
-        if iteration === nothing
+        if isnothing(iteration)
             throw(ErrorException("insufficient data to compute a sliding DFT of window length = $n"))
         end
         datapoint, datastate = iteration
