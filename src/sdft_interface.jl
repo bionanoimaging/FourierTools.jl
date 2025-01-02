@@ -29,10 +29,12 @@ containing the value returned by the last iteration of the sliding DFT.
 
 `method` is the object that defines the method to compute the sliding DFT.
 
-`state` is an object generated automatically at each iteration of an object created by
-`sdft(method, x)`, containing the information that is needed
-to compute the new values of the sliding DFT, together with `x`.
-That information can be extracted from `state` with the following functions:
+`state` is an object generated automatically at each iteration
+of an SDFT iterator made from `method` and `x`,
+(an object of the type [`FourierTools.SlidingDFTs.SDFTIterator`](@ref)).
+
+The information that is needed to update the sliding DFT can be extracted from `state`
+with the following functions:
 
 * [`SlidingDFTs.previousdft`](@ref) to get the DFTs of previous iterations.
 * [`SlidingDFTs.previousdata`](@ref) to get a previous value of the data series.
@@ -217,11 +219,20 @@ function updatefragment!(::Nothing, ::Any, ::Any) end
 
 ## Iterator
 
+"""
+    SDFTIterator(method, x[, safe=true])
+
+Return an iterator to produce a sliding DFT of `x` using the given `method`.
+If `safe == true` (the default value), this iterator produces a new vector at each iteration;
+otherwise the vector produced in the first iteration can be reused in subsequent iterations.
+"""
 struct SDFTIterator{M, T}
     method::M
     data::T
     safe::Bool
 end
+
+SDFTIterator(method, x) = SDFTIterator(method, x, true)
 
 getmethod(iterator::SDFTIterator) = iterator.method
 getdata(iterator::SDFTIterator) = iterator.data
@@ -241,18 +252,6 @@ Base.eltype(::SDFTIterator{M,T}) where {M,T} = Vector{Complex{eltype(T)}}
 
 Base.isdone(iterator::SDFTIterator) = Base.isdone(getdata(iterator))
 Base.isdone(iterator::SDFTIterator, state::SDFTState) = Base.isdone(getdata(iterator), state.nextdatastate)
-
-"""
-    sdft(method, x[, safe=true])
-
-Return an iterator to produce a sliding DFT of `x` using the given `method`.
-If `safe == true` (the default behavior), this iterator produces a new vector at each iteration.
-
-Set the optional argument `safe=false` to improve performance by reducing allocations,
-at the expense of unexpected behavior if the resulting vector is mutated between iterations.
-"""
-sdft(method, x, safe=true) = SDFTIterator(method, x, safe)
-
 
 function iterate(itr::SDFTIterator)
     windowed_data, datastate = initialize(itr)
@@ -303,5 +302,35 @@ end
 create_dfthistory(::Any, ::Nothing) = nothing
 create_dfthistory(dft, n::Integer) = repeat(dft, n+1)
 create_dfthistory(dft, indices) = create_dfthistory(dft, maximum(indices))
+
+"""
+    (m::AbstractSDFT)(x[, safe=true])
+
+`AbstractSDFT` is an abstract type for callable structs that implement
+Sliding Discrete Fourier Transforms.
+
+If `typeof(m) <: AbstractSDFT`, then `m(x)` will return an iterator
+that produces a sliding DFT of `x` according to the method `m`. 
+
+By default that iterator produces a new vector at each iteration.
+Set the optional argument `safe=false` to improve performance by reducing allocations,
+at the expense of unexpected behavior if the resulting vector is mutated between iterations.
+
+# Example
+```julia
+sdft = SDFT(10) # basic [`SDFT`](@ref) with a window of length 10
+
+for dft in sdft(x)
+    # here `dft` is a vector with 10 complex values
+end
+```
+
+# Available methods:
+See some methods for sliding DFTs at:
+https://nanoimaging.de/FourierTools.jl/stable/slidingdft/#Methods-for-SDFTs
+"""
+abstract type AbstractSDFT end
+
+(m::AbstractSDFT)(args...) = SlidingDFTs.SDFTIterator(m, args...)
 
 end # module SlidingDFTs

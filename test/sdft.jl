@@ -19,11 +19,11 @@
     # Compare SDFT
     @testset "SDFT" begin
         method = SDFT(n)
-        dfty = collect(sdft(method, y))
+        dfty = collect(method(y))
         @testset "stateless" for i in eachindex(sample_offsets)
             @test dfty[1 + sample_offsets[i]] ≈ dfty_sample[i]
         end
-        dfty = collect(sdft(method, Iterators.Stateful(y)))
+        dfty = collect(method(Iterators.Stateful(y)))
         @testset "stateful" for i in eachindex(sample_offsets)
             @test dfty[1 + sample_offsets[i]] ≈ dfty_sample[i]
         end

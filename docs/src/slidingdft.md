@@ -9,13 +9,13 @@ The basic Sliding Discrete Fourier Transform (SDFT) of a one-dimensional series 
 **Step 1**: Setup the method for an SDFT of length `n`:
 
 ```julia
-method = SDFT(n)
+sdft = SDFT(n)
 ```
 
-**Step 2**: Create an iterator of the SDFT over `x`, with the function `sdft`. This is typically used in a loop:
+**Step 2**: Apply the created method to the data series `x`. This is typically used in a loop:
 
 ```julia
-for spectrum in sdft(method, x)
+for spectrum in sdft(x)
     # `spectrum` is a `Vector{Complex(eltype(x))}` of length `n`
 end
 ```
@@ -31,12 +31,6 @@ Apart from that consideration, it is safe to apply SDFTs to stateful iterators, 
 ```@autodocs
 Modules = [SlidingDFTs]
 Pages = ["sdft_implementations.jl"]
-```
-
-## Functions
-
-```@docs
-sdft
 ```
 
 ## Developing new SDFTs
@@ -65,11 +59,11 @@ Other variations of the SDFT may use formulas that depend on previous iterations
 
 A method to compute an SDFT is defined by three kinds of object types:
 
-* One for the method, which contains the fixed parameters that are needed by the algorithm to compute the SDFT.
-* Another for the iterator created by the function `sdft`, which binds a method with the target data series.
+* One for the method (e.g. `sdft = SDFT(n)` in the previous example), which contains the fixed parameters that are needed by the algorithm to compute the SDFT.
+* Another for the iterator created by calling the method as a function (`sdft(x)` in the example), which is thus bound with the target data series.
 * And yet another for the state of the iterator, which holds the information needed by the algorithm that depends on the data series and changes at each iteration.
 
-The internals of this package, implemented in the module `FourierTools.SlidingDFTs`, take care of the design of the iterator and state types, and of the creation of their instances. The only thing that has to be defined to create a new kind of SDFT is the `struct` of the method with the fixed parameters, and a few function methods dispatching on that type.
+The internals of this package take care of the design of the iterator and state types, and of the creation of their instances. The only thing that has to be defined to create a new kind of SDFT is the `struct` of the method with the fixed parameters, and a few function methods dispatching on that type.
 
 Before explaining how to define such a struct, it is convenient to know the functions that can be used to extract the information that is stored in the state of SDFT iterators. There is a function for each one of the three kinds of variables presented in the general recursive equation above.
 
@@ -86,7 +80,7 @@ Notice that the second arguments of `previousdft` and `previousdata` might have 
 
 For methods that need to know how many steps of the SDFT have been done, this can also be extracted with the function [`SlidingDFTs.iterationcount`](@ref).
 
-The design of the `struct` representing a new SDFT type is free, but it is required to implement the following methods dispatching on that type:
+The design of the `struct` representing a new SDFT type is free, but it is required to be a subtype of [`AbstractSDFT`](@ref), and implement the following methods dispatching on that type:
 
 * [`SlidingDFTs.windowlength`](@ref) to return the length of the DFT window.
 * [`SlidingDFTs.updatepdf!`](@ref) with the implementation of the recursive equation, extracting the information stored in the state with the functions commented above (`previousdft`, etc.) .
@@ -125,10 +119,18 @@ SlidingDFTs.dataoffsets(::MyBasicSDFT) = 0
 
 On the other hand there is no need to define `SlidingDFTs.dftback` in this case, since the interface of of `updatedft!` assumes that the most recent DFT is already contained in its first argument `dft`, so it is not necessary to use the function `previousdft` to get it.
 
+### Alternative to subtyping `AbstractSDFT`
+
+Types that represent SDFT methods are required to be subtypes of `AbstractSDFT` in order to make them callable and return an iterator of the SDFT (i.e. objects of the type `FourierTools.SlidingDFTs.SDFTIterator`). If for some reason that subtyping is not desired or possible (e.g. if the said type already has another supertype), the same behavior can be obtained by defining them explicitly as [functors](https://docs.julialang.org/en/v1/manual/methods/#Function-like-objects), in the following fashion:
+
+```julia
+(m::MyBasicSDFT)(args...) = SlidingDFTs.SDFTIterator(args...)
+```
+
+
 ### SDFT development API
 
 ```@autodocs
 Modules = [FourierTools]
 Pages = ["sdft_interface.jl"]
-Filter = !isequal(SlidingDFTs.sdft)
 ```
