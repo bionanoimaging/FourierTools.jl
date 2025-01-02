@@ -16,6 +16,7 @@ makedocs(modules = [FourierTools],
             "CZT" => "czt.md",
             "Fractional Fourier Transform" => "fractional.md",
             "Utility Functions" => "utils.md",
+            "Sliding Discrete Fourier Transforms" => "slidingdft.md",
          ],
          warnonly=true
         )
