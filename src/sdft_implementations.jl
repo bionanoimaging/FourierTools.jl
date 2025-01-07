@@ -41,14 +41,14 @@ SDFT(n) = SDFT(ComplexF64, n)
 
 # Required functions
 
-windowlength(method::SDFT) = method.n
+sdft_windowlength(method::SDFT) = method.n
 
-function updatedft!(dft, x, method::SDFT{T,C}, state) where {T,C}
+function sdft_update!(dft, x, method::SDFT{T,C}, state) where {T,C}
     twiddle = one(C)
     for k in eachindex(dft)
-        dft[k] = twiddle * (dft[k] + nextdata(state) - previousdata(state))
+        dft[k] = twiddle * (dft[k] + sdft_nextdata(state) - sdft_previousdata(state))
         twiddle *= method.factor
     end
 end
 
-dataoffsets(::SDFT) = 0
+sdft_dataoffsets(::SDFT) = 0

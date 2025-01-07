@@ -67,42 +67,42 @@ The internals of this package take care of the design of the iterator and state 
 
 Before explaining how to define such a struct, it is convenient to know the functions that can be used to extract the information that is stored in the state of SDFT iterators. There is a function for each one of the three kinds of variables presented in the general recursive equation above.
 
-* [`FourierTools.previousdft`](@ref) for the values of the DFT in previous iterations.
-* [`FourierTools.previousdata`](@ref) for the values of the data series used in the most recent iteration.
-* [`FourierTools.nextdata`](@ref) for the next value of the data series after the fragment used in the most recent iteration.
+* [`FourierTools.sdft_previousdft`](@ref) for the values of the DFT in previous iterations.
+* [`FourierTools.sdft_previousdata`](@ref) for the values of the data series used in the most recent iteration.
+* [`FourierTools.sdft_nextdata`](@ref) for the next value of the data series after the fragment used in the most recent iteration.
 
 For instance, the values used in the formula of the basic SDFT may be obtained from a `state` object as:
-* `FourierTools.previousdft(state, 0)` for $X_{i}$.
-* `FourierTools.previousdata(state, 0)` for $x[i]$.
-* `FourierTools.nextdata(state)` for $x[i+n+1]$.
+* `FourierTools.sdft_previousdft(state, 0)` for $X_{i}$.
+* `FourierTools.sdft_previousdata(state, 0)` for $x[i]$.
+* `FourierTools.sdft_nextdata(state)` for $x[i+n+1]$.
 
-Notice that the second arguments of `previousdft` and `previousdata` might have been ommited in this case, since they are zero by default.
+Notice that the second arguments of `sdft_previousdft` and `sdft_previousdata` might have been ommited in this case, since they are zero by default.
 
-For methods that need to know how many steps of the SDFT have been done, this can also be extracted with the function [`FourierTools.iterationcount`](@ref).
+For methods that need to know how many steps of the SDFT have been done, this can also be extracted with the function [`FourierTools.sdft_iteration`](@ref).
 
 The design of the `struct` representing a new SDFT type is free, but it is required to be a subtype of [`AbstractSDFT`](@ref), and implement the following methods dispatching on that type:
 
-* [`FourierTools.windowlength`](@ref) to return the length of the DFT window.
-* [`FourierTools.updatepdf!`](@ref) with the implementation of the recursive equation, extracting the information stored in the state with the functions commented above (`previousdft`, etc.) .
+* [`FourierTools.sdft_windowlength`](@ref) to return the length of the DFT window.
+* [`FourierTools.sdft_update!`](@ref) with the implementation of the recursive equation, extracting the information stored in the state with the functions commented above (`sdft_previousdft`, etc.) .
 
-Depending on the functions that are used in the particular implementation of `updatepdf!` for a given type, the following methods should be defined too:
+Depending on the functions that are used in the particular implementation of `sdft_update!` for a given type, the following methods should be defined too:
 
-* [`FourierTools.dftback`](@ref) if `FourierTools.previousdft` is used.
-* [`FourierTools.dataoffsets`](@ref) if `FourierTools.previousdata` is used.
+* [`FourierTools.sdft_backindices`](@ref) if `FourierTools.sdft_previousdft` is used.
+* [`FourierTools.sdft_dataoffsets`](@ref) if `FourierTools.sdft_previousdata` is used.
 
 ### Example
 
 The formula of the basic SDFT formula could be implemented for a type `MyBasicSDFT` as follows:
 
 ```julia
-import FourierTools: updatedft!, windowlength, nextdata, previousdata
+import FourierTools: sdft_update!, sdft_windowlength, sdft_nextdata, sdft_previousdata
 
-function udpatedft!(dft, x, method::MyBasicSDFT, state)
-    n = windowlength(method)
+function sdft_udpatedft!(dft, x, method::MyBasicSDFT, state)
+    n = sdft_windowlength(method)
     for k in eachindex(dft)
         X_i = dft[k]
-        x_iplusn = nextdata(state)
-        x_i = previousdata(state)
+        x_iplusn = sdft_nextdata(state)
+        x_i = sdft_previousdata(state)
         Wk = exp(2π*im*k/n)
         dft[k] = Wk * (X_i + x_iplusn - x_i)
     end
@@ -111,13 +111,13 @@ end
 
 (The type [`SDFT`](@ref) actually has as a similar, but not identical definition.)
 
-The implementation of `updatepdf!` given in the previous example does use `previousdata` - with the default offset value, equal to zero - so the following is required in this case:
+The implementation of `sdft_update!` given in the previous example does use `sdft_previousdata` - with the default offset value, equal to zero - so the following is required in this case:
 
 ```julia
-FourierTools.dataoffsets(::MyBasicSDFT) = 0
+FourierTools.sdft_dataoffsets(::MyBasicSDFT) = 0
 ```
 
-On the other hand there is no need to define `FourierTools.dftback` in this case, since the interface of of `updatedft!` assumes that the most recent DFT is already contained in its first argument `dft`, so it is not necessary to use the function `previousdft` to get it.
+On the other hand there is no need to define `FourierTools.sdft_backindices` in this case, since the interface of of `sdft_update!` assumes that the most recent DFT is already contained in its first argument `dft`, so it is not necessary to use the function `sdft_previousdft` to get it.
 
 ### Alternative to subtyping `AbstractSDFT`
 
