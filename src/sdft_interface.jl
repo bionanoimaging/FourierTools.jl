@@ -1,15 +1,9 @@
-module SlidingDFTs
-
-using FFTW # AbstractFFTs would suffice
-import Base: iterate
-
-
-# exports
+export AbstractSDFT
 
 ## Required functions
 
 """
-    SlidingDFTs.windowlength(method)
+    windowlength(method)
 
 Return the length of the window used by `method`.
 """
@@ -31,14 +25,14 @@ containing the value returned by the last iteration of the sliding DFT.
 
 `state` is an object generated automatically at each iteration
 of an SDFT iterator made from `method` and `x`,
-(an object of the type [`FourierTools.SlidingDFTs.SDFTIterator`](@ref)).
+(an object of the type [`FourierTools.SDFTIterator`](@ref)).
 
 The information that is needed to update the sliding DFT can be extracted from `state`
 with the following functions:
 
-* [`SlidingDFTs.previousdft`](@ref) to get the DFTs of previous iterations.
-* [`SlidingDFTs.previousdata`](@ref) to get a previous value of the data series.
-* [`SlidingDFTs.nextdata`](@ref) to get the next value of the data series.
+* [`FourierTools.previousdft`](@ref) to get the DFTs of previous iterations.
+* [`FourierTools.previousdata`](@ref) to get a previous value of the data series.
+* [`FourierTools.nextdata`](@ref) to get the next value of the data series.
 """
 function updatedft! end
 
@@ -50,7 +44,7 @@ function updatedft! end
 Return an integer or a vector of positive integers with the indices of the previous iterations
 that are needed by the given method to compute a sliding DFT.
 
-If the code of `SlidingDFTs.updatepdf!` for the type of `method` uses the function `SlidingDFTs.previousdft`,
+If the code of `FourierTools.updatepdf!` for the type of `method` uses the function `FourierTools.previousdft`,
 this function must return the integers that are used as the third argument (`back`) of that function.
 
 If that function is not needed, this one may return `nothing` to reduce memory allocations.
@@ -63,7 +57,7 @@ dftback(::Any) = nothing
 Return an integer or a vector of integers with the offsets of data samples
 that are needed by the given method to compute a sliding DFT.
 
-If the code of `SlidingDFTs.updatepdf!` that dispatches on the type of `method` uses the function `SlidingDFTs.previousdata`,
+If the code of `FourierTools.updatepdf!` that dispatches on the type of `method` uses the function `FourierTools.previousdata`,
 this function must return the integers that are used as the third argument (`offset`) of that function.
 
 If that function is not needed (no past samples are used), this one may return `nothing` to reduce memory allocations.
@@ -100,7 +94,7 @@ then this function returns its DFT for the fragment between `i-back` and `i+n-ba
 """
 function previousdft(state::StateData, back=0)
     !hasdfthistory(state) && throw(ErrorException(
-        "previous DFT results not available; the SDFT method has no valid definition of `SlidingDFTs.dftback`"
+        "previous DFT results not available; the SDFT method has no valid definition of `FourierTools.dftback`"
         ))
     dfthistory = state.dfthistory
     n = state.windowlength
@@ -123,7 +117,7 @@ then this function returns the `i+offset`-th value.
 """
 function previousdata(state::StateData, offset=0)
     !haspreviousdata(state) && throw(ErrorException(
-        "previous data values not available; the SDFT method has no valid definition of `SlidingDFTs.dataoffsets`"
+        "previous data values not available; the SDFT method has no valid definition of `FourierTools.dataoffsets`"
         ))
     fragment = state.fragment
     adjustedoffset = rem(offset + state.iteration - 1, length(fragment))
@@ -253,7 +247,7 @@ Base.eltype(::SDFTIterator{M,T}) where {M,T} = Vector{Complex{eltype(T)}}
 Base.isdone(iterator::SDFTIterator) = Base.isdone(getdata(iterator))
 Base.isdone(iterator::SDFTIterator, state::SDFTState) = Base.isdone(getdata(iterator), state.nextdatastate)
 
-function iterate(itr::SDFTIterator)
+function Base.iterate(itr::SDFTIterator)
     windowed_data, datastate = initialize(itr)
     dft = fft(windowed_data)
     method = getmethod(itr)
@@ -264,7 +258,7 @@ function iterate(itr::SDFTIterator)
     return returned_dft, state
 end
 
-function iterate(itr::SDFTIterator, state)
+function Base.iterate(itr::SDFTIterator, state)
     method = getmethod(itr)
     x = getdata(itr)
     newstate = updatestate(state, method, x)
@@ -331,6 +325,4 @@ https://nanoimaging.de/FourierTools.jl/stable/slidingdft/#Methods-for-SDFTs
 """
 abstract type AbstractSDFT end
 
-(m::AbstractSDFT)(args...) = SlidingDFTs.SDFTIterator(m, args...)
-
-end # module SlidingDFTs
+(m::AbstractSDFT)(args...) = SDFTIterator(m, args...)

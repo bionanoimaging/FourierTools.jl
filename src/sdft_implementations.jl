@@ -1,7 +1,4 @@
-export AbstractSDFT, SDFT
-
-import .SlidingDFTs
-import .SlidingDFTs: AbstractSDFT
+export SDFT
 
 ## Basic SDFT
 
@@ -44,14 +41,14 @@ SDFT(n) = SDFT(ComplexF64, n)
 
 # Required functions
 
-SlidingDFTs.windowlength(method::SDFT) = method.n
+windowlength(method::SDFT) = method.n
 
-function SlidingDFTs.updatedft!(dft, x, method::SDFT{T,C}, state) where {T,C}
+function updatedft!(dft, x, method::SDFT{T,C}, state) where {T,C}
     twiddle = one(C)
     for k in eachindex(dft)
-        dft[k] = twiddle * (dft[k] + SlidingDFTs.nextdata(state) - SlidingDFTs.previousdata(state))
+        dft[k] = twiddle * (dft[k] + nextdata(state) - previousdata(state))
         twiddle *= method.factor
     end
 end
 
-SlidingDFTs.dataoffsets(::SDFT) = 0
+dataoffsets(::SDFT) = 0
