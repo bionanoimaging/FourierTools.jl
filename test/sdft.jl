@@ -4,6 +4,7 @@ import FourierTools:
     sdft_previousdft,
     sdft_previousdata,
     sdft_nextdata,
+    sdft_iteration,
     sdft_backindices,
     sdft_dataoffsets
 
@@ -22,8 +23,10 @@ function sdft_update!(dft, x, method::TestSDFT{T,C}, state) where {T,C}
     dft0 = sdft_previousdft(state, 0)
     unused_dft = sdft_previousdft(state, 2) # not used - add for coverage
     unused_data = sdft_previousdata(state, 1) # not used - add for coverage
+    unused_count = sdft_iteration(state) # not used - add for coverage
     for k in eachindex(dft)
-        dft[k] = twiddle * (dft0[k] + sdft_nextdata(state) - sdft_previousdata(state))
+        dft[k] = twiddle * (dft0[k] + sdft_nextdata(state) - sdft_previousdata(state)) +
+            0.0 * (unused_dft[k] + unused_data + unused_count)
         twiddle *= method.factor
     end
 end
@@ -80,5 +83,20 @@ dfty_sample = [fft(view(y, (1:n) .+ offset)) for offset in sample_offsets]
         @test_throws "insufficient data" iterate(SDFT(10)(ones(5)))
         @test_throws "insufficient data" iterate(SDFT(10)(Float64[]))
         @test_throws "previous DFT results not available" collect(ErrorSDFT()(y))
+    end
+
+    # Additional coverage
+    @testset "Extra" begin
+        itr = SDFT(n)(y)
+        _, state = iterate(itr)
+        @test ismissing(Base.isdone(itr))
+        @test ismissing(Base.isdone(itr, state))
+        FourierTools.sdft_updatedfthistory!(nothing)
+        FourierTools.sdft_updatefragment!(nothing, nothing, nothing)
+        dummy_state = FourierTools.SDFTStateData(nothing, nothing, 1.0, 1, 1)
+        @test FourierTools.haspreviousdata(dummy_state) == false
+        # sdft_dataoffsets
+        @test iszero(FourierTools.sdft_dataoffsets(SDFT(n)))
+        @test isnothing(FourierTools.sdft_dataoffsets(nothing))
     end
 end

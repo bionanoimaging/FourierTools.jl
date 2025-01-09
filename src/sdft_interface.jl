@@ -254,7 +254,7 @@ function Base.iterate(itr::SDFTIterator)
     backindices = sdft_backindices(method)
     dfthistory = create_sdfthistory(dft, backindices)
     state = SDFTState(dft, dfthistory, windowed_data, datastate, 1)
-    returned_dft = itr.safe ? copy(dft) : dft
+    returned_dft = issafe(itr) ? copy(dft) : dft
     return returned_dft, state
 end
 
@@ -266,7 +266,7 @@ function Base.iterate(itr::SDFTIterator, state)
         return nothing
     end
     dft = newstate.dft
-    returned_dft = itr.safe ? copy(dft) : dft
+    returned_dft = issafe(itr) ? copy(dft) : dft
     return returned_dft, newstate
 end
 
