@@ -8,6 +8,10 @@ using LinearAlgebra
 using IndexFunArrays
 using ChainRulesCore
 using NDTools
+
+using SnoopPrecompile
+
+
 @reexport using NFFT
 FFTW.set_num_threads(4)
 
@@ -32,5 +36,8 @@ include("czt.jl")
 include("fractional_fourier_transform.jl")
 include("sdft_interface.jl")
 include("sdft_implementations.jl")
+
+
+include("precompilation.jl")
 
 end # module
