@@ -30,7 +30,7 @@ function damp_edge_outside(img::AbstractArray{T, N}, border=0.1, mykernel=nothin
     rborder=ceil.(Int,border.*size(img));
     new_size=size(img).+ rborder;
     if isnothing(mykernel)
-        mykernel = (one(T)./rr(new_size)) .- one(T)./norm(rborder.*sqrt(2.0));
+        mykernel = (one(T)./rr(T, new_size)) .- one(T)./norm(rborder.*sqrt(T(2.0)));
         # clip at zero
         mykernel .= max.(mykernel, zero(T)); 
         mykernel=mykernel .^ kernelpower;
