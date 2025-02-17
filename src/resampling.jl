@@ -52,11 +52,14 @@ julia> resample([2.0, 0.0], (6,)) ≈ 1 .+ cos.(2π .* (0:5)./6)
 true
 ```
 """
-function resample(arr::AbstractArray{T, N}, new_size; normalize=true) where {T, N}
+function resample(arr::AbstractArray{T, N}, new_size; shift_center=false, normalize=true) where {T, N}
     if new_size == size(arr)
         return copy(arr)
     end
     # for complex arrays we need a full FFT
+    if shift_center
+        arr = ifftshift(arr)
+    end
     if T <: Complex
         arr_out = resample_by_FFT(arr, Tuple(new_size))
     else 
@@ -66,6 +69,9 @@ function resample(arr::AbstractArray{T, N}, new_size; normalize=true) where {T, 
     # this violates energy!
     if normalize
         arr_out .*= length(arr_out) ./ length(arr)
+    end
+    if shift_center
+        arr_out = fftshift(arr_out)
     end
     return arr_out
 end
