@@ -56,7 +56,7 @@ function damp_edge_outside(img::AbstractArray{T, N}, border=0.1, mykernel=nothin
     nimg2 = real(ift(ft(nimg) .* transfer)); 
     wimg2 = real(ift(ft(wimg) .* transfer));
 
-    nimg = nimg2 ./ wimg2;
+    nimg = T.(nimg2 ./ wimg2);
     if usepixels > 0
         # replace the original in the middle
         NDTools.select_region!(img, nimg)  
