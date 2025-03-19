@@ -90,7 +90,19 @@ function fourier_filter(arr, fct=window_gaussian;  kwargs...)
     return fourier_filter!(copy(arr), fct; kwargs...)
 end
 
-function fourier_filter_by_1D_FT!(arr::TA, wins::AbstractVector; transform_win=false, dims=(1:ndims(arr))) where {N, TA <: AbstractArray{<:Complex, N}}
+"""
+    fourier_filter_by_1D_FT!(arr::TA, wins::AbstractVector; transform_win=false, normalize_win=false, dims=(1:ndims(arr))) where {N, TA <: AbstractArray{<:Complex, N}}
+
+filters an array by sequential multiplication in Fourierspace using one-dimensional FFTs with one-dimensional kernels as specified in `wins`.
+
+#Arguments
++ `arr`:     the array to filter by separable multiplication with windows.
++ `wins`:    the window as a vector of vectors. Each of the original array dimensions corresponds to an entry in the outer vector.
++ `transform_win`: specifies whether the directional windows each need to be FFTed before applying.
++ `normalize_win`: specifies whether the directional windows (after potential FFT) each need to be normalized to a value of 1 at the zero frequency coordinate.
++ `dims`: the dimensions to apply this separable multiplication to. If empty, the array will not be filtered.
+"""
+function fourier_filter_by_1D_FT!(arr::TA, wins::AbstractVector; transform_win=false, normalize_win=false, dims=(1:ndims(arr))) where {N, TA <: AbstractArray{<:Complex, N}}
     if isempty(dims)
         return arr
     end
@@ -100,9 +112,21 @@ function fourier_filter_by_1D_FT!(arr::TA, wins::AbstractVector; transform_win=f
         fft!(arr, d)
         arr .*= let 
             if transform_win
-                fft(wins[d], d)
+                tmp = fft(wins[d], d)
+                if (normalize_win)
+                    if (tmp[1] != 0 && tmp[1] != 1)
+                        tmp ./= tmp[1]
+                    end
+                end    
+                tmp
             else
-                wins[d]
+                if (normalize_win)
+                    if (wins[d][1] != 0 && wins[d][1] != 1)
+                        wins[d] ./ wins[d][1]
+                    end
+                else
+                    wins[d]
+                end    
             end        
         end
     end
@@ -110,7 +134,20 @@ function fourier_filter_by_1D_FT!(arr::TA, wins::AbstractVector; transform_win=f
     return arr
 end
 
-function fourier_filter_by_1D_FT!(arr::TA, fct=window_gaussian; dims=(1:ndims(arr)), transform_win=false, kwargs...) where {N, TA <: AbstractArray{<:Complex, N}}
+"""
+    fourier_filter_by_1D_FT!(arr::TA, fct=window_gaussian; transform_win=false, normalize_win=false, dims=(1:ndims(arr))) where {N, TA <: AbstractArray{<:Complex, N}}
+
+filters an array by sequential multiplication in Fourierspace using one-dimensional FFTs with one-dimensional kernels as specified in `wins`.
+
+#Arguments
++`arr`:     the array to filter by separable multiplication with windows.
++`fct`:    the window as a fuction. It needs to accept a datatype as the first argument and a size as a second argument.
+           If specified in real space (`transform_win=true`), it should interpret the zero position near the center of the array.
++`transform_win`: specifies whether the directional windows each need to be FFTed before applying.
++`normalize_win`: specifies whether the directional windows (after potential FFT) each need to be normalized to a value of 1 at the zero frequency coordinate.
++`dims`: the dimensions to apply this separable multiplication to. If empty, the array will not be filtered.
+"""
+function fourier_filter_by_1D_FT!(arr::TA, fct=window_gaussian; dims=(1:ndims(arr)), transform_win=false, normalize_win=false, kwargs...) where {N, TA <: AbstractArray{<:Complex, N}}
     if isempty(dims)
         return arr
     end
@@ -124,10 +161,22 @@ function fourier_filter_by_1D_FT!(arr::TA, fct=window_gaussian; dims=(1:ndims(ar
         win .= fct(real(eltype(arr)), select_sizes(arr, d); kwargs...)
         wins[d] = ifftshift(win)
     end
-    return fourier_filter_by_1D_FT!(arr, wins; transform_win=transform_win, dims=dims)
+    return fourier_filter_by_1D_FT!(arr, wins; transform_win=transform_win, normalize_win=normalize_win, dims=dims)
 end
 
-function fourier_filter_by_1D_RFT!(arr::TA, wins::AbstractVector; dims=(1:ndims(arr)), transform_win=false, kwargs...) where {T<:Real, N, TA<:AbstractArray{T, N}}
+"""
+    fourier_filter_by_1D_RFT!(arr::TA, wins::AbstractVector; transform_win=false, normalize_win=false, dims=(1:ndims(arr))) where {N, TA <: AbstractArray{<:Complex, N}}
+
+filters an array by sequential multiplication in Fourierspace using one-dimensional RFFTs (first transform dimension) and FFTS (other transform dimensions) with one-dimensional kernels as specified in `wins`.
+
+#Arguments
++`arr`:     the array to filter by separable multiplication with windows.
++`wins`:    the window as a vector of vectors. Each of the original array dimensions corresponds to an entry in the outer vector.
++`transform_win`: specifies whether the directional windows each need to be FFTed before applying.
++`normalize_win`: specifies whether the directional windows (after potential FFT) each need to be normalized to a value of 1 at the zero frequency coordinate.
++`dims`: the dimensions to apply this separable multiplication to. If empty, the array will not be filtered.
+"""
+function fourier_filter_by_1D_RFT!(arr::TA, wins::AbstractVector; dims=(1:ndims(arr)), transform_win=false, normalize_win=false, kwargs...) where {T<:Real, N, TA<:AbstractArray{T, N}}
     if isempty(dims)
         return arr
     end
@@ -138,23 +187,48 @@ function fourier_filter_by_1D_RFT!(arr::TA, wins::AbstractVector; dims=(1:ndims(
     arr_ft .*= let 
         if transform_win
             pw = plan_rfft(wins[d], d)
-            pw * wins[d]
+            tmp = pw * wins[d]
+            if (normalize_win)
+                if (tmp[1] != 0 && tmp[1] != 1)
+                    tmp ./= tmp[1]
+                end
+            end
+            tmp 
         else
-            wins[d]
+            if (normalize_win)
+                if (wins[d][1] != 0 && wins[d][1] != 1)
+                    wins[d] ./ wins[d][1]
+                end
+            else
+                wins[d]
+            end    
         end
     end
     # since we now did a single rfft dim, we can switch to the complex routine
     # new_limits = ntuple(i -> i ≤ d ? 0 : limits[i], N)
     # workaround to mimic in-place rfft
-    fourier_filter_by_1D_FT!(arr_ft, wins; dims=dims[2:end], transform_win=transform_win, kwargs...)
+    fourier_filter_by_1D_FT!(arr_ft, wins; dims=dims[2:end], transform_win=transform_win, normalize_win=normalize_win, kwargs...)
     # go back to real space now and return because shift_by_1D_FT processed
     # the other dimensions already
     mul!(arr, inv(p), arr_ft)
     return arr
 end
 
-# transforms the first dim as rft and then hands over to the fft-based routines.
-function fourier_filter_by_1D_RFT!(arr::TA, fct=window_gaussian; dims=(1:ndims(arr)), transform_win=false, kwargs...) where {T<:Real, N, TA<:AbstractArray{T, N}}
+"""
+    fourier_filter_by_1D_RFT!(arr::TA, fct=window_gaussian; transform_win=false, normalize_win=false, dims=(1:ndims(arr))) where {N, TA <: AbstractArray{<:Complex, N}}
+
+filters an array by sequential multiplication in Fourierspace using one-dimensional RFFTs (first transform dimension) and FFTS (other transform dimensions) with one-dimensional kernels as specified in `wins`.
+
+#Arguments
++`arr`:     the array to filter by separable multiplication with windows.
++`fct`:    the window as a fuction. It needs to accept a datatype as the first argument and a size as a second argument.
+           If specified in real space (`transform_win=true`), it should interpret the zero position near the center of the array.
++`transform_win`: specifies whether the directional windows each need to be FFTed before applying.
++`normalize_win`: specifies whether the directional windows (after potential FFT) each need to be normalized to a value of 1 at the zero frequency coordinate.
++`dims`: the dimensions to apply this separable multiplication to. If empty, the array will not be filtered.
+"""
+function fourier_filter_by_1D_RFT!(arr::TA, fct=window_gaussian; dims=(1:ndims(arr)), transform_win=false, normalize_win=false, kwargs...) where {T<:Real, N, TA<:AbstractArray{T, N}}
+    # transforms the first dim as rft and then hands over to the fft-based routines.
     if isempty(dims)
         return arr
     end
@@ -175,8 +249,15 @@ function fourier_filter_by_1D_RFT!(arr::TA, fct=window_gaussian; dims=(1:ndims(a
             win .= fct(real(eltype(arr)), select_sizes(arr_ft,d), offset=CtrRFFT, scale=2 ./size(arr,d); kwargs...)
         end
     end
+    if (normalize_win)
+        if (win[1] != 0 && win[1] != 1)
+            win ./= win[1]
+        end
+    end
     arr_ft .*= win
-    fourier_filter_by_1D_FT!(arr_ft, fct;  dims=dims[2:end], transform_win=transform_win, kwargs...)
+
+    # hand over to the fft-based routines for all other dimensions
+    fourier_filter_by_1D_FT!(arr_ft, fct;  dims=dims[2:end], transform_win=transform_win, normalize_win=normalize_win, kwargs...)
     # go back to real space now and return because shift_by_1D_FT processed
     # the other dimensions already
     mul!(arr, inv(p), arr_ft)
@@ -310,9 +391,7 @@ See also `filter_gaussian()` and `fourier_filter!()`.
 """
 function filter_gaussian!(arr, sigma=eltype(arr)(1); real_space_kernel=true, border_in=(real(eltype(arr)))(0), border_out=(real(eltype(arr))).(2 ./ (pi .* sigma)), kwargs...)
     if real_space_kernel
-        mysum = sum(arr)
-        fourier_filter!(arr, gaussian; transform_win=true, sigma=sigma, kwargs...)
-        arr .*= (mysum/sum(arr))
+        fourier_filter!(arr, gaussian; transform_win=true, normalize_win=true, sigma=sigma, kwargs...)
         return arr
     else
         return fourier_filter!(arr; border_in=border_in, border_out=border_out, kwargs...)

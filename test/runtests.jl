@@ -33,5 +33,6 @@ include("czt.jl") #
 include("nfft_tests.jl")
 include("fractional_fourier_transform.jl")
 include("fourier_filtering.jl")
+include("sdft.jl")
 
 return
