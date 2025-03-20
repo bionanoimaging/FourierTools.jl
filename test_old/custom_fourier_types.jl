@@ -1,7 +1,7 @@
 
 @testset "Custom Fourier Types" begin
     N = 5
-    x = opt_cu(randn((N, N)), use_cuda)
+    x = randn((N, N))
     fs = FourierTools.FourierSplit(x, 2, 2, 4, true)
     @test FourierTools.parenttype(fs) == typeof(x)
     fs = FourierTools.FourierSplit(x, 2, 2, 4, false)

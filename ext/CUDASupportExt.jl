@@ -47,4 +47,6 @@ function Base.:(==)(x::T, y::T)  where {CT, N, CD, T<:FourierTools.FourierSplit{
     return all(x .== y)
 end
 
+optional_collect(a::CuArray) = a 
+
 end
