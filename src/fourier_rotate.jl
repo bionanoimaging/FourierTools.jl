@@ -22,11 +22,13 @@ function rotate(arr, θ, rotation_plane=(1, 2); adapt_size=true, keep_new_size=f
         a,b = rotation_plane
         old_size = size(arr)
 
+        pad_value = eltype(arr)(pad_value)
+
         # enforce an odd size along these dimensions, to simplify the potential flips below.
         arr = let
             if iseven(size(arr,a)) || iseven(size(arr,b))
                 new_size = size(arr) .+ ntuple(i-> (i==a || i==b) ? iseven(size(arr,i)) : 0, ndims(arr))
-                select_region(arr, new_size=new_size, pad_value=pad_value)
+                select_region_view(arr, new_size=new_size, pad_value=pad_value)
             else
                 arr
             end
@@ -53,7 +55,8 @@ function rotate(arr, θ, rotation_plane=(1, 2); adapt_size=true, keep_new_size=f
                 0
             end
         end
-        arr = select_region(arr, new_size=old_size .+ extra_size, pad_value=pad_value)
+
+        arr = select_region_view(arr, new_size=old_size .+ extra_size, pad_value=pad_value)
         # convert to radiants
 
         # parameters for shearing
@@ -67,7 +70,7 @@ function rotate(arr, θ, rotation_plane=(1, 2); adapt_size=true, keep_new_size=f
         if keep_new_size || size(arr) == old_size
             return arr
         else
-            return select_region(arr, new_size=old_size, pad_value=pad_value)
+            return select_region_view(arr, new_size=old_size, pad_value=pad_value)
         end
     else
         return rotate!(copy(arr), θ, rotation_plane) 

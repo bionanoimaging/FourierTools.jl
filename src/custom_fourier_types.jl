@@ -37,11 +37,26 @@ Base.size(A::FourierSplit) = size(parent(A))
 
 @inline function Base.getindex(A::FourierSplit{T,N, <:AbstractArray{T, N}}, i::Vararg{Int,N}) where {T,N}
     if (i[A.D]==A.L2 || i[A.D]==A.L1) && A.do_split # index along this dimension A.D corrsponds to slice L2
-        # not that "setindex" in the line below modifies only the index, not the array
-        @inbounds return parent(A)[Base.setindex(i,A.L1, A.D)...] / 2
+        # note that "setindex" in the line below modifies only the index, not the array
+        @inbounds return parent(A)[Base.setindex(i, A.L1, A.D)...] / 2
     else i[A.D]==A.L2
         @inbounds return parent(A)[i...]
         # @inbounds return parent(A)[i...]
+    end
+end
+
+# One-D version
+@inline function Base.getindex(A::FourierSplit{T,N, <:AbstractArray{T, N}}, i::Int) where {T,N}
+    if A.do_split
+        # compute the ND index from the one-D index i
+        ind = Tuple(CartesianIndices(parent(A))[i])
+        if (ind[A.D]==A.L2 || ind[A.D]==A.L1) 
+            return parent(A)[Base.setindex(ind, A.L1, A.D)...] / 2
+        else
+            return parent(A)[i]
+        end
+    else
+        return parent(A)[i]
     end
 end
 

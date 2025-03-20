@@ -3,7 +3,7 @@ module FourierTools
 
 using Reexport
 # using PaddedViews
-# using ShiftedArrays
+using ShiftedArrays
 @reexport using FFTW
 using LinearAlgebra
 using IndexFunArrays
@@ -11,8 +11,6 @@ using ChainRulesCore
 using NDTools
 @reexport using NFFT
 FFTW.set_num_threads(4)
-
-
 
 include("utils.jl")
 include("nfft_nd.jl")
