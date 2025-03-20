@@ -16,7 +16,7 @@ optional_collect(a::AbstractArray) = collect(a)
 optional_collect(a::Array) = a 
 
 # for CircShiftedArray we only need collect if shifts is non-zero
-function optional_collect(csa::ShiftedArrays.CircShiftedArray)
+function optional_collect(csa::CircShiftedArray)
     if all(iszero.(csa.shifts))
         return optional_collect(parent(csa))
     else

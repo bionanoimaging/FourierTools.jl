@@ -2,7 +2,8 @@ module FourierTools
 
 
 using Reexport
-using PaddedViews, ShiftedArrays
+# using PaddedViews
+# using ShiftedArrays
 @reexport using FFTW
 using LinearAlgebra
 using IndexFunArrays
