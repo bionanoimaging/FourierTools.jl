@@ -7,7 +7,7 @@ export ffts2d, ffts2d!, iffts2d, rffts2d, irffts2d
 """
     optional_collect(a)
 
-Only collects certain arrays, for a pure `Array` there is no collect
+Only collects certain arrays, for a pure `Array` or a `CuArray` there is no collect
 and it returns simply `a`.
 """
 # collect
@@ -17,7 +17,7 @@ optional_collect(a::Array) = a
 
 # for CircShiftedArray we only need collect if shifts is non-zero
 function optional_collect(csa::CircShiftedArray)
-    if all(iszero.(csa.shifts))
+    if all(iszero.(shifts(csa)))
         return optional_collect(parent(csa))
     else
         return collect(csa)

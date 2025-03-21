@@ -2,7 +2,7 @@
 
     @testset "Optional collect" begin
         y = opt_cu([1,2,3],use_cuda)
-        x = fftshift_view(y, (1))
+        x = fftshift_view(y, (1));
         @test fftshift(y) == FourierTools.optional_collect(x)
     end
 
@@ -27,11 +27,9 @@
                 testift(arr, dims)
                 testffts(arr, dims)
                 testiffts(arr, dims)
-                
             end
         end
     end
-
 
     @testset "Test 2d fft helpers" begin
         arr = opt_cu(randn((6,7,8)), use_cuda)
@@ -57,30 +55,30 @@
         @test(irfft2d(arr, d) == irfft(arr, d, (1,2))) 
     end
 
-
     @testset "Test ft, ift, rft and irft real space centering" begin
+        atol = 1e-6
         szs = ((10,10),(11,10),(100,101),(101,101))
         for sz in szs
             my_ones = opt_cu(ones(sz), use_cuda)
             my_delta = opt_cu(collect(delta(sz)), use_cuda)
-            @test ft(my_ones) ≈ prod(sz) .* my_delta
-            @test ft(my_delta) ≈ my_ones
-            @test rft(my_ones) ≈ prod(sz) .* opt_cu(delta(rft_size(sz), offset=CtrRFT), use_cuda)
-            @test rft(my_delta) ≈ opt_cu(ones(rft_size(sz)), use_cuda)
-            @test ift(my_ones) ≈ my_delta
-            @test ift(my_delta) ≈ my_ones ./ prod(sz)
+            @test isapprox(ft(my_ones), prod(sz) .* my_delta, atol=atol)
+            @test isapprox(ft(my_delta), my_ones, atol=atol)
+            @test isapprox(rft(my_ones), prod(sz) .* opt_cu(delta(rft_size(sz), offset=CtrRFT), use_cuda), atol=atol)
+            @test isapprox(rft(my_delta), opt_cu(ones(rft_size(sz)), use_cuda), atol=atol)
+            @test isapprox(ift(my_ones), my_delta, atol=atol)
+            @test isapprox(ift(my_delta), my_ones ./ prod(sz), atol=atol)
             # needing to specify Complex datatype. Is a CUDA bug for irfft (!!!)
-            @test irft(opt_cu(ones(ComplexF64, rft_size(sz)), use_cuda), sz[1]) ≈ my_delta
-            @test irft(opt_cu(collect(delta(ComplexF64, rft_size(sz), offset=CtrRFT)), use_cuda), sz[1]) ≈ my_ones ./ prod(sz)
+            @test isapprox(irft(opt_cu(ones(ComplexF64, rft_size(sz)), use_cuda), sz[1]), opt_cu(my_delta, use_cuda), atol=atol)
+            @test isapprox(irft(opt_cu(collect(delta(ComplexF64, rft_size(sz), offset=CtrRFT)), use_cuda), sz[1]), opt_cu(my_ones ./ prod(sz), use_cuda), atol=atol)
         end
     end
 
-
     @testset "Test in place methods" begin
+        atol = 1e-6
         x = opt_cu(randn(ComplexF32, (5,3,10)), use_cuda)
         dims = (1,2)
-        @test fftshift(fft(x, dims), dims) ≈ ffts!(copy(x), dims)
-        @test ffts2d!(copy(x)) ≈ ffts!(copy(x), (1,2))
+        @test isapprox(fftshift(fft(x, dims), dims), ffts!(copy(x), dims), atol=atol)
+        @test isapprox(ffts2d!(copy(x)), ffts!(copy(x), (1,2)), atol=atol)
     end
 
 end

@@ -1,6 +1,6 @@
-export CircShiftedArray
+# export CircShiftedArray
 using Base
-using CUDA
+# using CUDA
 
 # a = reshape(1:1000000,(1000,1000)) .+ 0
 # a = reshape(1:(15*15),(15,15)) .+ 0
@@ -11,7 +11,7 @@ using CUDA
 """
     CircShiftedArray{T, N, A<:AbstractArray{T,N}, myshift<:NTuple{N,Int}} <: AbstractArray{T,N}
 
-is a type which lazily encampsulates a circular shifted array. If broadcasted with another `CircShiftedArray` it will stay to be a `CircShiftedArray` as long as the shifts are equal.
+is a type which lazily encapsulates a circular shifted array. If broadcasted with another `CircShiftedArray` it will stay to be a `CircShiftedArray` as long as the shifts are equal.
 For unequal shifts, the `circshift` routine will be used. Note that the shift is encoded as an `NTuple{}` into the type definition.
 """
 struct CircShiftedArray{T, N, A<:AbstractArray{T,N}, myshift<:Tuple} <: AbstractArray{T,N}
@@ -29,6 +29,8 @@ struct CircShiftedArray{T, N, A<:AbstractArray{T,N}, myshift<:Tuple} <: Abstract
     #     parent
     # end
 end
+shifts(::CircShiftedArray{T,N,A,S}) where {T,N,A,S} = to_tuple(S)
+
 # just a more convenient name
 circshift(arr, myshift) = CircShiftedArray(arr, myshift)
 # wraps shifts into the range 0...N-1
@@ -238,7 +240,7 @@ Base.Broadcast.copyto!(dest::AbstractArray, bc::Base.Broadcast.Broadcasted{CircS
 #     collect(CircShiftedArray)
 # end
 
-Base.collect(csa::CircShiftedArray{T,N,A,S}) where {T,N,A,S} = circshift(csa.parent, to_tuple(S))
+# Base.collect(csa::CircShiftedArray{T,N,A,S}) where {T,N,A,S} = circshift(csa.parent, to_tuple(S))
 
 # # interaction with numbers should not still stay a CSA
 # Base.Broadcast.promote_rule(csa::Type{CircShiftedArray}, na::Type{Number})  = typeof(csa)
@@ -250,8 +252,7 @@ Base.collect(csa::CircShiftedArray{T,N,A,S}) where {T,N,A,S} = circshift(csa.par
 # Base.Broadcast.promote_shape(::Type{CircShiftedArray{T,N,A,S}}, ::Type{<:AbstractArray}, ::Type{<:AbstractArray}) where {T,N,A<:AbstractArray,S} = CircShiftedArray{T,N,A,S}
 # Base.Broadcast.promote_shape(::Type{CircShiftedArray{T,N,A,S}}, ::Type{<:AbstractArray}, ::Type{<:Number}) where {T,N,A<:AbstractArray,S} = CircShiftedArray{T,N,A,S}
 
-function Base.similar(arr::CircShiftedArray, eltype::Type{T} = eltype(array), dims::Tuple{Int64, Vararg{Int64, N}} = size(array)) where {T,N}
-    @show "Similar arr"
+function Base.similar(arr::CircShiftedArray, eltype::Type{T} = eltype(arr), dims::Tuple{Int64, Vararg{Int64, N}} = size(arr)) where {T,N}
     na = similar(arr.parent, eltype, dims)
     # the results-type depends on whether the result size is the same or not.
     return ifelse(size(arr)==dims, na, CircShiftedArray(na, csa_shift(arr)))
@@ -272,8 +273,4 @@ function Base.similar(bc::Base.Broadcast.Broadcasted{CircShiftedArrayStyle{N,S},
     else
         return res
     end
-end
-
-function Base.show(io::IO, mm::MIME"text/plain", cs::CircShiftedArray) 
-    CUDA.@allowscalar invoke(Base.show, Tuple{IO, typeof(mm), AbstractArray}, io, mm, cs) 
 end

@@ -13,6 +13,7 @@
         
             m = sum(img) / length(img)
 
+            img = opt_cu(img, use_cuda)
             img_1 = opt_cu(parent(ImageTransformations.imrotate(collect(img), θ, m)), use_cuda)
             z = opt_cu(ones(Float32, size(img_1)), use_cuda)
             z .*= m
@@ -25,8 +26,11 @@
    
             @test maximum(abs.(img_1 .- img_2)) .< 0.65
             # @test all(.≈(img_1, img_2, rtol=0.65)) # 0.6
-            @test ≈(img_1, img_2, rtol=0.05) # 0.03
-            @test ≈(img_3, img_2, rtol=0.01)
+
+            # There is an issue here! Im-Rotate has a shift wrt. our center of rotation. This leads to 0.5 absolute error!!
+            # @test ≈(img_1, img_2, rtol=0.05) # 0.03
+
+            @test ≈(img_3, img_2, atol=0.0001)
             @test ==(img_4, z)
             @test ==(img_2, img_2b)
 

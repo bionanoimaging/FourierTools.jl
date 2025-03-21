@@ -3,15 +3,20 @@ module FourierTools
 
 using Reexport
 # using PaddedViews
-using ShiftedArrays
+# using ShiftedArrays
 @reexport using FFTW
 using LinearAlgebra
 using IndexFunArrays
 using ChainRulesCore
 using NDTools
+import Base: checkbounds, getindex, setindex!, parent, size, axes, copy, collect
+
 @reexport using NFFT
 FFTW.set_num_threads(4)
 
+# include("CircShiftedArrays.jl")
+include("circshiftedarray.jl") # from ShiftedArrays.jl
+include("circshift.jl") # from ShiftedArrays.jl
 include("utils.jl")
 include("nfft_nd.jl")
 include("resampling.jl")
