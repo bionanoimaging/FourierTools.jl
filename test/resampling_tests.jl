@@ -279,7 +279,7 @@
         @test rs2b ≈ rs2
     end
 
-    if (dat isa Array)
+    if (! use_cuda)
         @testset "test resample_nfft" begin
         dim =2
         s_small = (12,16) # ntuple(_ -> rand(1:13), dim)
