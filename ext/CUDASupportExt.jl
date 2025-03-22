@@ -9,6 +9,22 @@ get_base_arr(arr::Array) = arr
 get_base_arr(arr::CuArray) = arr
 get_base_arr(arr::AbstractArray) = get_base_arr(parent(arr))
 
+# define a number of Union types to not repeat all definitions for each type
+AllShiftedType = Union{FourierTools.CircShiftedArray{<:Any,<:Any,<:Any},
+                            FourierTools.FourierSplit{<:Any,<:Any,<:Any},
+                            FourierTools.FourierJoin{<:Any,<:Any,<:Any}}
+
+# these are special only if a CuArray is wrapped
+AllShiftedTypeCu{N, CD} = Union{FourierTools.CircShiftedArray{<:Any,<:Any,<:CuArray{<:Any,N,CD}},
+                            FourierTools.FourierSplit{<:Any,<:Any,<:CuArray{<:Any,N,CD}},
+                            FourierTools.FourierJoin{<:Any,<:Any,<:CuArray{<:Any,N,CD}}}
+
+AllSubArrayType = SubArray{<:Any, <:Any, <:AllShiftedType, <:Any, <:Any}
+AllShiftedAndViews = Union{AllShiftedType, AllSubArrayType}
+
+AllSubArrayTypeCu = SubArray{<:Any, <:Any, <:AllShiftedTypeCu, <:Any, <:Any}
+AllShiftedAndViewsCu = Union{AllShiftedTypeCu, AllSubArrayTypeCu}
+
 # define adapt structures for the ShiftedArrays model. This will not be needed if the PR is merged:
 # Adapt.adapt_structure(to, x::FourierTools.CircShiftedArray{T, D}) where {T, D} = FourierTools.CircShiftedArray(adapt(to, parent(x)), FourierTools.shifts(x));
 # parent_type(::Type{FourierTools.CircShiftedArray{T, N, A, S}})  where {T, N, A, S} = A
@@ -32,54 +48,47 @@ function Base.Broadcast.BroadcastStyle(::Type{T})  where {CT, N, CD, T<:Base.Res
     CUDA.CuArrayStyle{N,CD}()
 end
 
-function Base.copy(s::FourierTools.CircShiftedArray)
+function Base.copy(s::AllShiftedAndViews) # where {CT, N, CD, T<:FourierTools.CircShiftedArray{<:Any,<:Any,<:CuArray{CT,N,CD}}}
     res = similar(get_base_arr(s), eltype(s), size(s));
     res .= s
 end
-
-AllShiftedType{N, CD} = Union{FourierTools.CircShiftedArray{<:Any,<:Any,<:CuArray{<:Any,N,CD}},
-                            FourierTools.FourierSplit{<:Any,<:Any,<:CuArray{<:Any,N,CD}},
-                            FourierTools.FourierJoin{<:Any,<:Any,<:CuArray{<:Any,N,CD}}}
-
-AllSubArrayType = SubArray{<:Any, <:Any, <:AllShiftedType, <:Any, <:Any}
-AllShiftedAndViews = Union{AllShiftedType, AllSubArrayType}
 
 function Base.collect(x::AllShiftedAndViews)  # where {CT, N, CD, T<:FourierTools.CircShiftedArray{<:Any,<:Any,<:CuArray{CT,N,CD}}}
     return copy(x) # stay on the GPU        
 end
 
-function Base.Array(x::FourierTools.CircShiftedArray) # where {CT, N, CD, T<:FourierTools.CircShiftedArray{<:Any,<:Any,<:CuArray{CT,N,CD}}}
+function Base.Array(x::AllShiftedAndViews) # where {CT, N, CD, T<:FourierTools.CircShiftedArray{<:Any,<:Any,<:CuArray{CT,N,CD}}}
     return Array(copy(x)) # remove from GPU
 end
 
-function Base.:(==)(x::T, y::AbstractArray)  where {CT, N, CD, T<:FourierTools.CircShiftedArray{<:Any,<:Any,<:CuArray{CT,N,CD}}}    
+function Base.:(==)(x::AllShiftedAndViewsCu, y::AbstractArray)  # where {CT, N, CD, T<:FourierTools.CircShiftedArray{<:Any,<:Any,<:CuArray{CT,N,CD}}}    
     return all(x .== y)
 end
 
-function Base.:(==)(y::AbstractArray, x::T)  where {CT, N, CD, T<:FourierTools.CircShiftedArray{<:Any,<:Any,<:CuArray{CT,N,CD}}}    
+function Base.:(==)(y::AbstractArray, x::AllShiftedAndViewsCu) # where {CT, N, CD, T<:FourierTools.CircShiftedArray{<:Any,<:Any,<:CuArray{CT,N,CD}}}    
     return all(x .== y)
 end
 
-function Base.:(==)(x::T, y::T)  where {CT, N, CD, T<:FourierTools.CircShiftedArray{<:Any,<:Any,<:CuArray{CT,N,CD}}}    
+function Base.:(==)(x::AllShiftedAndViewsCu, y::AllShiftedAndViewsCu) # where {CT, N, CD, T<:FourierTools.CircShiftedArray{<:Any,<:Any,<:CuArray{CT,N,CD}}}    
     return all(x .== y)
 end
 
-function Base.isapprox(x::T, y::AbstractArray; atol=0, rtol=atol>0 ? 0 : sqrt(eps(real(eltype(x)))), va...)  where {CT, N, CD, T<:FourierTools.CircShiftedArray{<:Any,<:Any,<:CuArray{CT,N,CD}}}    
+function Base.isapprox(x::AllShiftedAndViewsCu, y::AbstractArray; atol=0, rtol=atol>0 ? 0 : sqrt(eps(real(eltype(x)))), va...) # where {CT, N, CD, T<:FourierTools.CircShiftedArray{<:Any,<:Any,<:CuArray{CT,N,CD}}}    
     atol = (atol != 0) ? atol : rtol * maximum(abs.(x))
     return all(abs.(x .- y) .<= atol)
 end
 
-function Base.isapprox(y::AbstractArray, x::T; atol=0, rtol=atol>0 ? 0 : sqrt(eps(real(eltype(x)))),  va...)  where {CT, N, CD, T<:FourierTools.CircShiftedArray{<:Any,<:Any,<:CuArray{CT,N,CD}}}    
+function Base.isapprox(y::AbstractArray, x::AllShiftedAndViewsCu; atol=0, rtol=atol>0 ? 0 : sqrt(eps(real(eltype(x)))),  va...) # where {CT, N, CD, T<:FourierTools.CircShiftedArray{<:Any,<:Any,<:CuArray{CT,N,CD}}}    
     atol = (atol != 0) ? atol : rtol * maximum(abs.(x))
     return all(abs.(x .- y) .<= atol)
 end
 
-function Base.isapprox(x::T, y::T; atol=0, rtol=atol>0 ? 0 : sqrt(eps(real(eltype(x)))),  va...)  where {CT, N, CD, T<:FourierTools.CircShiftedArray{<:Any,<:Any,<:CuArray{CT,N,CD}}}    
+function Base.isapprox(x::AllShiftedAndViewsCu, y::AllShiftedAndViewsCu; atol=0, rtol=atol>0 ? 0 : sqrt(eps(real(eltype(x)))),  va...) # where {CT, N, CD, T<:FourierTools.CircShiftedArray{<:Any,<:Any,<:CuArray{CT,N,CD}}}    
     atol = (atol != 0) ? atol : rtol * maximum(abs.(x))
     return all(abs.(x .- y) .<= atol)
 end
 
-function Base.show(io::IO, mm::MIME"text/plain", cs::FourierTools.CircShiftedArray) # where {CT, N, CD, T<:FourierTools.CircShiftedArray{<:Any,<:Any,<:CuArray{CT,N,CD}}}
+function Base.show(io::IO, mm::MIME"text/plain", cs::AllShiftedAndViews) # where {CT, N, CD, T<:FourierTools.CircShiftedArray{<:Any,<:Any,<:CuArray{CT,N,CD}}}
     CUDA.@allowscalar invoke(Base.show, Tuple{IO, typeof(mm), AbstractArray}, io, mm, cs) 
 end
 
@@ -101,34 +110,34 @@ function Base.Broadcast.BroadcastStyle(::Type{T})  where {T2, N, CD, T<:FourierT
     CUDA.CuArrayStyle{N,CD}()
 end
 
-function Base.copy(s::FourierTools.FourierSplit) #  where {CT, N, CD, T<:FourierTools.FourierSplit{<:Any,<:Any,<:CuArray{CT,N,CD}}}
-    res = similar(get_base_arr(s), eltype(s), size(s));
-    res .= s
-end
+# function Base.copy(s::FourierTools.FourierSplit) #  where {CT, N, CD, T<:FourierTools.FourierSplit{<:Any,<:Any,<:CuArray{CT,N,CD}}}
+#     res = similar(get_base_arr(s), eltype(s), size(s));
+#     res .= s
+# end
 
-function Base.collect(x::FourierTools.FourierSplit) # where {CT, N, CD, T<:FourierTools.FourierSplit{<:Any,<:Any,<:CuArray{CT,N,CD}}}
-    return copy(x) # stay on the GPU        
-end
+# function Base.collect(x::FourierTools.FourierSplit) # where {CT, N, CD, T<:FourierTools.FourierSplit{<:Any,<:Any,<:CuArray{CT,N,CD}}}
+#     return copy(x) # stay on the GPU        
+# end
 
-function Base.Array(x::T)  where {CT, N, CD, T<:FourierTools.FourierSplit{<:Any,<:Any,<:CuArray{CT,N,CD}}}
-    return Array(copy(x)) # remove from GPU
-end
+# function Base.Array(x::T)  where {CT, N, CD, T<:FourierTools.FourierSplit{<:Any,<:Any,<:CuArray{CT,N,CD}}}
+#     return Array(copy(x)) # remove from GPU
+# end
 
-function Base.:(==)(x::T, y::AbstractArray)  where {CT, N, CD, T<:FourierTools.FourierSplit{<:Any,<:Any,<:CuArray{CT,N,CD}}}    
-    return all(x .== y)
-end
+# function Base.:(==)(x::T, y::AbstractArray)  where {CT, N, CD, T<:FourierTools.FourierSplit{<:Any,<:Any,<:CuArray{CT,N,CD}}}    
+#     return all(x .== y)
+# end
 
-function Base.:(==)(y::AbstractArray, x::T)  where {CT, N, CD, T<:FourierTools.FourierSplit{<:Any,<:Any,<:CuArray{CT,N,CD}}}    
-    return all(x .== y)
-end
+# function Base.:(==)(y::AbstractArray, x::T)  where {CT, N, CD, T<:FourierTools.FourierSplit{<:Any,<:Any,<:CuArray{CT,N,CD}}}    
+#     return all(x .== y)
+# end
 
-function Base.:(==)(x::T, y::T)  where {CT, N, CD, T<:FourierTools.FourierSplit{<:Any,<:Any,<:CuArray{CT,N,CD}}}    
-    return all(x .== y)
-end
+# function Base.:(==)(x::T, y::T)  where {CT, N, CD, T<:FourierTools.FourierSplit{<:Any,<:Any,<:CuArray{CT,N,CD}}}    
+#     return all(x .== y)
+# end
 
-function Base.show(io::IO, mm::MIME"text/plain", cs::FourierTools.FourierSplit) # where {CT, N, CD, T<:FourierTools.FourierSplit{<:Any,<:Any,<:CuArray{CT,N,CD}}}
-    CUDA.@allowscalar invoke(Base.show, Tuple{IO, typeof(mm), AbstractArray}, io, mm, cs) 
-end
+# function Base.show(io::IO, mm::MIME"text/plain", cs::FourierTools.FourierSplit) # where {CT, N, CD, T<:FourierTools.FourierSplit{<:Any,<:Any,<:CuArray{CT,N,CD}}}
+#     CUDA.@allowscalar invoke(Base.show, Tuple{IO, typeof(mm), AbstractArray}, io, mm, cs) 
+# end
 
 # for FourierJoin
 Adapt.adapt_structure(to, x::FourierTools.FourierJoin{T, M, AA}) where {T, M, AA} = FourierTools.FourierJoin(adapt(to, parent(x)), ndims(x), x.L1, x.L2, x.do_join);
@@ -137,22 +146,22 @@ function Base.Broadcast.BroadcastStyle(::Type{T})  where {T2, N, CD, T<:FourierT
     CUDA.CuArrayStyle{N,CD}()
 end
 
-function Base.copy(s::FourierTools.FourierJoin)  # where {CT, N, CD, T<:FourierTools.FourierJoin{<:Any,<:Any,<:CuArray{CT,N,CD}}}
-    res = similar(get_base_arr(s), eltype(s), size(s));
-    res .= s
-end
+# function Base.copy(s::FourierTools.FourierJoin)  # where {CT, N, CD, T<:FourierTools.FourierJoin{<:Any,<:Any,<:CuArray{CT,N,CD}}}
+#     res = similar(get_base_arr(s), eltype(s), size(s));
+#     res .= s
+# end
 
-function Base.collect(x::FourierTools.FourierJoin) # where {CT, N, CD, T<:FourierTools.FourierJoin{<:Any,<:Any,<:CuArray{CT,N,CD}}}
-    return copy(x) # stay on the GPU        
-end
+# function Base.collect(x::FourierTools.FourierJoin) # where {CT, N, CD, T<:FourierTools.FourierJoin{<:Any,<:Any,<:CuArray{CT,N,CD}}}
+#     return copy(x) # stay on the GPU        
+# end
 
-function Base.Array(x::T)  where {CT, N, CD, T<:FourierTools.FourierJoin{<:Any,<:Any,<:CuArray{CT,N,CD}}}
-    return Array(copy(x)) # remove from GPU
-end
+# function Base.Array(x::T)  where {CT, N, CD, T<:FourierTools.FourierJoin{<:Any,<:Any,<:CuArray{CT,N,CD}}}
+#     return Array(copy(x)) # remove from GPU
+# end
 
-function Base.show(io::IO, mm::MIME"text/plain", cs::FourierTools.FourierJoin) # where {CT, N, CD, T<:FourierTools.FourierJoin{<:Any,<:Any,<:CuArray{CT,N,CD}}}
-    CUDA.@allowscalar invoke(Base.show, Tuple{IO, typeof(mm), AbstractArray}, io, mm, cs) 
-end
+# function Base.show(io::IO, mm::MIME"text/plain", cs::FourierTools.FourierJoin) # where {CT, N, CD, T<:FourierTools.FourierJoin{<:Any,<:Any,<:CuArray{CT,N,CD}}}
+#     CUDA.@allowscalar invoke(Base.show, Tuple{IO, typeof(mm), AbstractArray}, io, mm, cs) 
+# end
 
 ### addition functions specific to CUDA
 
