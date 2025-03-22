@@ -12,7 +12,13 @@ using CUDA
 Random.seed!(42)
 
 use_cuda = false
-opt_cu(img, use_cuda) = ifelse(use_cuda, CuArray(img), img)
+function opt_cu(img, use_cuda=false)
+    if (use_cuda)
+        CuArray(img)
+    else
+        img
+    end
+end
 
 function run_all_tests()
     include("fft_helpers.jl");
