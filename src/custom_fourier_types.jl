@@ -32,6 +32,8 @@ end
 Base.IndexStyle(::Type{FD}) where {FD<:FourierSplit} = IndexStyle(parenttype(FD))
 parenttype(::Type{FourierSplit{T,N,AA}}) where {T,N,AA} = AA
 parenttype(A::FourierSplit) = parenttype(typeof(A))
+
+Base.similar(s::FourierSplit, el::Type, v::NTuple{N, Int64}) where {N} = similar(s.parent, el, v)
 Base.parent(A::FourierSplit) = A.parent 
 Base.size(A::FourierSplit) = size(parent(A))
 
@@ -94,6 +96,9 @@ end
 Base.IndexStyle(::Type{FS}) where {FS<:FourierJoin} = IndexStyle(parenttype(FS))
 parenttype(::Type{FourierJoin{T,N,AA}}) where {T,N,AA} = AA
 parenttype(A::FourierJoin) = parenttype(typeof(A))
+
+Base.similar(s::FourierJoin, el::Type, v::NTuple{N, Int64}) where {N} = similar(s.parent, el, v)
+
 Base.parent(A::FourierJoin) = A.parent
 Base.size(A::FourierJoin) = size(parent(A))
 

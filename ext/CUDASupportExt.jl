@@ -5,6 +5,10 @@ using Adapt
 using FourierTools
 using Base # to allow displaying such arrays without causing the single indexing CUDA error
 
+get_base_arr(arr::Array) = arr
+get_base_arr(arr::CuArray) = arr
+get_base_arr(arr::AbstractArray) = get_base_arr(parent(arr))
+
 # define adapt structures for the ShiftedArrays model. This will not be needed if the PR is merged:
 # Adapt.adapt_structure(to, x::FourierTools.CircShiftedArray{T, D}) where {T, D} = FourierTools.CircShiftedArray(adapt(to, parent(x)), FourierTools.shifts(x));
 # parent_type(::Type{FourierTools.CircShiftedArray{T, N, A, S}})  where {T, N, A, S} = A
@@ -28,11 +32,23 @@ function Base.Broadcast.BroadcastStyle(::Type{T})  where {CT, N, CD, T<:Base.Res
     CUDA.CuArrayStyle{N,CD}()
 end
 
-function Base.collect(x::T)  where {CT, N, CD, T<:FourierTools.CircShiftedArray{<:Any,<:Any,<:CuArray{CT,N,CD}}}
+function Base.copy(s::FourierTools.CircShiftedArray)
+    res = similar(get_base_arr(s), eltype(s), size(s));
+    res .= s
+end
+
+AllShiftedType{N, CD} = Union{FourierTools.CircShiftedArray{<:Any,<:Any,<:CuArray{<:Any,N,CD}},
+                            FourierTools.FourierSplit{<:Any,<:Any,<:CuArray{<:Any,N,CD}},
+                            FourierTools.FourierJoin{<:Any,<:Any,<:CuArray{<:Any,N,CD}}}
+
+AllSubArrayType = SubArray{<:Any, <:Any, <:AllShiftedType, <:Any, <:Any}
+AllShiftedAndViews = Union{AllShiftedType, AllSubArrayType}
+
+function Base.collect(x::AllShiftedAndViews)  # where {CT, N, CD, T<:FourierTools.CircShiftedArray{<:Any,<:Any,<:CuArray{CT,N,CD}}}
     return copy(x) # stay on the GPU        
 end
 
-function Base.Array(x::T)  where {CT, N, CD, T<:FourierTools.CircShiftedArray{<:Any,<:Any,<:CuArray{CT,N,CD}}}
+function Base.Array(x::FourierTools.CircShiftedArray) # where {CT, N, CD, T<:FourierTools.CircShiftedArray{<:Any,<:Any,<:CuArray{CT,N,CD}}}
     return Array(copy(x)) # remove from GPU
 end
 
@@ -63,7 +79,7 @@ function Base.isapprox(x::T, y::T; atol=0, rtol=atol>0 ? 0 : sqrt(eps(real(eltyp
     return all(abs.(x .- y) .<= atol)
 end
 
-function Base.show(io::IO, mm::MIME"text/plain", cs::T) where {CT, N, CD, T<:FourierTools.CircShiftedArray{<:Any,<:Any,<:CuArray{CT,N,CD}}}
+function Base.show(io::IO, mm::MIME"text/plain", cs::FourierTools.CircShiftedArray) # where {CT, N, CD, T<:FourierTools.CircShiftedArray{<:Any,<:Any,<:CuArray{CT,N,CD}}}
     CUDA.@allowscalar invoke(Base.show, Tuple{IO, typeof(mm), AbstractArray}, io, mm, cs) 
 end
 
@@ -85,7 +101,12 @@ function Base.Broadcast.BroadcastStyle(::Type{T})  where {T2, N, CD, T<:FourierT
     CUDA.CuArrayStyle{N,CD}()
 end
 
-function Base.collect(x::T)  where {CT, N, CD, T<:FourierTools.FourierSplit{<:Any,<:Any,<:CuArray{CT,N,CD}}}
+function Base.copy(s::FourierTools.FourierSplit) #  where {CT, N, CD, T<:FourierTools.FourierSplit{<:Any,<:Any,<:CuArray{CT,N,CD}}}
+    res = similar(get_base_arr(s), eltype(s), size(s));
+    res .= s
+end
+
+function Base.collect(x::FourierTools.FourierSplit) # where {CT, N, CD, T<:FourierTools.FourierSplit{<:Any,<:Any,<:CuArray{CT,N,CD}}}
     return copy(x) # stay on the GPU        
 end
 
@@ -104,6 +125,36 @@ end
 function Base.:(==)(x::T, y::T)  where {CT, N, CD, T<:FourierTools.FourierSplit{<:Any,<:Any,<:CuArray{CT,N,CD}}}    
     return all(x .== y)
 end
+
+function Base.show(io::IO, mm::MIME"text/plain", cs::FourierTools.FourierSplit) # where {CT, N, CD, T<:FourierTools.FourierSplit{<:Any,<:Any,<:CuArray{CT,N,CD}}}
+    CUDA.@allowscalar invoke(Base.show, Tuple{IO, typeof(mm), AbstractArray}, io, mm, cs) 
+end
+
+# for FourierJoin
+Adapt.adapt_structure(to, x::FourierTools.FourierJoin{T, M, AA}) where {T, M, AA} = FourierTools.FourierJoin(adapt(to, parent(x)), ndims(x), x.L1, x.L2, x.do_join);
+
+function Base.Broadcast.BroadcastStyle(::Type{T})  where {T2, N, CD, T<:FourierTools.FourierJoin{<:Any,<:Any,<:CuArray{T2,N,CD}}}
+    CUDA.CuArrayStyle{N,CD}()
+end
+
+function Base.copy(s::FourierTools.FourierJoin)  # where {CT, N, CD, T<:FourierTools.FourierJoin{<:Any,<:Any,<:CuArray{CT,N,CD}}}
+    res = similar(get_base_arr(s), eltype(s), size(s));
+    res .= s
+end
+
+function Base.collect(x::FourierTools.FourierJoin) # where {CT, N, CD, T<:FourierTools.FourierJoin{<:Any,<:Any,<:CuArray{CT,N,CD}}}
+    return copy(x) # stay on the GPU        
+end
+
+function Base.Array(x::T)  where {CT, N, CD, T<:FourierTools.FourierJoin{<:Any,<:Any,<:CuArray{CT,N,CD}}}
+    return Array(copy(x)) # remove from GPU
+end
+
+function Base.show(io::IO, mm::MIME"text/plain", cs::FourierTools.FourierJoin) # where {CT, N, CD, T<:FourierTools.FourierJoin{<:Any,<:Any,<:CuArray{CT,N,CD}}}
+    CUDA.@allowscalar invoke(Base.show, Tuple{IO, typeof(mm), AbstractArray}, io, mm, cs) 
+end
+
+### addition functions specific to CUDA
 
 function FourierTools.optional_collect(a::CuArray)
     a 

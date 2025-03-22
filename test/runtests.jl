@@ -20,7 +20,7 @@ opt_cu(img, use_cuda) = ifelse(use_cuda, CuArray(img), img)
 include("fft_helpers.jl");
 include("fftshift_alternatives.jl");
 include("utils.jl");
-include("fourier_shifting.jl"); ###
+include("fourier_shifting.jl");
 include("fourier_shear.jl");
 include("fourier_rotate.jl");
 include("resampling_tests.jl"); ###

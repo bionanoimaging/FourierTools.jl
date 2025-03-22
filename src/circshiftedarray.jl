@@ -83,6 +83,8 @@ const CircShiftedVector{T, S<:AbstractArray} = CircShiftedArray{T, 1, S}
 
 CircShiftedVector(v::AbstractVector, n = ()) = CircShiftedArray(v, n)
 
+Base.similar(s::CircShiftedArray, el::Type, v::NTuple{N, Int64}) where {N} = similar(s.parent, el, v)
+
 Base.size(s::CircShiftedArray) = size(parent(s))
 Base.axes(s::CircShiftedArray) = axes(parent(s))
 
@@ -113,12 +115,6 @@ Base.parent(s::CircShiftedArray) = s.parent
 Return amount by which `s` is shifted compared to `parent(s)`.
 """
 shifts(s::CircShiftedArray) = s.shifts
-
-
-function copy(s::CircShiftedArray)
-    res = similar(parent(s), eltype(s), size(s))
-    res .= s
-end
 
 # function Base.copyto!(dst::AbstractArray, src::CircShiftedArray)
 #     dst[:] .= @view src[:]

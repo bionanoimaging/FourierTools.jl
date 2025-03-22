@@ -127,13 +127,13 @@ end
 # end
 
 function ft_pad(mat, new_size)
-    return select_region(mat; new_size = new_size)
+    return select_region(optional_collect(mat); new_size = new_size)
 end
 
 function rft_pad(mat, new_size)
     c2 = rft_center_diff(size(mat))
     c2 = Base.setindex(c2, new_size[1] .÷ 2, 1);
-    return select_region(mat; new_size=new_size, center = c2 .+ 1)
+    return select_region(optional_collect(mat); new_size=new_size, center = c2 .+ 1)
 end
 
 """

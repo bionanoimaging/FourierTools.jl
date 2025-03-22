@@ -1,10 +1,8 @@
 Random.seed!(42)
 
 @testset "Fourier shifting methods" begin
-
     # Int error
     @test_throws ArgumentError FourierTools.shift(opt_cu([1,2,3], use_cuda), (1,))
-
     @testset "Empty shifts" begin
         x = opt_cu(randn(ComplexF32, (11, 12, 13)), use_cuda);
         @test FourierTools.shift(x, []) == x
