@@ -11,7 +11,7 @@ using CUDA
 
 Random.seed!(42)
 
-use_cuda = true
+use_cuda = false
 if use_cuda
     CUDA.allowscalar(false);
 end
@@ -23,9 +23,8 @@ include("utils.jl");
 include("fourier_shifting.jl");
 include("fourier_shear.jl");
 include("fourier_rotate.jl");
-include("resampling_tests.jl"); ###
-
-include("convolutions.jl");
+include("resampling_tests.jl"); ### nfft does not work with CUDA
+include("convolutions.jl"); # spurious buffer problem in conv_p4 in CUDA?
 include("correlations.jl");
 include("custom_fourier_types.jl");
 include("damping.jl");

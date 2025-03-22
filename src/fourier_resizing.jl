@@ -89,6 +89,9 @@ is always assumed to align before and after the padding aperation.
 function select_region_rft(mat, old_size, new_size)
     # rft_old_size = size(mat)
     rft_new_size = Base.setindex(new_size,new_size[1] ÷ 2 + 1, 1)
+    # tmp = similar(mat, (8, 10))
+    # tmp .= 1
+    # return rft_fix_after(tmp, old_size, new_size)
     return rft_fix_after(rft_pad(
         rft_fix_before(mat, old_size, new_size), rft_new_size), old_size, new_size)
 end
@@ -147,7 +150,7 @@ function ft_fix_before(mat::MT, size_old, size_new, ::Val{N})::FourierJoin{T,N,M
     so = size_old[N]
     do_join = (sn < so && iseven(sn))
     L1 = (size_old[N] - size_new[N] ) ÷ 2 + 1
-    return FourierJoin(mat, N, L1, do_join)
+    return FourierJoin(mat, Val(N), L1, do_join)
 end
 
 """
@@ -162,20 +165,21 @@ function ft_fix_before(mat::MT, size_old, size_new, ::Val{D}=Val(1))  where {D, 
         so = size_old[D]
         do_join = (sn < so && iseven(sn))
         L1 = (size_old[D] - size_new[D] )÷2 +1
-        mat = FourierJoin(mat, D, L1, do_join)
+        mat = FourierJoin(mat, Val(D), L1, do_join)
         return ft_fix_before(mat, size_old, size_new, Val(D + 1))
     else
         L1 = (size_old[N] -size_new[N] )÷2 +1
-        return FourierJoin(mat, N, L1, false)
+        return FourierJoin(mat, Val(N), L1, false)
     end
 end
 
-function ft_fix_after(mat::MT, size_old, size_new, ::Val{N})::FourierSplit{T,N,MT}   where {T, N, MT<:AbstractArray{T,N}}
+# routine only for the last dimensions N == D
+function ft_fix_after(mat::MT, size_old, size_new, ::Val{N})::FourierSplit{T,N,MT,N}   where {T, N, MT<:AbstractArray{T,N}}
     sn = size_new[N]
     so = size_old[N]
     do_split = (sn > so && iseven(so))
     L1 = (size_new[N] - size_old[N]) ÷ 2 + 1
-    return FourierSplit(mat, N, L1, do_split)
+    return FourierSplit(mat, Val(N), L1, do_split)
 end
 
 function ft_fix_after(mat::MT, size_old, size_new, ::Val{D}=Val(1)) where {D, T, N, MT<:AbstractArray{T,N}}
@@ -184,49 +188,49 @@ function ft_fix_after(mat::MT, size_old, size_new, ::Val{D}=Val(1)) where {D, T,
         so = size_old[D]
         do_split = (sn > so && iseven(so))
         L1 = (size_new[D]-size_old[D])÷2+1
-        mat = FourierSplit(mat, D, L1, do_split)
+        mat = FourierSplit(mat, Val(D), L1, do_split)
         return ft_fix_after(mat, size_old, size_new, Val(D + 1))
     else
         L1 = (size_new[N]-size_old[N])÷2+1
-        return FourierSplit(mat, N, L1, false)
+        return FourierSplit(mat, Val(N), L1, false)
     end
 end
 
-function rft_fix_first_dim_before(mat, size_old, size_new; dim=1)
+function rft_fix_first_dim_before(mat, size_old, size_new; dim::Val{D}=Val(1)) where {D}
     # Note that this dim is the corresponding real-space size
-    sn = size_new[dim] 
-    so = size_old[dim]
+    sn = size_new[D] 
+    so = size_old[D]
     # result size is even upon cropping
     do_join = (sn < so && iseven(sn))
-    L1 = size_new[dim] ÷ 2 + 1
+    L1 = size_new[D] ÷ 2 + 1
     # a hack to dublicate the value
-    mat = FourierJoin(mat, dim, L1, L1, do_join)
+    mat = FourierJoin(mat, Val(D), L1, L1, do_join)
     return mat
 end
 
-function rft_fix_first_dim_after(mat,size_old,size_new;dim=1)
+function rft_fix_first_dim_after(mat,size_old,size_new; dim::Val{D}=Val(1)) where {D}
     # Note that this dim is the corresponding real-space size
-    sn = size_new[dim] 
-    so = size_old[dim] 
+    sn = size_new[D] 
+    so = size_old[D] 
     # source size is even upon padding
     do_split = (sn > so && iseven(so)) 
-    L1 = size_old[dim] ÷ 2 + 1
+    L1 = size_old[D] ÷ 2 + 1
     # This hack prevents a second position to be affected
-    mat = FourierSplit(mat, dim, L1, -1, do_split)
+    mat = FourierSplit(mat, Val(D), L1, -1, do_split)
     # if equal do nothing
     return mat
 end
 
 function rft_fix_before(mat,size_old,size_new)
     # ignore the first dimension
-    mat=rft_fix_first_dim_before(mat,size_old,size_new;dim=1) 
+    mat=rft_fix_first_dim_before(mat,size_old,size_new; dim=Val(1)) 
     # ignore the first dimension since it starts at Val(2)
     ft_fix_before(mat, size_old, size_new, Val(2)) 
 end
 
-function rft_fix_after(mat,size_old,size_new)
+function rft_fix_after(mat, size_old, size_new)
     # ignore the first dimension
-    mat = rft_fix_first_dim_after(mat,size_old,size_new;dim=1) 
+    mat = rft_fix_first_dim_after(mat, size_old, size_new; dim=Val(1)) 
     # ignore the first dimension since it starts at Val(2)
     ft_fix_after(mat, size_old, size_new, Val(2))
 end

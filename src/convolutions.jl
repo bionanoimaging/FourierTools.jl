@@ -148,6 +148,7 @@ end
     plan_conv_buffer(u, v [, dims]; kwargs...)
 
 Similar to [`plan_conv`](@ref) but instead uses buffers to prevent memory allocations.
+The three buffers are internal to the function and are not exposed to the user.
 Not AD friendly!
 
 """

@@ -46,9 +46,6 @@ function resample_by_1D_FT!(arr::AbstractArray{<:Complex, N}, new_size; normaliz
                 arr_v[inds_left...] ./= correction_factor
             end
             #overwrite old arr handle
-            @show typeof(arr_v)
-            @show typeof(optional_collect(arr_v))
-            @show d
             arr = iffts(arr_v, d)
         end
     end

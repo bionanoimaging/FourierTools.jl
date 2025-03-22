@@ -3,11 +3,15 @@ using CUDA
 using Adapt
 # using ShiftedArrays
 using FourierTools
+using IndexFunArrays # to prevent a stack overflow in get_base_arr
 using Base # to allow displaying such arrays without causing the single indexing CUDA error
 
 get_base_arr(arr::Array) = arr
 get_base_arr(arr::CuArray) = arr
-get_base_arr(arr::AbstractArray) = get_base_arr(parent(arr))
+get_base_arr(arr::IndexFunArray) = arr
+function get_base_arr(arr::AbstractArray) 
+    get_base_arr(parent(arr))
+end
 
 # define a number of Union types to not repeat all definitions for each type
 AllShiftedType = Union{FourierTools.CircShiftedArray{<:Any,<:Any,<:Any},
@@ -15,15 +19,19 @@ AllShiftedType = Union{FourierTools.CircShiftedArray{<:Any,<:Any,<:Any},
                             FourierTools.FourierJoin{<:Any,<:Any,<:Any}}
 
 # these are special only if a CuArray is wrapped
+
+AllSubArrayType = Union{SubArray{<:Any, <:Any, <:AllShiftedType, <:Any, <:Any},
+                        Base.ReshapedArray{<:Any, <:Any, <:AllShiftedType, <:Any},
+                        SubArray{<:Any, <:Any, <:Base.ReshapedArray{<:Any, <:Any, <:AllShiftedType, <:Any}, <:Any, <:Any}}
+AllShiftedAndViews = Union{AllShiftedType, AllSubArrayType}
+
 AllShiftedTypeCu{N, CD} = Union{FourierTools.CircShiftedArray{<:Any,<:Any,<:CuArray{<:Any,N,CD}},
                             FourierTools.FourierSplit{<:Any,<:Any,<:CuArray{<:Any,N,CD}},
                             FourierTools.FourierJoin{<:Any,<:Any,<:CuArray{<:Any,N,CD}}}
-
-AllSubArrayType = SubArray{<:Any, <:Any, <:AllShiftedType, <:Any, <:Any}
-AllShiftedAndViews = Union{AllShiftedType, AllSubArrayType}
-
-AllSubArrayTypeCu = SubArray{<:Any, <:Any, <:AllShiftedTypeCu, <:Any, <:Any}
-AllShiftedAndViewsCu = Union{AllShiftedTypeCu, AllSubArrayTypeCu}
+AllSubArrayTypeCu{N, CD} = Union{SubArray{<:Any, <:Any, <:AllShiftedTypeCu{N,CD}, <:Any, <:Any},
+                                 Base.ReshapedArray{<:Any, <:Any, <:AllShiftedTypeCu{N,CD}, <:Any},
+                                 SubArray{<:Any, <:Any, <:Base.ReshapedArray{<:Any, <:Any, <:AllShiftedTypeCu{N,CD}, <:Any}, <:Any, <:Any}}
+AllShiftedAndViewsCu{N, CD} = Union{AllShiftedTypeCu{N, CD}, AllSubArrayTypeCu{N, CD}}
 
 # define adapt structures for the ShiftedArrays model. This will not be needed if the PR is merged:
 # Adapt.adapt_structure(to, x::FourierTools.CircShiftedArray{T, D}) where {T, D} = FourierTools.CircShiftedArray(adapt(to, parent(x)), FourierTools.shifts(x));
@@ -31,26 +39,36 @@ AllShiftedAndViewsCu = Union{AllShiftedTypeCu, AllSubArrayTypeCu}
 # Base.Broadcast.BroadcastStyle(::Type{T})  where {T<:FourierTools.CircShiftedArray} = Base.Broadcast.BroadcastStyle(parent_type(T))
 
 Adapt.adapt_structure(to, x::FourierTools.CircShiftedArray{T, N, S}) where {T, N, S} = FourierTools.CircShiftedArray(adapt(to, parent(x)), FourierTools.shifts(x));
-parent_type(::Type{FourierTools.CircShiftedArray{T, N, S}})  where {T, N, S} = S
+# parent_type(::Type{FourierTools.CircShiftedArray{T, N, S}})  where {T, N, S} = S
 
 # Base.Broadcast.BroadcastStyle(::Type{T}) where {T2, N, S, T <:FourierTools.CircShiftedArray{T2, N, S}}  = Base.Broadcast.BroadcastStyle(parent_type(T))
-function Base.Broadcast.BroadcastStyle(::Type{T})  where {CT, N, CD, T<:FourierTools.CircShiftedArray{<:Any,<:Any,<:CuArray{CT,N,CD}}}
+# function Base.Broadcast.BroadcastStyle(::Type{T})  where {CT, N, CD, T<:FourierTools.CircShiftedArray{<:Any,<:Any,<:CuArray{CT,N,CD}}}
+#     CUDA.CuArrayStyle{N,CD}()
+# end
+function Base.Broadcast.BroadcastStyle(::Type{T})  where {N, CD, T<:AllShiftedTypeCu{N, CD}}
     CUDA.CuArrayStyle{N,CD}()
 end
 
 # Define the BroadcastStyle for SubArray of MutableShiftedArray with CuArray
-function Base.Broadcast.BroadcastStyle(::Type{T})  where {CT, N, CD, T<:SubArray{<:Any, <:Any, <:FourierTools.CircShiftedArray{<:Any,<:Any,<:CuArray{CT,N,CD}}}}
+# function Base.Broadcast.BroadcastStyle(::Type{T})  where {CT, N, CD, T<:SubArray{<:Any, <:Any, <:FourierTools.CircShiftedArray{<:Any,<:Any,<:CuArray{CT,N,CD}}}}
+#     CUDA.CuArrayStyle{N,CD}()
+# end
+function Base.Broadcast.BroadcastStyle(::Type{T})  where {N, CD, T<:AllSubArrayTypeCu{N, CD}}
     CUDA.CuArrayStyle{N,CD}()
 end
 
 # Define the BroadcastStyle for ReshapedArray of MutableShiftedArray with CuArray
-function Base.Broadcast.BroadcastStyle(::Type{T})  where {CT, N, CD, T<:Base.ReshapedArray{<:Any, <:Any, <:FourierTools.CircShiftedArray{<:Any,<:Any,<:CuArray{CT,N,CD}}, <:Any}}
-    CUDA.CuArrayStyle{N,CD}()
-end
+# function Base.Broadcast.BroadcastStyle(::Type{T})  where {CT, N, CD, T<:Base.ReshapedArray{<:Any, <:Any, <:FourierTools.CircShiftedArray{<:Any,<:Any,<:CuArray{CT,N,CD}}, <:Any}}
+#     CUDA.CuArrayStyle{N,CD}()
+# end
 
 function Base.copy(s::AllShiftedAndViews) # where {CT, N, CD, T<:FourierTools.CircShiftedArray{<:Any,<:Any,<:CuArray{CT,N,CD}}}
     res = similar(get_base_arr(s), eltype(s), size(s));
+    # @show "copy here"
+    # @show s.D
     res .= s
+    # CUDA.@allowscalar @show res[5]
+    return res
 end
 
 function Base.collect(x::AllShiftedAndViews)  # where {CT, N, CD, T<:FourierTools.CircShiftedArray{<:Any,<:Any,<:CuArray{CT,N,CD}}}
@@ -103,12 +121,17 @@ end
 # end
 
 # lets do this for the FourierSplit
-Adapt.adapt_structure(to, x::FourierTools.FourierSplit{T, M, AA}) where {T, M, AA} = FourierTools.FourierSplit(adapt(to, parent(x)), ndims(x), x.L1, x.L2, x.do_split);
+Adapt.adapt_structure(to, x::FourierTools.FourierSplit{T, M, AA, D}) where {T, M, AA, D} = FourierTools.FourierSplit(adapt(to, parent(x)), Val(D), x.L1, x.L2, x.do_split);
+# parent_type(::Type{FourierTools.FourierSplit{T, N, S}})  where {T, N, S} = S
 
 # function Base.Broadcast.BroadcastStyle(::Type{T})  where (CT,CN,CD,T<: ShiftedArray{<:Any,<:Any,<:Any,<:CuArray})
-function Base.Broadcast.BroadcastStyle(::Type{T})  where {T2, N, CD, T<:FourierTools.FourierSplit{<:Any,<:Any,<:CuArray{T2,N,CD}}}
-    CUDA.CuArrayStyle{N,CD}()
-end
+# function Base.Broadcast.BroadcastStyle(::Type{T})  where {T2, N, CD, T<:FourierTools.FourierSplit{<:Any,<:Any,<:CuArray{T2,N,CD}}}
+#     CUDA.CuArrayStyle{N,CD}()
+# end
+
+# function Base.Broadcast.BroadcastStyle(::Type{T})  where {CT, N, CD, T<:SubArray{<:Any, <:Any, <:FourierTools.FourierSplit{<:Any,<:Any,<:CuArray{CT,N,CD}}}}
+#     CUDA.CuArrayStyle{N,CD}()
+# end
 
 # function Base.copy(s::FourierTools.FourierSplit) #  where {CT, N, CD, T<:FourierTools.FourierSplit{<:Any,<:Any,<:CuArray{CT,N,CD}}}
 #     res = similar(get_base_arr(s), eltype(s), size(s));
@@ -140,11 +163,12 @@ end
 # end
 
 # for FourierJoin
-Adapt.adapt_structure(to, x::FourierTools.FourierJoin{T, M, AA}) where {T, M, AA} = FourierTools.FourierJoin(adapt(to, parent(x)), ndims(x), x.L1, x.L2, x.do_join);
+Adapt.adapt_structure(to, x::FourierTools.FourierJoin{T, M, AA, D}) where {T, M, AA, D} = FourierTools.FourierJoin(adapt(to, parent(x)), Val(D), x.L1, x.L2, x.do_join);
+# parent_type(::Type{FourierTools.FourierJoin{T, N, S}})  where {T, N, S} = S
 
-function Base.Broadcast.BroadcastStyle(::Type{T})  where {T2, N, CD, T<:FourierTools.FourierJoin{<:Any,<:Any,<:CuArray{T2,N,CD}}}
-    CUDA.CuArrayStyle{N,CD}()
-end
+# function Base.Broadcast.BroadcastStyle(::Type{T})  where {T2, N, CD, T<:FourierTools.FourierJoin{<:Any,<:Any,<:CuArray{T2,N,CD}}}
+#     CUDA.CuArrayStyle{N,CD}()
+# end
 
 # function Base.copy(s::FourierTools.FourierJoin)  # where {CT, N, CD, T<:FourierTools.FourierJoin{<:Any,<:Any,<:CuArray{CT,N,CD}}}
 #     res = similar(get_base_arr(s), eltype(s), size(s));

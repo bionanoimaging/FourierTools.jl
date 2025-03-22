@@ -45,7 +45,6 @@
         end
     end
 
-
     @testset "Tests that resample_by_FFT is purely real" begin
         function test_real(s_1, s_2)
             x = opt_cu(randn(Float32, (s_1)), use_cuda)
@@ -108,7 +107,7 @@
     @testset "Upsample2 compared to resample" begin
     for sz in ((10,10),(5,8,9),(20,5,4))
         a = opt_cu(rand(sz...), use_cuda)
-        @test ≈(upsample2(a),resample(a,sz.*2))
+        @test ≈(upsample2(a), resample(a,sz.*2))
         @test ≈(upsample2_abs2(a),abs2.(resample(a,sz.*2)))
         a = opt_cu(rand(ComplexF32, sz...), use_cuda)
         @test ≈(upsample2(a),resample(a,sz.*2))
@@ -147,12 +146,9 @@
     test_resample(253, 254)
     test_resample(253, 1001)
     test_resample(99, 100101)
-
     end
 
-    @testset "FFT resample in 2D" begin
-    
-    
+    @testset "FFT resample in 2D" begin    
         function test_2D(in_s, out_s)
             x = opt_cu(range(-10.0, 10.0, length=in_s[1] + 1)[1:end-1], use_cuda)
             y = opt_cu(range(-10.0, 10.0, length=in_s[2] + 1)[1:end-1]', use_cuda)
@@ -256,9 +252,11 @@
 
     @testset "test select_region_ft" begin
         x = opt_cu([1,2,3,4], use_cuda)
-        @test select_region_ft(ffts(x), (5,)) == ComplexF64[-1.0 + 0.0im, -2.0 - 2.0im, 10.0 + 0.0im, -2.0 + 2.0im, -1.0 + 0.0im]
+        res = select_region_ft(ffts(x), (5,))
+        @test res == opt_cu(ComplexF64[-1.0 + 0.0im, -2.0 - 2.0im, 10.0 + 0.0im, -2.0 + 2.0im, -1.0 + 0.0im], use_cuda)
         x = opt_cu([3.1495759241275225 0.24720770605505335 -1.311507800204285 -0.3387627167144301; -0.7214121984874265 -0.02566249380406308 0.687066447881175 -0.09536748694092163; -0.577092696986848 -0.6320809680268722 -0.09460071173365793 0.7689715736798227; 0.4593837753047561 -1.0204193548690512 -0.28474772376166907 1.442443602597533], use_cuda)
-        @test select_region_ft(ffts(x), (7, 7)) == ComplexF64[0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im; 0.0 + 0.0im 0.32043577156395486 + 0.0im 2.321469443190397 + 0.7890379226962572im 0.38521287113798636 + 0.0im 2.321469443190397 - 0.7890379226962572im 0.32043577156395486 + 0.0im 0.0 + 0.0im; 0.0 + 0.0im 1.3691035744780353 + 0.16703621316206385im 2.4110077589815555 - 0.16558718095884828im 2.2813159163314163 - 0.7520360306228049im 7.47614366018844 - 4.139633109911205im 1.3691035744780353 + 0.16703621316206385im 0.0 + 0.0im; 0.0 + 0.0im 0.4801675770812479 + 0.0im 3.3142445917764407 - 3.2082400832669373im 1.6529948781166373 + 0.0im 3.3142445917764407 + 3.2082400832669373im 0.4801675770812479 + 0.0im 0.0 + 0.0im; 0.0 + 0.0im 1.3691035744780353 - 0.16703621316206385im 7.47614366018844 + 4.139633109911205im 2.2813159163314163 + 0.7520360306228049im 2.4110077589815555 + 0.16558718095884828im 1.3691035744780353 - 0.16703621316206385im 0.0 + 0.0im; 0.0 + 0.0im 0.32043577156395486 + 0.0im 2.321469443190397 + 0.7890379226962572im 0.38521287113798636 + 0.0im 2.321469443190397 - 0.7890379226962572im 0.32043577156395486 + 0.0im 0.0 + 0.0im; 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im]
+        res = select_region_ft(ffts(x), (7, 7))
+        @test collect(res) ≈ opt_cu(ComplexF64[0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im; 0.0 + 0.0im 0.32043577156395486 + 0.0im 2.321469443190397 + 0.7890379226962572im 0.38521287113798636 + 0.0im 2.321469443190397 - 0.7890379226962572im 0.32043577156395486 + 0.0im 0.0 + 0.0im; 0.0 + 0.0im 1.3691035744780353 + 0.16703621316206385im 2.4110077589815555 - 0.16558718095884828im 2.2813159163314163 - 0.7520360306228049im 7.47614366018844 - 4.139633109911205im 1.3691035744780353 + 0.16703621316206385im 0.0 + 0.0im; 0.0 + 0.0im 0.4801675770812479 + 0.0im 3.3142445917764407 - 3.2082400832669373im 1.6529948781166373 + 0.0im 3.3142445917764407 + 3.2082400832669373im 0.4801675770812479 + 0.0im 0.0 + 0.0im; 0.0 + 0.0im 1.3691035744780353 - 0.16703621316206385im 7.47614366018844 + 4.139633109911205im 2.2813159163314163 + 0.7520360306228049im 2.4110077589815555 + 0.16558718095884828im 1.3691035744780353 - 0.16703621316206385im 0.0 + 0.0im; 0.0 + 0.0im 0.32043577156395486 + 0.0im 2.321469443190397 + 0.7890379226962572im 0.38521287113798636 + 0.0im 2.321469443190397 - 0.7890379226962572im 0.32043577156395486 + 0.0im 0.0 + 0.0im; 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im 0.0 + 0.0im], use_cuda)
     end
 
     @testset "test resample_czt" begin
@@ -281,7 +279,8 @@
         @test rs2b ≈ rs2
     end
 
-    @testset "test resample_nfft" begin
+    if (dat isa Array)
+        @testset "test resample_nfft" begin
         dim =2
         s_small = (12,16) # ntuple(_ -> rand(1:13), dim)
         s_large = (20,18) # ntuple(i -> max.(s_small[i], rand(10:16)), dim)
@@ -319,6 +318,9 @@
         rs6 = FourierTools.resample_nfft(1im .* dat , t->t .* 2.0, s_small.÷2, is_src_coords=false, is_in_pixels=false, pad_value=0.0)
         rs7 = FourierTools.resample_nfft(1im .* dat, t->t .* 0.5, s_small.÷2, is_src_coords=true, is_in_pixels=false, pad_value=0.0)
         @test rs6.*4 ≈ rs7
+        end
+    else
+        @warn "Skipping test for CuArray, since nfft does not support CuArray"
     end
 
 end
