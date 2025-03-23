@@ -3,6 +3,33 @@ export expanddims, fourierspace_pixelsize, realspace_pixelsize
 export δ
 export fourier_reverse!
 
+"""
+    similar_zeros(arr::AbstractArray, sz::NTuple)
+
+Creates a similar array to `arr` with zeros. This is useful to also support CuArrays.
+There are specializations for `Array` and `CuArray` which use the original `zeros` function.
+
+# parameters
+- `arr`: array to copy the type and size from
+- `sz`: size of the new array. Default is the size of `arr`.
+
+# Examples
+```jldoctest
+julia> FourierTools.similar_zeros([1, 2, 3], (3,))
+3-element Vector{Int64}:
+ 0
+ 0
+ 0
+"""
+function similar_zeros(arr::AbstractArray, sz::NTuple=size(arr))
+    res = similar(arr, sz)
+    fill!(res, zero(eltype(res)))
+    return res
+end
+
+function similar_zeros(arr::Array, sz::NTuple=size(arr))
+    zeros(eltype(arr), sz)
+end
 
  #get_RFT_scale(real_size) = 0.5 ./ (max.(real_size ./ 2, 1))  # The same as the FFT scale but for the full array in real space!
 

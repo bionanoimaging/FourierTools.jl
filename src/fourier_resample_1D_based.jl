@@ -22,8 +22,7 @@ function resample_by_1D_FT!(arr::AbstractArray{<:Complex, N}, new_size; normaliz
         arr = ffts!(arr, d)
         if ns > s
             # out = zeros(eltype(arr), Base.setindex(size(arr), ns, d))
-            out = similar(arr, Base.setindex(size(arr), ns, d)) # to work with CuArary
-            out .= 0
+            out = similar_zeros(arr, Base.setindex(size(arr), ns, d)) # to work with CuArary
             center_set!(out, arr)
             # in the even case we need to fix hermitian property
             if iseven(s)

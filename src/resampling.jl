@@ -114,8 +114,7 @@ function upsample2_1D(mat::AbstractArray{T, N}, dim=1, fix_center=false, keep_si
         return mat
     end
     newsize = Tuple((d==dim) ? 2*size(mat,d) : size(mat,d) for d in 1:N)
-    res = similar(mat, newsize)
-    res .= 0;
+    res = similar_zeros(mat, newsize)
     # res = zeros(eltype(mat), newsize)
     if fix_center && isodd(size(mat,dim))
         selectdim(res,dim,2:2:size(res,dim)) .= mat  

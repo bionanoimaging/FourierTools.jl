@@ -5,13 +5,8 @@ using Adapt
 using FourierTools
 using IndexFunArrays # to prevent a recuursive stack overflow in get_base_arr
 using Base 
-
-get_base_arr(arr::Array) = arr
-get_base_arr(arr::CuArray) = arr
-get_base_arr(arr::IndexFunArray) = arr
-function get_base_arr(arr::AbstractArray) 
-    get_base_arr(parent(arr))
-end
+# using NFFT
+# using CuNFFT
 
 # define a number of Union types to not repeat all definitions for each type
 AllShiftedType = Union{FourierTools.CircShiftedArray{<:Any,<:Any,<:Any},
@@ -96,6 +91,17 @@ end
 
 function FourierTools.optional_collect(a::CuArray)
     a 
+end
+
+get_base_arr(arr::CuArray) = arr
+get_base_arr(arr::Array) = arr
+get_base_arr(arr::IndexFunArray) = arr
+function get_base_arr(arr::AbstractArray) 
+    get_base_arr(parent(arr))
+end
+
+function similar_zeros(arr::CuArray, sz::NTuple=size(arr))
+    CUDA.zeros(sz)
 end
 
 end
