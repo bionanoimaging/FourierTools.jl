@@ -4,6 +4,25 @@ export δ
 export fourier_reverse!
 
 """
+    bc_size(arr1, arr2)
+
+Calculates the size of the broadcasted array of `arr1` and `arr2`.
+
+# Arguments
+- `arr1`: first array
+- `arr2`: second array
+
+# Examples
+```jldoctest
+julia> FourierTools.bc_size(rand(5, 2, 3), rand(1, 2))
+(5, 2, 3)
+"""
+function bc_size(arr1, arr2)
+    md = max(ndims(arr1), ndims(arr2))
+    return ntuple((d) -> max(size(arr1, d), size(arr2, d)), md)
+end
+
+"""
     similar_zeros(arr::AbstractArray, sz::NTuple)
 
 Creates a similar array to `arr` with zeros. This is useful to also support CuArrays.

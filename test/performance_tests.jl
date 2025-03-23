@@ -2,24 +2,29 @@ using BenchmarkTools
 using CUDA
 using Test
 
-function test_fft()
-    img = rand(ComplexF32, 512, 512)
-    img = opt_cu(img, use_cuda)
+function test_fft(img)
     img = fft(img)
     img = ifft(img)
     return img
 end
 
-function test_ft()
-    img = rand(ComplexF32, 512, 512)
-    img = opt_cu(img, use_cuda)
+function test_ft(img)
     img = ft(img)
     img = ift(img)
     return img
 end
 
-diplay(@benchmark test_fft())
-diplay(@benchmark test_ft())
+use_cuda = false
+sz = (1024, 1024)
+dat = rand(ComplexF32, sz...)
+img = opt_cu(dat, use_cuda)
+display(@benchmark test_fft($img)) # 33 ms
+display(@benchmark test_ft($img)) # 38 ms
+
+use_cuda = true
+img = opt_cu(dat, use_cuda)
+display(@benchmark CUDA.@sync test_fft($img)) # 834 µs
+display(@benchmark CUDA.@sync test_ft($img)) # 1086 ms
 
 function test_nfft()
     J, N = 8, 16
