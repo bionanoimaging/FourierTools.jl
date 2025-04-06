@@ -28,7 +28,7 @@ AllSubArrayTypeCu{N, CD} = Union{SubArray{<:Any, <:Any, <:AllShiftedTypeCu{N,CD}
                                  SubArray{<:Any, <:Any, <:Base.ReshapedArray{<:Any, <:Any, <:AllShiftedTypeCu{N,CD}, <:Any}, <:Any, <:Any}}
 AllShiftedAndViewsCu{N, CD} = Union{AllShiftedTypeCu{N, CD}, AllSubArrayTypeCu{N, CD}}
 
-Adapt.adapt_structure(to, x::ShiftedArrays.CircShiftedArray{T, N, S}) where {T, N, S} = ShiftedArrays.CircShiftedArray(adapt(to, parent(x)), FourierTools.shifts(x));
+Adapt.adapt_structure(to, x::ShiftedArrays.CircShiftedArray{T, N, S}) where {T, N, S} = ShiftedArrays.CircShiftedArray(adapt(to, parent(x)), CirShiftedArray.shifts(x));
 Adapt.adapt_structure(to, x::FourierTools.FourierSplit{T, M, AA, D}) where {T, M, AA, D} = FourierTools.FourierSplit(adapt(to, parent(x)), Val(D), x.L1, x.L2, x.do_split);
 Adapt.adapt_structure(to, x::FourierTools.FourierJoin{T, M, AA, D}) where {T, M, AA, D} = FourierTools.FourierJoin(adapt(to, parent(x)), Val(D), x.L1, x.L2, x.do_join);
 

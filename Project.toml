@@ -19,6 +19,7 @@ CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
 
 [extensions]
 CUDASupportExt_FT = ["CUDA", "Adapt"]
+CUDASupportExt_SA = ["CUDA", "Adapt"]
 
 [compat]
 Adapt = "3.7, 4.0, 4.1"
