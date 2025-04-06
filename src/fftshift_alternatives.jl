@@ -13,7 +13,7 @@ If `dims` is not given then the signal is shifted along each dimension.
 function _fftshift!(dst::AbstractArray{T, N}, src::AbstractArray{T, N},
                    dims=ntuple(i -> i, Val(N))) where {T, N}
     Δ = ntuple(i -> i ∈ dims ? size(src, i) ÷ 2 : 0, Val(N))
-    circshift!(dst, src, Δ)
+    ShiftedArrays.circshift!(dst, src, Δ)
 end
 
 """
@@ -27,7 +27,7 @@ If `dims` is not given then the signal is shifted along each dimension.
 function _ifftshift!(dst::AbstractArray{T, N}, src::AbstractArray{T, N},
                    dims=ntuple(i -> i, Val(N))) where {T, N}
     Δ = ntuple(i -> i ∈ dims ? - size(src, i) ÷ 2 : 0, Val(N))
-    circshift!(dst, src, Δ)
+    ShiftedArrays.circshift!(dst, src, Δ)
 end
 
 
@@ -39,7 +39,7 @@ Result is semantically equivalent to `fftshift(A, dims)` but returns
 a view instead. 
 """
 function fftshift_view(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
-    circshift(mat, ft_center_diff(size(mat), dims))
+    ShiftedArrays.circshift(mat, ft_center_diff(size(mat), dims))
 end
 
 
@@ -51,7 +51,7 @@ a view instead.
 """
 function ifftshift_view(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
     diff = .-(ft_center_diff(size(mat), dims))
-    return circshift(mat, diff)
+    return ShiftedArrays.circshift(mat, diff)
 end
 
 
@@ -63,7 +63,7 @@ Shifts the frequencies to the center expect for `dims[1]` because there os no ne
 and positive frequency.
 """
 function rfftshift_view(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
-    circshift(mat, rft_center_diff(size(mat), dims))
+    ShiftedArrays.circshift(mat, rft_center_diff(size(mat), dims))
 end
 
 
@@ -75,7 +75,7 @@ Shifts the frequencies back to the corner except for `dims[1]` because there os 
 and positive frequency.
 """
 function irfftshift_view(mat::AbstractArray{T, N}, dims=ntuple(identity, Val(N))) where {T, N}
-    circshift(mat ,.-(rft_center_diff(size(mat), dims)))
+    ShiftedArrays.circshift(mat ,.-(rft_center_diff(size(mat), dims)))
 end
 
 """
