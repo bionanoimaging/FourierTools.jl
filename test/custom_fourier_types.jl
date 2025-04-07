@@ -4,11 +4,15 @@
     x = opt_cu(randn((N, N)), use_cuda)
     fs = FourierTools.FourierSplit(x, Val(2), 2, 4, true)
     @test FourierTools.parenttype(fs) == typeof(x)
+    @test fs[1,1] == fs[1]
+    @test fs[1,2] == fs[6]
     fs = FourierTools.FourierSplit(x, Val(2), 2, 4, false)
     @test FourierTools.parenttype(fs) == typeof(x)
     
     fj = FourierTools.FourierJoin(x, Val(2), 2, 4, true)
     @test FourierTools.parenttype(fj) == typeof(x)
+    @test fj[1,1] == fj[1]
+    @test fj[1,2] == fj[6]
 
     fj = FourierTools.FourierJoin(x, Val(2), 2, 4, false)
     @test FourierTools.parenttype(fj) == typeof(x)
