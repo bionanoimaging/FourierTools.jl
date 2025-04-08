@@ -8,7 +8,7 @@ get_base_arr(arr::CuArray) = arr
 get_base_arr(arr::Array) = arr
 function get_base_arr(arr::AbstractArray) 
     p = parent(arr)
-    return (p == arr) ? arr : get_base_arr(parent(arr))
+    return (p === arr) ? arr : get_base_arr(parent(arr))
 end
 
 # define a number of Union types to not repeat all definitions for each type

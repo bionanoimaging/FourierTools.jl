@@ -92,7 +92,7 @@ get_base_arr(arr::CuArray) = arr
 get_base_arr(arr::Array) = arr
 function get_base_arr(arr::AbstractArray) 
     p = parent(arr)
-    return (p == arr) ? arr : get_base_arr(parent(arr))
+    return (p === arr) ? arr : get_base_arr(parent(arr))
 end
 
 function similar_zeros(arr::CuArray, sz::NTuple=size(arr))
