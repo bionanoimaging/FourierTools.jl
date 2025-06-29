@@ -13,7 +13,7 @@
         
             m = sum(img) / length(img)
 
-            img_1 = parent(ImageTransformations.imrotate(img, θ, m))
+            img_1 = parent(ImageTransformations.imrotate(img, θ; fillvalue = m))
             z = ones(Float32, size(img_1))
             z .*= m
             FourierTools.center_set!(z, img)
