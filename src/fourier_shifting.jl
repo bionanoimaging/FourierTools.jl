@@ -80,7 +80,7 @@ function soft_shift(freqs, myshift, fraction=eltype(freqs)(0.1); corner=false)
         w .= window_half_cos(size(freqs),border_in=1.0-fraction, border_out=1.0)
         w = ifftshift_view(w)
     end
-    return cispi.(-freqs .* 2 .* (w .* myshift + (1.0 .-w).* rounded_shift))
+    return cispi.(-freqs .* 2 .* (w .* myshift + (1 .-w).* rounded_shift))
 end
 
 function shift_by_1D_FT!(arr::TA, shifts; soft_fraction=0, take_real=false, fix_nyquist_frequency=false) where {N, TA<:AbstractArray{<:Complex, N}}

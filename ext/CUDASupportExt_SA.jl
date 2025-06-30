@@ -12,14 +12,14 @@ function get_base_arr(arr::AbstractArray)
 end
 
 # define a number of Union types to not repeat all definitions for each type
-AllShiftedType = Union{ShiftedArrays.CircShiftedArray{<:Any,<:Any,<:Any}}
+const AllShiftedType = Union{ShiftedArrays.CircShiftedArray{<:Any,<:Any,<:Any}}
 
 # these are special only if a CuArray is wrapped
 
-AllSubArrayType = Union{SubArray{<:Any, <:Any, <:AllShiftedType, <:Any, <:Any},
+const AllSubArrayType = Union{SubArray{<:Any, <:Any, <:AllShiftedType, <:Any, <:Any},
                         Base.ReshapedArray{<:Any, <:Any, <:AllShiftedType, <:Any},
                         SubArray{<:Any, <:Any, <:Base.ReshapedArray{<:Any, <:Any, <:AllShiftedType, <:Any}, <:Any, <:Any}}
-AllShiftedAndViews = Union{AllShiftedType, AllSubArrayType}
+const AllShiftedAndViews = Union{AllShiftedType, AllSubArrayType}
 
 AllShiftedTypeCu{N, CD} = Union{ShiftedArrays.CircShiftedArray{<:Any,<:Any,<:CuArray{<:Any,N,CD}}}
 AllSubArrayTypeCu{N, CD} = Union{SubArray{<:Any, <:Any, <:AllShiftedTypeCu{N,CD}, <:Any, <:Any},

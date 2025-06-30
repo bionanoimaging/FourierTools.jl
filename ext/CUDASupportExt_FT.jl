@@ -7,22 +7,22 @@ using Base
 # using CuNFFT
 
 # define a number of Union types to not repeat all definitions for each type
-AllShiftedType = Union{FourierTools.FourierSplit{<:Any,<:Any,<:Any},
+const AllShiftedType = Union{FourierTools.FourierSplit{<:Any,<:Any,<:Any},
                             FourierTools.FourierJoin{<:Any,<:Any,<:Any}}
 
 # these are special only if a CuArray is wrapped
 
-AllSubArrayType = Union{SubArray{<:Any, <:Any, <:AllShiftedType, <:Any, <:Any},
+const AllSubArrayType = Union{SubArray{<:Any, <:Any, <:AllShiftedType, <:Any, <:Any},
                         Base.ReshapedArray{<:Any, <:Any, <:AllShiftedType, <:Any},
                         SubArray{<:Any, <:Any, <:Base.ReshapedArray{<:Any, <:Any, <:AllShiftedType, <:Any}, <:Any, <:Any}}
-AllShiftedAndViews = Union{AllShiftedType, AllSubArrayType}
+const AllShiftedAndViews = Union{AllShiftedType, AllSubArrayType}
 
-AllShiftedTypeCu{N, CD} = Union{FourierTools.FourierSplit{<:Any,<:Any,<:CuArray{<:Any,N,CD}},
+const AllShiftedTypeCu{N, CD} = Union{FourierTools.FourierSplit{<:Any,<:Any,<:CuArray{<:Any,N,CD}},
                             FourierTools.FourierJoin{<:Any,<:Any,<:CuArray{<:Any,N,CD}}}
-AllSubArrayTypeCu{N, CD} = Union{SubArray{<:Any, <:Any, <:AllShiftedTypeCu{N,CD}, <:Any, <:Any},
+const AllSubArrayTypeCu{N, CD} = Union{SubArray{<:Any, <:Any, <:AllShiftedTypeCu{N,CD}, <:Any, <:Any},
                                  Base.ReshapedArray{<:Any, <:Any, <:AllShiftedTypeCu{N,CD}, <:Any},
                                  SubArray{<:Any, <:Any, <:Base.ReshapedArray{<:Any, <:Any, <:AllShiftedTypeCu{N,CD}, <:Any}, <:Any, <:Any}}
-AllShiftedAndViewsCu{N, CD} = Union{AllShiftedTypeCu{N, CD}, AllSubArrayTypeCu{N, CD}}
+const AllShiftedAndViewsCu{N, CD} = Union{AllShiftedTypeCu{N, CD}, AllSubArrayTypeCu{N, CD}}
 
 Adapt.adapt_structure(to, x::FourierTools.FourierSplit{T, M, AA, D}) where {T, M, AA, D} = FourierTools.FourierSplit(adapt(to, parent(x)), Val(D), x.L1, x.L2, x.do_split);
 Adapt.adapt_structure(to, x::FourierTools.FourierJoin{T, M, AA, D}) where {T, M, AA, D} = FourierTools.FourierJoin(adapt(to, parent(x)), Val(D), x.L1, x.L2, x.do_join);
