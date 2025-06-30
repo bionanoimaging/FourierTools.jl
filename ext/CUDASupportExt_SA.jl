@@ -4,6 +4,8 @@ using Adapt
 using ShiftedArrays
 using Base 
 
+# This should live in ShiftedArrays.jl, as otherwise it is type piracy!
+
 get_base_arr(arr::CuArray) = arr
 get_base_arr(arr::Array) = arr
 function get_base_arr(arr::AbstractArray) 
