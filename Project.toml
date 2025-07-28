@@ -13,6 +13,7 @@ NFFT = "efe261a4-0d2b-5849-be55-fc731d526b0d"
 PaddedViews = "5432bcbf-9aad-5242-b902-cca2824c8663"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 ShiftedArrays = "1277b4bf-5013-50f5-be3d-901d8477a67a"
+SnoopPrecompile = "66db9d55-30c0-4569-8b51-7e840670fc0c"
 
 [compat]
 ChainRulesCore = "1, 1.0, 1.1"
@@ -24,6 +25,7 @@ NFFT = "0.11, 0.12, 0.13"
 PaddedViews = "0.5"
 Reexport = "1"
 ShiftedArrays = "2"
+SnoopPrecompile = "1"
 Zygote = "0.6"
 julia = "1, 1.6, 1.7, 1.8, 1.9, 1.10"
 
