@@ -14,7 +14,7 @@ function get_base_arr(arr::AbstractArray)
 end
 
 # define a number of Union types to not repeat all definitions for each type
-const AllShiftedType = Union{ShiftedArrays.CircShiftedArray{<:Any,<:Any,<:Any}}
+const AllShiftedType = ShiftedArrays.CircShiftedArray{<:Any,<:Any,<:Any}
 
 # these are special only if a CuArray is wrapped
 

@@ -16,6 +16,7 @@ Calculates the size of the broadcasted array of `arr1` and `arr2`.
 ```jldoctest
 julia> FourierTools.bc_size(rand(5, 2, 3), rand(1, 2))
 (5, 2, 3)
+```
 """
 function bc_size(arr1, arr2)
     md = max(ndims(arr1), ndims(arr2))
@@ -39,6 +40,7 @@ julia> FourierTools.similar_zeros([1, 2, 3], (3,))
  0
  0
  0
+```
 """
 function similar_zeros(arr::AbstractArray, sz::NTuple=size(arr))
     res = similar(arr, sz)
@@ -370,13 +372,6 @@ julia> FourierTools.center_set!([1, 1, 1, 1, 1, 1], [5, 5, 5])
 ```
 """
 function center_set!(arr_large, arr_small)
-    # out_is = []
-    # for i = 1:ndims(arr_large)
-    #     a, b = get_indices_around_center(size(arr_large)[i], size(arr_small)[i])
-    #     push!(out_is, a:b)
-    # end
-
-    #rest = ones(Int, ndims(arr_large) - 3)
     arr_large[get_idxrng_around_center(arr_large, arr_small)...] = arr_small
     
     return arr_large
