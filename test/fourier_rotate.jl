@@ -14,7 +14,7 @@
             m = sum(img) / length(img)
 
             img = opt_cu(img, use_cuda)
-            img_1 = opt_cu(parent(ImageTransformations.imrotate(collect(img), θ, m)), use_cuda)
+            img_1 = opt_cu(parent(ImageTransformations.imrotate(collect(img), θ; fillvalue = m)), use_cuda)
             z = opt_cu(ones(Float32, size(img_1)), use_cuda)
             z .*= m
             FourierTools.center_set!(z, img)
