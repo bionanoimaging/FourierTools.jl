@@ -30,7 +30,7 @@ end
     ffts(A [, dims])
 
 Result is semantically equivalent to `fftshift(fft(A, dims), dims)`
-However, the shift is done with `ShiftedArrays` and therefore doesn't allocate memory.
+However, the shift is done with `MutableShiftedArrays` and therefore doesn't allocate memory.
 
 See also: [`ft`](@ref ift), [`ift`](@ref ift), [`rft`](@ref rft), [`irft`](@ref irft),
           [`ffts`](@ref ffts),  [`iffts`](@ref iffts),  [`ffts!`](@ref ffts!), [`rffts`](@ref rffts), [`irffts`](@ref irffts), 
@@ -45,7 +45,7 @@ end
 
 Result is semantically equivalent to `fftshift(fft!(A, dims), dims)`.
 `A` is in-place modified.
-However, the shift is done with `ShiftedArrays` and therefore doesn't allocate memory.
+However, the shift is done with `MutableShiftedArrays` and therefore doesn't allocate memory.
 
 See also: [`ft`](@ref ift), [`ift`](@ref ift), [`rft`](@ref rft), [`irft`](@ref irft),
           [`ffts`](@ref ffts),  [`iffts`](@ref iffts),  [`ffts!`](@ref ffts!), [`rffts`](@ref rffts), [`irffts`](@ref irffts), 
@@ -59,7 +59,7 @@ end
 
 Result is semantically equivalent to `ifft(ifftshift(A, dims), dims)`.
 `A` is in-place modified.
-However, the shift is done with `ShiftedArrays` and therefore doesn't allocate memory.
+However, the shift is done with `MutableShiftedArrays` and therefore doesn't allocate memory.
 
 See also: [`ft`](@ref ift), [`ift`](@ref ift), [`rft`](@ref rft), [`irft`](@ref irft),
           [`ffts`](@ref ffts),  [`iffts`](@ref iffts),  [`ffts!`](@ref ffts!), [`rffts`](@ref rffts), [`irffts`](@ref irffts), 
@@ -74,7 +74,7 @@ end
 
 Calculates a `rfft(A, dims)` and then shift the frequencies to the center.
 `dims[1]` is not shifted, because there is no negative and positive frequency.
-The shift is done with `ShiftedArrays` and therefore doesn't allocate memory.
+The shift is done with `MutableShiftedArrays` and therefore doesn't allocate memory.
 
 See also: [`ft`](@ref ift), [`ift`](@ref ift), [`rft`](@ref rft), [`irft`](@ref irft),
           [`ffts`](@ref ffts),  [`iffts`](@ref iffts),  [`ffts!`](@ref ffts!), [`rffts`](@ref rffts), [`irffts`](@ref irffts), 
@@ -88,7 +88,7 @@ end
 
 Calculates a `irfft(A, d, dims)` and then shift the frequencies back to the corner.
 `dims[1]` is not shifted, because there is no negative and positive frequency.
-The shift is done with `ShiftedArrays` and therefore doesn't allocate memory.
+The shift is done with `MutableShiftedArrays` and therefore doesn't allocate memory.
 
 See also: [`ft`](@ref ift), [`ift`](@ref ift), [`rft`](@ref rft), [`irft`](@ref irft),
           [`ffts`](@ref ffts),  [`iffts`](@ref iffts),  [`ffts!`](@ref ffts!), [`rffts`](@ref rffts), [`irffts`](@ref irffts), 

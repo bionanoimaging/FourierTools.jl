@@ -26,13 +26,13 @@ julia> x = [1 20 3; 4 500 6; -7 821 923]
  -7  821  923
 
 julia> ffts(x)
-3×3 ShiftedArrays.CircShiftedArray{ComplexF64, 2, Matrix{ComplexF64}}:
+3×3 MutableShiftedArrays.CircShiftedArray{ComplexF64, 2, Matrix{ComplexF64}}:
    106.5+390.577im  -1099.5-1062.61im   1000.5+700.615im
  -1138.5+354.204im   2271.0+0.0im      -1138.5-354.204im
   1000.5-700.615im  -1099.5+1062.61im    106.5-390.577im
 
 julia> select_region_ft(ffts(x), (4,4))
-4×4 PaddedView(0.0 + 0.0im, OffsetArray(::ShiftedArrays.CircShiftedArray{ComplexF64, 2, Matrix{ComplexF64}}, 2:4, 2:4), (Base.OneTo(4), Base.OneTo(4))) with eltype ComplexF64:
+4×4 PaddedView(0.0 + 0.0im, OffsetArray(::MutableShiftedArrays.CircShiftedArray{ComplexF64, 2, Matrix{ComplexF64}}, 2:4, 2:4), (Base.OneTo(4), Base.OneTo(4))) with eltype ComplexF64:
  0.0+0.0im      0.0+0.0im          0.0+0.0im          0.0+0.0im
  0.0+0.0im    106.5+390.577im  -1099.5-1062.61im   1000.5+700.615im
  0.0+0.0im  -1138.5+354.204im   2271.0+0.0im      -1138.5-354.204im
@@ -46,14 +46,14 @@ julia> x = [1 20; 4 500; -7 821; -2 2]
  -2    2
 
 julia> ffts(x)
-4×2 ShiftedArrays.CircShiftedArray{ComplexF64, 2, Matrix{ComplexF64}}:
+4×2 MutableShiftedArrays.CircShiftedArray{ComplexF64, 2, Matrix{ComplexF64}}:
   -347.0+0.0im     331.0+0.0im
    809.0-492.0im  -793.0+504.0im
  -1347.0+0.0im    1339.0+0.0im
    809.0+492.0im  -793.0-504.0im
 
 julia> select_region_ft(ffts(x), (5,3))
-5×3 FourierTools.FourierSplit{ComplexF64, 2, FourierTools.FourierSplit{ComplexF64, 2, PaddedViews.PaddedView{ComplexF64, 2, Tuple{Base.OneTo{Int64}, Base.OneTo{Int64}}, OffsetArrays.OffsetMatrix{ComplexF64, ShiftedArrays.CircShiftedArray{ComplexF64, 2, Matrix{ComplexF64}}}}}}:
+5×3 FourierTools.FourierSplit{ComplexF64, 2, FourierTools.FourierSplit{ComplexF64, 2, PaddedViews.PaddedView{ComplexF64, 2, Tuple{Base.OneTo{Int64}, Base.OneTo{Int64}}, OffsetArrays.OffsetMatrix{ComplexF64, MutableShiftedArrays.CircShiftedArray{ComplexF64, 2, Matrix{ComplexF64}}}}}}:
  -86.75+0.0im     165.5+0.0im    -86.75+0.0im
   404.5-246.0im  -793.0+504.0im   404.5-246.0im
  -673.5+0.0im    1339.0+0.0im    -673.5+0.0im

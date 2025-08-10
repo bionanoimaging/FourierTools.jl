@@ -8,10 +8,10 @@ ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
 FFTW = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
 IndexFunArrays = "613c443e-d742-454e-bfc6-1d7f8dd76566"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+MutableShiftedArrays = "d3d30c82-a38e-471c-a45a-3d24d2f4d22d"
 NDTools = "98581153-e998-4eef-8d0d-5ec2c052313d"
 NFFT = "efe261a4-0d2b-5849-be55-fc731d526b0d"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
-ShiftedArrays = "1277b4bf-5013-50f5-be3d-901d8477a67a"
 
 [weakdeps]
 Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
@@ -19,7 +19,6 @@ CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
 
 [extensions]
 CUDASupportExt_FT = ["CUDA", "Adapt"]
-CUDASupportExt_SA = ["CUDA", "Adapt"]
 
 [compat]
 Adapt = "3.7, 4.0, 4.1"
@@ -28,12 +27,11 @@ ChainRulesCore = "1"
 FFTW = "1.5, 1.6, 1.7, 1.8, 1.9"
 ImageTransformations = "0.9, 0.10"
 IndexFunArrays = "0.2"
-NDTools = "0.8"
 NFFT = "0.11, 0.12, 0.13"
 Reexport = "1"
-ShiftedArrays = "2.0.0"
 Zygote = "0.6, 0.7"
 julia = "1, 1.6, 1.7, 1.8, 1.9, 1.10, 1.11"
+MutableShiftedArrays = "0.3"
 
 [extras]
 CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"

@@ -56,7 +56,8 @@ function rotate(arr, θ, rotation_plane=(1, 2); adapt_size=true, keep_new_size=f
             end
         end
 
-        arr = select_region_view(arr, new_size=old_size .+ extra_size, pad_value=pad_value)
+        # ToDo: This can be select_region_view for better performance, but should be benchmarked first
+        arr = select_region(arr, new_size=old_size .+ extra_size, pad_value=pad_value)
         # convert to radiants
 
         # parameters for shearing

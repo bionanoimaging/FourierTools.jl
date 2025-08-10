@@ -7,7 +7,7 @@ export shift, shift!
 Shifts an array in-place. For real arrays it is based on `rfft`.
 For complex arrays based on `fft`.
 `shifts` can be non-integer, for integer shifts one should prefer
-`circshift` or `ShiftedArrays.circshift` because a FFT-based methods
+`circshift` or `MutableShiftedArrays.circshift` because a FFT-based methods
 introduces numerical errors.
 
 ## kwargs...

@@ -294,7 +294,7 @@ function get_indices_around_center(i_in, i_out)
 end
 
 """
-    get_idxrng_around_center(arr_1, arr_2)
+    get_indexrange_around_center(arr_1, arr_2)
 
 A function which provides a range of output indices `i1:i2`
 where `i2 - i1 = i_out`
@@ -303,7 +303,7 @@ cuts the interval `1:i_in` such that the center frequency
 stays at the center position.
 Works for both odd and even indices
 """
-function get_idxrng_around_center(arr_1, arr_2)
+function get_indexrange_around_center(arr_1, arr_2)
     sz1 = size(arr_1)
     sz2 = size(arr_2)
     all_rng = ntuple((d) -> begin a,b = get_indices_around_center(sz1[d], sz2[d]); a:b end, ndims(arr_1))
@@ -372,7 +372,7 @@ julia> FourierTools.center_set!([1, 1, 1, 1, 1, 1], [5, 5, 5])
 ```
 """
 function center_set!(arr_large, arr_small)
-    arr_large[get_idxrng_around_center(arr_large, arr_small)...] = arr_small
+    arr_large[get_indexrange_around_center(arr_large, arr_small)...] = arr_small
     
     return arr_large
 end

@@ -27,7 +27,7 @@ function get_kernel_1d(arr::AT, N::Integer, M::Integer; a= 1.0, w = cispi(-2/N),
     CT = (RT <: Real) ? Complex{RT} : RT
     RT = real(CT)
 
-    # converts ShiftedArrays.CircShiftedArray into a plain array type:
+    # converts MutableShiftedArrays.CircShiftedArray into a plain array type:
     tmp = similar(arr, RT, (1,))
     RAT = real_arr_type(typeof(tmp), Val(1))
 

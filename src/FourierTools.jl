@@ -3,7 +3,7 @@ module FourierTools
 
 using Reexport
 # using PaddedViews
-using ShiftedArrays # for circshift
+using MutableShiftedArrays # for circshift
 @reexport using FFTW
 using LinearAlgebra
 using IndexFunArrays
@@ -14,8 +14,6 @@ import Base: checkbounds, getindex, setindex!, parent, size, axes, copy, collect
 @reexport using NFFT
 FFTW.set_num_threads(4)
 
-# include("circshiftedarray.jl") # from ShiftedArrays.jl
-# include("circshift.jl") # from ShiftedArrays.jl
 include("utils.jl")
 include("nfft_nd.jl")
 include("resampling.jl")
