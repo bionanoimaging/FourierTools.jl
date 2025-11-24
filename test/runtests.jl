@@ -27,10 +27,10 @@ function run_all_tests()
     include("fourier_shifting.jl");
     include("fourier_shear.jl");
     include("fourier_rotate.jl");
-    include("resampling_tests.jl"); ### nfft does not work with CUDA
+    include("resampling_tests.jl"); ### nfft does not work with CUDA -> warning for this method
     include("convolutions.jl"); # spurious buffer problem in conv_p4 in CUDA?
     include("correlations.jl");
-    include("custom_fourier_types.jl");
+    include("custom_fourier_types.jl"); 
     include("damping.jl");
     include("czt.jl"); 
     include("nfft_tests.jl");
@@ -40,18 +40,18 @@ function run_all_tests()
 end
 
 use_cuda=false
-run_all_tests()
+run_all_tests();
 
 if CUDA.functional()
+    use_cuda=true
     @testset "all in CUDA" begin
     CUDA.allowscalar(false);
-    use_cuda=true
     run_all_tests()
     end
 else
     @testset "no CUDA available!" begin
         @test true == true
     end
-end
+end;
 
 return

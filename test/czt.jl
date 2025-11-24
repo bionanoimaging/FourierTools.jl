@@ -10,7 +10,7 @@ using NDTools # this is needed for the select_region! function below.
         @test ≈(czt(x, (1.0,1.0,1.0), (1,3), src_center=(1,1,1), dst_center=(1,1,1)), fft(x, (1,3)), rtol=1e-5)
         @test ≈(iczt(x, (1.0,1.0,1.0), (1,3), src_center=(1,1,1), dst_center=(1,1,1)), ifft(x, (1,3)), rtol=1e-5)
 
-        y = randn(ComplexF32, (5,6))
+        y = opt_cu(randn(ComplexF32, (5,6)), use_cuda)
         zoom = (1.0,1.0,1.0)
         # @test ≈(czt(x, zoom), ft(x), rtol=1e-4)         
         @test ≈(czt(x, zoom), ft(x), atol=1e-4)         
@@ -30,12 +30,12 @@ using NDTools # this is needed for the select_region! function below.
         @test ≈(p_czt * y, czt(y, zoom, (1,2), (11,12)))
         # zoom smaller 1.0 causes wrap around:
         zoom = (0.5,2.0)
-        @test abs(czt(y,zoom)[1,1]) > 1e-5
+        @test abs(Array(czt(y,zoom))[1,1]) > 1e-5
         zoom = (2.0, 0.5)
         # check if the remove_wrap works
-        @test abs(czt(y, zoom; remove_wrap=true)[1,1]) == 0.0
-        @test abs(iczt(y, zoom; remove_wrap=true)[1,1]) == 0.0
-        @test abs(czt(y, zoom; pad_value=0.2, remove_wrap=true)[1,1]) == 0.2f0
-        @test abs(iczt(y, zoom; pad_value=0.5f0, remove_wrap=true)[1,1]) == 0.5f0
+        @test abs(Array(czt(y, zoom; remove_wrap=true))[1,1]) == 0.0
+        @test abs(Array(iczt(y, zoom; remove_wrap=true))[1,1]) == 0.0
+        @test abs(Array(czt(y, zoom; pad_value=0.2, remove_wrap=true))[1,1]) == 0.2f0
+        @test abs(Array(iczt(y, zoom; pad_value=0.5f0, remove_wrap=true))[1,1]) == 0.5f0
     end
 end

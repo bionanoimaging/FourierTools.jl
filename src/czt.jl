@@ -186,7 +186,7 @@ function plan_czt(xin::AbstractArray{U,D}, scale, dims, dsize=size(xin); a=nothi
                   src_center=size(xin).÷2 .+1, dst_center=dsize.÷2 .+1, remove_wrap=false, pad_value=zero(eltype(xin)), fft_flags=FFTW.ESTIMATE) where {U,D}
     CT = (eltype(xin) <: Real) ? Complex{eltype(xin)} : eltype(xin)
     sz = size(xin)
-    xin = Array{eltype(xin)}(undef, sz)
+    xin = similar(xin) # Array{eltype(xin)}(undef, sz)
 
     d = dims[1]
     p = plan_czt_1d(xin, scale[d], d, dsize[d]; a=a, w=w, damp=damp[d], src_center=src_center[d], dst_center=dst_center[d], remove_wrap=remove_wrap, pad_value=pad_value, fft_flags=fft_flags)
@@ -196,7 +196,7 @@ function plan_czt(xin::AbstractArray{U,D}, scale, dims, dsize=size(xin); a=nothi
     plans[n]=p 
     n+=1
     for d in dims[2:end]
-        xin = Array{eltype(xin)}(undef, sz)
+        xin = similar(xin, sz) # Array{eltype(xin)}(undef, sz)
         p = plan_czt_1d(xin, scale[d], d, dsize[d]; a=a, w=w, damp=damp[d], src_center=src_center[d], dst_center=dst_center[d], remove_wrap=remove_wrap, pad_value=pad_value, fft_flags=fft_flags)
         sz = ntuple((dd)-> (dd==d) ? dsize[d] : sz[dd], ndims(xin))
         plans[n]=p 

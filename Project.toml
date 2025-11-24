@@ -24,15 +24,16 @@ CUDASupportExt_FT = ["CUDA", "Adapt"]
 Adapt = "3.7, 4.0, 4.1"
 CUDA = "5.2, 5.3, 5.4, 5.5, 5.6, 5.7"
 ChainRulesCore = "1"
+Cthulhu = "2.16.6"
 FFTW = "1.5, 1.6, 1.7, 1.8, 1.9"
 ImageTransformations = "0.9, 0.10"
 IndexFunArrays = "0.2"
-NDTools = "0.8"
-NFFT = "0.11, 0.12, 0.13"
+MutableShiftedArrays = "0.2, 0.3.1"
+NDTools = "0.8.0"
+NFFT = "0.11, 0.12, 0.13, 0.14"
 Reexport = "1"
 Zygote = "0.6, 0.7"
 julia = "1, 1.6, 1.7, 1.8, 1.9, 1.10, 1.11"
-MutableShiftedArrays = "0.3"
 
 [extras]
 CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
@@ -42,6 +43,7 @@ Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 TestImages = "5e47fb64-e119-507b-a336-dd2b206d9990"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
+Cthulhu = "f68482b8-f384-11e8-15f7-abe071a5a75f"
 
 [targets]
-test = ["Test", "TestImages", "FractionalTransforms", "Random", "ImageTransformations", "Zygote", "CUDA"]
+test = ["Test", "TestImages", "FractionalTransforms", "Random", "ImageTransformations", "Zygote", "CUDA", "Cthulhu"]
