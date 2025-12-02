@@ -148,6 +148,7 @@ end
     plan_conv_buffer(u, v [, dims]; kwargs...)
 
 Similar to [`plan_conv`](@ref) but instead uses buffers to prevent memory allocations.
+The three buffers are internal to the function and are not exposed to the user.
 Not AD friendly!
 
 """
@@ -161,7 +162,9 @@ function plan_conv_buffer(u::AbstractArray{T1, N}, v::AbstractArray{T2, M}, dims
 
     u_buff = P_u * u
     v_ft = P_v * v
-    uv_buff = u_buff .* v_ft
+    uv_sz = bc_size(u_buff, v_ft)
+    # this saves memory allocations:
+    uv_buff = (uv_sz == size(u_buff)) ? u_buff : u_buff .* v_ft;
     
     # for fourier space we need a new plan
     P = plan(u .* v, dims; kwargs...)

@@ -3,6 +3,54 @@ export expanddims, fourierspace_pixelsize, realspace_pixelsize
 export δ
 export fourier_reverse!
 
+"""
+    bc_size(arr1, arr2)
+
+Calculates the size of the broadcasted array of `arr1` and `arr2`.
+
+# Arguments
+- `arr1`: first array
+- `arr2`: second array
+
+# Examples
+```jldoctest
+julia> FourierTools.bc_size(rand(5, 2, 3), rand(1, 2))
+(5, 2, 3)
+```
+"""
+function bc_size(arr1, arr2)
+    md = max(ndims(arr1), ndims(arr2))
+    return ntuple((d) -> max(size(arr1, d), size(arr2, d)), md)
+end
+
+"""
+    similar_zeros(arr::AbstractArray, sz::NTuple)
+
+Creates a similar array to `arr` with zeros. This is useful to also support CuArrays.
+There are specializations for `Array` and `CuArray` which use the original `zeros` function.
+
+# parameters
+- `arr`: array to copy the type and size from
+- `sz`: size of the new array. Default is the size of `arr`.
+
+# Examples
+```jldoctest
+julia> FourierTools.similar_zeros([1, 2, 3], (3,))
+3-element Vector{Int64}:
+ 0
+ 0
+ 0
+```
+"""
+function similar_zeros(arr::AbstractArray, sz::NTuple=size(arr))
+    res = similar(arr, sz)
+    fill!(res, zero(eltype(res)))
+    return res
+end
+
+function similar_zeros(arr::Array, sz::NTuple=size(arr))
+    zeros(eltype(arr), sz)
+end
 
  #get_RFT_scale(real_size) = 0.5 ./ (max.(real_size ./ 2, 1))  # The same as the FFT scale but for the full array in real space!
 
@@ -221,15 +269,12 @@ function rfft_size(size, dims)
     Base.setindex(size, size[dim] ÷ 2 + 1, dim)
 end
 
-
-
-
 """
     get_indices_around_center(i_in, i_out)
 
 A function which provides two output indices `i1` and `i2`
 where `i2 - i1 = i_out`
-The indices are chosen in a way that the set `i1:i2`
+The indices are chosen such that the set `i1:i2`
 cuts the interval `1:i_in` in a way that the center frequency
 stays at the center position.
 Works for both odd and even indices
@@ -248,6 +293,22 @@ function get_indices_around_center(i_in, i_out)
     end
 end
 
+"""
+    get_indexrange_around_center(arr_1, arr_2)
+
+A function which provides a range of output indices `i1:i2`
+where `i2 - i1 = i_out`
+The indices are chosen in a way that the set `i1:i2`
+cuts the interval `1:i_in` such that the center frequency
+stays at the center position.
+Works for both odd and even indices
+"""
+function get_indexrange_around_center(arr_1, arr_2)
+    sz1 = size(arr_1)
+    sz2 = size(arr_2)
+    all_rng = ntuple((d) -> begin a,b = get_indices_around_center(sz1[d], sz2[d]); a:b end, ndims(arr_1))
+    return all_rng
+end
 
 """
     center_extract(arr, new_size_array)
@@ -311,14 +372,7 @@ julia> FourierTools.center_set!([1, 1, 1, 1, 1, 1], [5, 5, 5])
 ```
 """
 function center_set!(arr_large, arr_small)
-    out_is = []
-    for i = 1:ndims(arr_large)
-        a, b = get_indices_around_center(size(arr_large)[i], size(arr_small)[i])
-        push!(out_is, a:b)
-    end
-
-    #rest = ones(Int, ndims(arr_large) - 3)
-    arr_large[out_is...] = arr_small
+    arr_large[get_indexrange_around_center(arr_large, arr_small)...] = arr_small
     
     return arr_large
 end

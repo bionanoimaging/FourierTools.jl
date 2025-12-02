@@ -23,21 +23,24 @@
 
     @testset "Test rfft_size" begin
         s = (11, 20, 10)
-        @test FourierTools.rfft_size(s, 2) == size(rfft(randn(s),2))
-        @test FourierTools.rft_size(randn(s), 2) == size(rfft(randn(s),2))
-         
-        s = (11, 21, 10)
-        @test FourierTools.rfft_size(s, 2) == size(rfft(randn(s),2))
+        dat = opt_cu(randn(s), use_cuda);
+        if !use_cuda
+            @test FourierTools.rfft_size(s, 2) == size(rfft(dat,2))
+            @test FourierTools.rft_size(randn(s), 2) == size(rfft(dat,2))
+            s = (11, 21, 10)
+            @test FourierTools.rfft_size(s, 2) == size(rfft(dat,2))
+        end
         
         s = (11, 21, 10)
-        @test FourierTools.rfft_size(s, 1) == size(rfft(randn(s),(1,2,3)))
+        dat = opt_cu(randn(s), use_cuda);
+        @test FourierTools.rfft_size(s, 1) == size(rfft(dat,(1,2,3)))
     end
 
 
 
     function center_test(x1, x2, x3, y1, y2, y3)
-        arr1 = randn((x1, x2, x3))
-        arr2 = zeros((y1, y2, y3))
+        arr1 = opt_cu(randn((x1, x2, x3)), use_cuda);
+        arr2 = opt_cu(zeros((y1, y2, y3)), use_cuda);
     
         FourierTools.center_set!(arr2, arr1)
         arr3 = FourierTools.center_extract(arr2, (x1, x2, x3))
@@ -107,7 +110,6 @@
         @test all(fourierspace_pixelsize(1, (512,256)) .≈ 1 ./ (512, 256))
         @test realspace_pixelsize(1, 512) ≈ 1 / 512 
         @test all(realspace_pixelsize(1, (512,256)) .≈ 1 ./ (512, 256))
-
     end
 
 
@@ -117,25 +119,34 @@
     end
 
     @testset "odd_view, fourier_reverse!" begin
-        a = [1 2 3;4 5 6;7 8 9;10 11 12]
-        @test FourierTools.odd_view(a) == [4 5 6;7 8 9; 10 11 12]
+        a = opt_cu([1 2 3;4 5 6;7 8 9;10 11 12], use_cuda)
+        @test FourierTools.odd_view(a) == opt_cu([4 5 6;7 8 9; 10 11 12], use_cuda)
         fourier_reverse!(a)
-        @test a == [3 2 1;12 11 10;9 8 7;6 5 4]
-        a = [1 2 3;4 5 6;7 8 9;10 11 12]
+        @test a == opt_cu([3 2 1;12 11 10;9 8 7;6 5 4], use_cuda)
+        a = opt_cu([1 2 3;4 5 6;7 8 9;10 11 12], use_cuda)
         b = copy(a);
         fourier_reverse!(a,dims=1);
         @test a[2:end,:] == b[end:-1:2,:]
-        a = [1 2 3 4;5 6 7 8;9 10 11 12 ;13 14 15 16]
+        a = opt_cu([1 2 3 4;5 6 7 8;9 10 11 12 ;13 14 15 16], use_cuda)
         b = copy(a);
         fourier_reverse!(a);
-        @test a[2,2] == b[4,4]
-        @test a[2,3] == b[4,3]
+        # the ranges are used to avoid error in single element acces with CuArray
+        @test a[2:2,2:2] == b[4:4,4:4]
+        @test a[2:2,3:3] == b[4:4,3:3]
         fourier_reverse!(a);
         @test a == b
         fourier_reverse!(a;dims=1);
         @test a[2:end,:] == b[end:-1:2,:]
-        @test sum(abs.(imag.(ift(fourier_reverse!(ft(rand(5,6,7))))))) < 1e-10
+        rd = opt_cu(rand(5,6,7), use_cuda)
+        if !use_cuda
+            @test sum(abs.(imag.(ift(fourier_reverse!(ft(rd)))))) < 1e-10
+        end
+        # @test sum(abs.(imag.(ift(fourier_reverse(ft(rd)))))) < 1e-10
         sz = (10,9,6)
-        @test sum(abs.(real.(ift(fourier_reverse!(ft(box((sz)))))) .- box(sz))) < 1e-10
+        bb = opt_cu(box((sz)), use_cuda)
+        if !use_cuda
+            @test sum(abs.(real.(ift(fourier_reverse!(ft(bb)))) .- bb)) < 1e-10
+        end
+        # @test sum(abs.(real.(ift(fourier_reverse(ft(bb)))) .- bb)) < 1e-10
     end
 end

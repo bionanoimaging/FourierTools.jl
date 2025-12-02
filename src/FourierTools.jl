@@ -2,16 +2,17 @@ module FourierTools
 
 
 using Reexport
-using PaddedViews, ShiftedArrays
+# using PaddedViews
+using MutableShiftedArrays # for circshift
 @reexport using FFTW
 using LinearAlgebra
 using IndexFunArrays
 using ChainRulesCore
 using NDTools
+import Base: checkbounds, getindex, setindex!, parent, size, axes, copy, collect
+
 @reexport using NFFT
 FFTW.set_num_threads(4)
-
-
 
 include("utils.jl")
 include("nfft_nd.jl")

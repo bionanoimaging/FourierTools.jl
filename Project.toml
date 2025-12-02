@@ -8,32 +8,42 @@ ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
 FFTW = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
 IndexFunArrays = "613c443e-d742-454e-bfc6-1d7f8dd76566"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+MutableShiftedArrays = "d3d30c82-a38e-471c-a45a-3d24d2f4d22d"
 NDTools = "98581153-e998-4eef-8d0d-5ec2c052313d"
 NFFT = "efe261a4-0d2b-5849-be55-fc731d526b0d"
-PaddedViews = "5432bcbf-9aad-5242-b902-cca2824c8663"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
-ShiftedArrays = "1277b4bf-5013-50f5-be3d-901d8477a67a"
+
+[weakdeps]
+Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
+CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
+
+[extensions]
+CUDASupportExt_FT = ["CUDA", "Adapt"]
 
 [compat]
-ChainRulesCore = "1, 1.0, 1.1"
-FFTW = "1.5"
-ImageTransformations = "0.9"
+Adapt = "3.7, 4.0, 4.1"
+CUDA = "5.2, 5.3, 5.4, 5.5, 5.6, 5.7"
+ChainRulesCore = "1"
+Cthulhu = "2.16.6"
+FFTW = "1.5, 1.6, 1.7, 1.8, 1.9"
+ImageTransformations = "0.9, 0.10"
 IndexFunArrays = "0.2"
-NDTools = "0.5.1, 0.6, 0.7, 0.8"
-NFFT = "0.11, 0.12, 0.13"
-PaddedViews = "0.5"
+MutableShiftedArrays = "0.2, 0.3.1"
+NDTools = "0.8.0"
+NFFT = "0.11, 0.12, 0.13, 0.14"
 Reexport = "1"
-ShiftedArrays = "2"
-Zygote = "0.6"
-julia = "1, 1.6, 1.7, 1.8, 1.9, 1.10"
+Zygote = "0.6, 0.7"
+julia = "1, 1.6, 1.7, 1.8, 1.9, 1.10, 1.11"
 
 [extras]
+CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
 FractionalTransforms = "e50ca838-b4f0-4a10-ad18-4b920bf1ae5c"
 ImageTransformations = "02fcd773-0e25-5acc-982a-7f6622650795"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 TestImages = "5e47fb64-e119-507b-a336-dd2b206d9990"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
+Cthulhu = "f68482b8-f384-11e8-15f7-abe071a5a75f"
 
 [targets]
-test = ["Test", "TestImages", "FractionalTransforms", "Random", "ImageTransformations", "Zygote"]
+test = ["Test", "TestImages", "FractionalTransforms", "Random", "ImageTransformations", "Zygote", "CUDA", "Cthulhu"]

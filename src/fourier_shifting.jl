@@ -7,7 +7,7 @@ export shift, shift!
 Shifts an array in-place. For real arrays it is based on `rfft`.
 For complex arrays based on `fft`.
 `shifts` can be non-integer, for integer shifts one should prefer
-`circshift` or `ShiftedArrays.circshift` because a FFT-based methods
+`circshift` or `MutableShiftedArrays.circshift` because a FFT-based methods
 introduces numerical errors.
 
 ## kwargs...
@@ -70,20 +70,23 @@ function shift(arr, shifts; soft_fraction=0, fix_nyquist_frequency=false, take_r
     return shift!(copy(arr), shifts; soft_fraction=soft_fraction, fix_nyquist_frequency=fix_nyquist_frequency, take_real=take_real)
 end
 
-function soft_shift(freqs, shift, fraction=eltype(freqs)(0.1); corner=false)
-    rounded_shift = round.(shift);
+function soft_shift(freqs, myshift, fraction=eltype(freqs)(0.1); corner=false)
+    rounded_shift = round.(myshift);
     if corner
-        w = window_half_cos(size(freqs),border_in=2.0-2*fraction, border_out=2.0, offset=CtrCorner)
+        w = similar(freqs) # to also work with CuArray
+        w .= window_half_cos(size(freqs),border_in=2.0-2*fraction, border_out=2.0, offset=CtrCorner)
     else
-        w = ifftshift_view(window_half_cos(size(freqs),border_in=1.0-fraction, border_out=1.0))
+        w = similar(freqs) # to also work with CuArray
+        w .= window_half_cos(size(freqs),border_in=1.0-fraction, border_out=1.0)
+        w = ifftshift_view(w)
     end
-    return cispi.(-freqs .* 2 .* (w .* shift + (1.0 .-w).* rounded_shift))
+    return cispi.(-freqs .* 2 .* (w .* myshift + (1 .-w).* rounded_shift))
 end
 
 function shift_by_1D_FT!(arr::TA, shifts; soft_fraction=0, take_real=false, fix_nyquist_frequency=false) where {N, TA<:AbstractArray{<:Complex, N}}
     # iterates of the dimension d using the corresponding shift
-    for (d, shift) in pairs(shifts)
-        if iszero(shift)
+    for (d, myshift) in pairs(shifts)
+        if iszero(myshift)
             continue
         end
         # better use reorient from NDTools here?
@@ -95,18 +98,20 @@ function shift_by_1D_FT!(arr::TA, shifts; soft_fraction=0, take_real=false, fix_
         # @show size(freqs)
         # allocates a 1D slice of exp values 
         if iszero(soft_fraction)
-            ϕ = cispi.(- freqs .* 2 .* shift)
+            ϕ = cispi.(- freqs .* 2 .* myshift)
         else
-            ϕ = soft_shift(freqs, shift, soft_fraction)
+            ϕ = soft_shift(freqs, myshift, soft_fraction)
         end
         # ϕ = exp_ikx_sep(complex_arr_type(TA), size(arr), dims=(d,), shift_by = shift)[1]
         # in even case, set one value to real
         if iseven(size(arr, d))
             s = size(arr, d) ÷ 2 + 1
-            ϕ[s] = take_real ? real(ϕ[s]) : ϕ[s]
-            invr = 1 / ϕ[s]
-            invr = isinf(invr) ? 0 : invr
-            ϕ[s] = fix_nyquist_frequency ? invr : ϕ[s]
+            ϕ_val = Array(ϕ[s:s])[1]  # to work with CuArray without @allowscalar
+            ϕ_val = take_real ? real(ϕ_val) : ϕ_val 
+            invr = 1 / ϕ_val
+            invr = isinf.(invr) ? 0 : invr
+            ϕ_val = fix_nyquist_frequency ? invr : ϕ_val
+            ϕ[s:s] .= ϕ_val # to work with CuArray without @allowscalar
         end
         # go to fourier space and apply ϕ
         fft!(arr, d)
@@ -133,8 +138,8 @@ end
 # rfft(x, 1) -> exp shift -> fft(x, 2) -> exp shift ->  fft(x, 3) -> exp shift -> ifft(x, [2,3]) -> irfft(x, 1)
 # So once we did a rft to shift something we can call the routine for complex arrays to shift
 function shift_by_1D_RFT!(arr::TA, shifts; soft_fraction=0, fix_nyquist_frequency=false, take_real=true) where {N, TA<:AbstractArray{<:Real, N}}
-    for (d, shift) in pairs(shifts)
-        if iszero(shift)
+    for (d, myshift) in pairs(shifts)
+        if iszero(myshift)
             continue
         end
         
@@ -151,16 +156,19 @@ function shift_by_1D_RFT!(arr::TA, shifts; soft_fraction=0, fix_nyquist_frequenc
         # freqs = TR(reorient(fftfreq(size(arr, d))[1:s], d, Val(N)))
         freqs .= reorient(rfftfreq(size(arr, d)), d, Val(N))
         if iszero(soft_fraction)
-            ϕ = cispi.(-freqs .* 2 .* shift)
+            ϕ = cispi.(-freqs .* 2 .* myshift)
         else
-            ϕ = soft_shift(freqs, shift, soft_fraction, corner=true)
+            ϕ = soft_shift(freqs, myshift, soft_fraction, corner=true)
         end
         if iseven(size(arr, d))
             # take real and maybe fix nyquist frequency
-            ϕ[s] = take_real ? real(ϕ[s]) : ϕ[s]
-            invr = 1 / ϕ[s]
-            invr = isinf(invr) ? 0 : invr
-            ϕ[s] = fix_nyquist_frequency ? invr : ϕ[s]
+            s = size(arr, d) ÷ 2 + 1
+            ϕ_val = Array(ϕ[s:s])[1]  # to work with CuArray without @allowscalar
+            ϕ_val = take_real ? real(ϕ_val) : ϕ_val 
+            invr = 1 / ϕ_val
+            invr = isinf.(invr) ? 0 : invr
+            ϕ_val = fix_nyquist_frequency ? invr : ϕ_val
+            ϕ[s:s] .= ϕ_val # to work with CuArray without @allowscalar
         end
         arr_ft .*= ϕ
         # since we now did a single rfft dim, we can switch to the complex routine

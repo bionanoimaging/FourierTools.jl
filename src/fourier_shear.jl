@@ -124,7 +124,8 @@ function apply_shift_strength!(arr::TA, arr_orig, shift, shear_dir_dim, shear_di
         r = real.(view(e, inds...))
         if fix_nyquist
             inv_r = 1 ./ r
-            inv_r = map(x -> (isinf(x) ? 0 : x), inv_r)
+            # inv_r = map(x -> (isinf(x) ? 0 : x), inv_r) # NOT GPU compatible
+            inv_r[isinf.(inv_r)] .= 0 
             e[inds...] .= inv_r 
         else
             e[inds...] .= r 
