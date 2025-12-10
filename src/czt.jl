@@ -88,6 +88,9 @@ struct CZTPlan_1D{CT<:Complex, AT<:AbstractArray{CT}, PT<:Number, PFFT<:Abstract
     wd :: AT 
     fftw_plan! :: PFFT 
     ifftw_plan! :: PIFFT 
+    # temporary arrays for calculation to avoid allocations
+    y :: AT
+    res :: AT
 end
 
 """
@@ -167,11 +170,17 @@ function plan_czt_1d(xin::AT, scaled, d, dsize=size(xin,d); a=nothing, w=nothing
 
     nsz = ntuple((dd) -> (d==dd) ? size(fft_fv, 1) : size(xin, dd), Val(ndims(xin))) 
     y = similar(xin, eltype(aw), nsz) 
+    # tmp = similar(xin);
+
+    myrangesz = ntuple((dd) -> (dd==d) ? size(wd, 1) : size(xin, dd), Val(ndims(xin))) 
+    res = similar(xin, eltype(aw), myrangesz)
 
     fft_p! = (typeof(y) <: Array) ? plan_fft!(y, (d,); flags=fft_flags) : plan_fft!(y, (d,))
     ifft_p! = (typeof(y) <: Array) ? plan_ifft!(y, (d,); flags=fft_flags) : plan_ifft!(y, (d,))
     
-    plan = CZTPlan_1D(d, pad_value, (start_range, stop_range), reorient(aw, d, Val(ndims(xin))), reorient(fft_fv, d, Val(ndims(xin))), reorient(wd, d, Val(ndims(xin))), fft_p!, ifft_p!)
+    plan = CZTPlan_1D(d, pad_value, (start_range, stop_range), reorient(aw, d, Val(ndims(xin))), reorient(fft_fv, d, Val(ndims(xin))),
+                    reorient(wd, d, Val(ndims(xin))), fft_p!, ifft_p!,
+                    y, res)
     return plan
 end
 
@@ -181,6 +190,13 @@ end
 
 creates a plan for an N-dimensional chirp z-transformation (CZT). The generated plan is then applied via 
 muliplication. For details about the arguments, see `czt()`.
+
+Example:
+y = rand(ComplexF32, (5,6))
+zoom = (2.0,2.0)
+p_czt = plan_czt(y, zoom, (1,2), (11,12));
+@time p_czt * y; # about 4 full allocations, 158 individual ones
+
 """
 function plan_czt(xin::AbstractArray{U,D}, scale, dims, dsize=size(xin); a=nothing, w=nothing, damp=ones(ndims(xin)),
                   src_center=size(xin).÷2 .+1, dst_center=dsize.÷2 .+1, remove_wrap=false, pad_value=zero(eltype(xin)), fft_flags=FFTW.ESTIMATE) where {U,D}
@@ -207,6 +223,7 @@ end
 
 function Base.:*(p::CZTPlan_ND, xin::AbstractArray{U,D}; kargs...)::AbstractArray{complex(U),D} where {U,D} 
     xout = xin
+    # one plan for each dimension
     for pd in p.plans
         xout = czt_1d(xout, pd)
     end
@@ -285,31 +302,35 @@ function czt_1d(xin::AbstractArray{U,D}, plan::CZTPlan_1D)::AbstractArray{comple
     L = size(plan.fft_fv, plan.d)
     nsz = ntuple((dd) -> (dd==plan.d) ? L : size(xin, dd), Val(D)) 
     # append zeros
-    tmp = eltype(plan.aw).(xin .* plan.aw)
     
     corner = ntuple((x)->1, Val(D))
-    y = NDTools.select_region(tmp, nsz; center=corner, dst_center=corner)
+
+    # The line below does NOT work as expected. Bug in NDTools? -> Using the select_region_view function instead.
+    # NDTools.select_region!(xin, plan.y, nsz; center=corner, dst_center=corner)
+    nszs = ntuple((dd) -> (size(plan.aw,dd) == 1) ? 1 : nsz[dd], Val(D));
+    plan.y .= NDTools.select_region_view(xin, nsz; center=corner, dst_center=corner) .* 
+              NDTools.select_region_view(plan.aw, nszs; center=corner, dst_center=corner)
 
     # in-place application to y:
-    plan.fftw_plan! * y 
-    y .*= plan.fft_fv
+    plan.fftw_plan! * plan.y 
+    plan.y .*= plan.fft_fv
     # in-place application to y:
-    plan.ifftw_plan! * y
+    plan.ifftw_plan! * plan.y
 
     # dsz = ntuple((dd) -> (d==dd) ? dsize : size(xin), Val(ndims(xin))) 
     # return only the wanted (valid) part
     myrange = ntuple((dd) -> (dd==plan.d) ? (1:size(plan.wd, plan.d)) : (1:size(xin, dd)), Val(D)) 
-    res = y[myrange...] .* plan.wd
+    plan.res .=  plan.wd .* @view plan.y[myrange...]
     # pad_value=0 means that it is either already handled by plan.wd or no padding is wanted.
     if plan.pad_value != 0
         # first the start_range (plan.pad_ranges[1]):
         myrange = ntuple((dd) -> (dd==plan.d) ? plan.pad_ranges[1] : Colon(), Val(D)) 
-        res[myrange...] .= plan.pad_value
+        plan.res[myrange...] .= plan.pad_value
         # first the stop_range (plan.pad_ranges[2]):
         myrange = ntuple((dd) -> (dd==plan.d) ? plan.pad_ranges[2] : Colon(), Val(D)) 
-        res[myrange...] .= plan.pad_value
+        plan.res[myrange...] .= plan.pad_value
     end
-    return res
+    return plan.res
 end
 
 """
