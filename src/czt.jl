@@ -170,9 +170,11 @@ function plan_czt_1d(xin::AT, scaled, d, dsize=size(xin,d); a=nothing, w=nothing
 
     nsz = ntuple((dd) -> (d==dd) ? size(fft_fv, 1) : size(xin, dd), Val(ndims(xin))) 
     y = (!isnothing(y) && size(y) == nsz) ? y : similar(xin, eltype(aw), nsz);
+    # y = similar(xin, eltype(aw), nsz);
 
     myrangesz = ntuple((dd) -> (dd==d) ? size(wd, 1) : size(xin, dd), Val(ndims(xin))) 
-    res = (!isnothing(res) && size(res) == myrangesz) ? y : similar(xin, eltype(aw), myrangesz);
+    res = (!isnothing(res) && size(res) == myrangesz) ? res : similar(xin, eltype(aw), myrangesz);
+    # res = similar(xin, eltype(aw), myrangesz);
 
     fft_p! = (typeof(y) <: Array) ? plan_fft!(y, (d,); flags=fft_flags) : plan_fft!(y, (d,))
     ifft_p! = (typeof(y) <: Array) ? plan_ifft!(y, (d,); flags=fft_flags) : plan_ifft!(y, (d,))
