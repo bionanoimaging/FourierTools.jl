@@ -145,7 +145,7 @@ end
 creates a plan for an one-dimensional chirp z-transformation (CZT). The generated plan is then applied via 
 muliplication. For details about the arguments, see `czt_1d()`.
 """
-function plan_czt_1d(xin::AT, scaled, d, dsize=size(xin,d); a=nothing, w=nothing, extra_phase=nothing, global_phase=nothing, damp=1.0, src_center=(size(xin,d)+1)/2, 
+function plan_czt_1d(xin::AT, scaled, d, dsize=size(xin,d); a=nothing, w=nothing, y=nothing, res=nothing, extra_phase=nothing, global_phase=nothing, damp=1.0, src_center=(size(xin,d)+1)/2, 
                      dst_center=dsize÷2+1, remove_wrap=false, pad_value=zero(eltype(xin)), fft_flags=FFTW.ESTIMATE) where {AT}
 
     a = isnothing(a) ? exp(-1im*(dst_center-1)*2pi/(scaled*size(xin,d))) : a
@@ -169,11 +169,10 @@ function plan_czt_1d(xin::AT, scaled, d, dsize=size(xin,d); a=nothing, w=nothing
     end
 
     nsz = ntuple((dd) -> (d==dd) ? size(fft_fv, 1) : size(xin, dd), Val(ndims(xin))) 
-    y = similar(xin, eltype(aw), nsz) 
-    # tmp = similar(xin);
+    y = (!isnothing(y) && size(y) == nsz) ? y : similar(xin, eltype(aw), nsz);
 
     myrangesz = ntuple((dd) -> (dd==d) ? size(wd, 1) : size(xin, dd), Val(ndims(xin))) 
-    res = similar(xin, eltype(aw), myrangesz)
+    res = (!isnothing(res) && size(res) == myrangesz) ? y : similar(xin, eltype(aw), myrangesz);
 
     fft_p! = (typeof(y) <: Array) ? plan_fft!(y, (d,); flags=fft_flags) : plan_fft!(y, (d,))
     ifft_p! = (typeof(y) <: Array) ? plan_ifft!(y, (d,); flags=fft_flags) : plan_ifft!(y, (d,))
@@ -213,7 +212,8 @@ function plan_czt(xin::AbstractArray{U,D}, scale, dims, dsize=size(xin); a=nothi
     n+=1
     for d in dims[2:end]
         xin = similar(xin, sz) # Array{eltype(xin)}(undef, sz)
-        p = plan_czt_1d(xin, scale[d], d, dsize[d]; a=a, w=w, damp=damp[d], src_center=src_center[d], dst_center=dst_center[d], remove_wrap=remove_wrap, pad_value=pad_value, fft_flags=fft_flags)
+        # reuse the tmp and result memory of y and res:
+        p = plan_czt_1d(xin, scale[d], d, dsize[d]; a=a, w=w, y=p.y, res=p.res, damp=damp[d], src_center=src_center[d], dst_center=dst_center[d], remove_wrap=remove_wrap, pad_value=pad_value, fft_flags=fft_flags)
         sz = ntuple((dd)-> (dd==d) ? dsize[d] : sz[dd], ndims(xin))
         plans[n]=p 
         n += 1
