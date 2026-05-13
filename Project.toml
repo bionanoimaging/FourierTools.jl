@@ -22,13 +22,12 @@ CUDASupportExt_FT = ["CUDA", "Adapt"]
 
 [compat]
 Adapt = "3.7, 4.0, 4.1"
-CUDA = "5.2, 5.3, 5.4, 5.5, 5.6, 5.7"
+CUDA = "5, 6"
 ChainRulesCore = "1"
-Cthulhu = "2.16.6"
 FFTW = "1.5, 1.6, 1.7, 1.8, 1.9"
 ImageTransformations = "0.9, 0.10"
 IndexFunArrays = "0.2"
-MutableShiftedArrays = "0.2, 0.3"
+MutableShiftedArrays = "0.2, 0.3, 0.4"
 NDTools = "0.8"
 NFFT = "0.11, 0.12, 0.13, 0.14"
 Reexport = "1"
