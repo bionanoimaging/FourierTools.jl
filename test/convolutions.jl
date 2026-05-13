@@ -49,26 +49,32 @@
     conv_test(psf, img, img_out, dims, "Convolution with random 3D PSF and random 3D image over 2D dimensions")
 
     # Cuda has problems with >3D FFTs
-    if (!use_cuda)
-        N = 5
-        psf = opt_cu(abs.(randn((N, N, N, N, N))), use_cuda)
-        img = opt_cu(randn((N, N, N, N, N)), use_cuda)
-        dims = [1, 2, 3, 4]
-        img_out = conv_gen(img, psf, dims)
-        conv_test(psf, img, img_out, dims, "Convolution with random 5D PSF and random 5D image over 4 Dimensions")
 
-        N = 5
-        psf = abs.(zeros((N, N, N, N, N)))
+    dims = [1, 2, 3, 4]
+    if (use_cuda)
+        dims = [1,2,5] # cuda can handle at max 3 transform directions, old CUDA 5 could only handle specific combinations
+    end
+    N = 5
+    psf = opt_cu(abs.(randn((N, N, N, N, N))), use_cuda)
+    img = opt_cu(randn((N, N, N, N, N)), use_cuda)
+    img_out = conv_gen(img, psf, dims)
+    conv_test(psf, img, img_out, dims, "Convolution with random 5D PSF and random 5D image over 4 Dimensions")
+
+    N = 5
+    psf = abs.(zeros((N, N, N, N, N)))
+    if (use_cuda)
+        for i = 1:N, j = 1:N
+            psf[1,1,i,j, 1] = 1 # since CUDA can only convolve over maximally 3 dims in total
+        end
+    else
         for i = 1:N
             psf[1,1,1,1, i] = 1
         end
-        opt_cu(psf, use_cuda)
-        img = opt_cu(randn((N, N, N, N, N)), use_cuda)
-        dims = [1, 2, 3, 4]
-        img_out = conv_gen(img, psf, dims)
-        conv_test(psf, img, img, dims, "Convolution with 5D delta peak and random 5D image over 4 Dimensions")
     end
-
+    psf = opt_cu(psf, use_cuda)
+    img = opt_cu(randn((N, N, N, N, N)), use_cuda)
+    img_out = conv_gen(img, psf, dims)
+    conv_test(psf, img, img, dims, "Convolution with 5D delta peak and random 5D image over 4 Dimensions");
 
     @testset "Check broadcasting convolution" begin
         img = opt_cu(randn((5,6,7)), use_cuda)
@@ -104,15 +110,13 @@
         @test conv(img, psf) ≈ conv(img, psf, dims)
     end
 
-    if (!use_cuda)
-        @testset "adjoint convolution" begin
-            x = opt_cu(randn(ComplexF32, (5,6)), use_cuda)
-            y = opt_cu( randn(ComplexF32, (5,6)), use_cuda)
+    @testset "adjoint convolution" begin
+        x = opt_cu(randn(ComplexF32, (5,6)), use_cuda)
+        y = opt_cu(randn(ComplexF32, (5,6)), use_cuda)
 
-            y_ft, p = plan_conv(x, y)
-            @test ≈(exp(1im * 1.23) .+ conv(ones(eltype(y), size(x)), conj.(y)), exp(1im * 1.23) .+ Zygote.gradient(x -> sum(real(conv(x, y))), x)[1], rtol=1e-4)   
-            @test ≈(exp(1im * 1.23) .+ conv(ones(ComplexF32, size(x)), conj.(y)), exp(1im * 1.23) .+ Zygote.gradient(x -> sum(real(p(x, y_ft))), x)[1], rtol=1e-4) 
-        end
+        y_ft, p = plan_conv(x, y)
+        @test ≈(exp(1im * 1.23) .+ conv(opt_cu(ones(eltype(y), size(x)), use_cuda), conj.(y)), exp(1im * 1.23) .+ Zygote.gradient(x -> sum(real(conv(x, y))), x)[1], rtol=1e-4)   
+        @test ≈(exp(1im * 1.23) .+ conv(opt_cu(ones(ComplexF32, size(x)), use_cuda), conj.(y)), exp(1im * 1.23) .+ Zygote.gradient(x -> sum(real(p(x, y_ft))), x)[1], rtol=1e-4) 
     end
 
 end

@@ -4,7 +4,7 @@
             for _ in 1:5
                 s_small = ntuple(_ -> rand(1:13), dim)
                 s_large = ntuple(i -> max.(s_small[i], rand(10:16)), dim)
-                                
+
                 x = opt_cu(randn(Float32, (s_small)), use_cuda)
                 @test x == resample(x, s_small)
                 @test Float32.(x) ≈ Float32.(resample(resample(x, s_large), s_small))
