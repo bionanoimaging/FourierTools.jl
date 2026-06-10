@@ -144,45 +144,45 @@ function plan_conv(u::AbstractArray{T1, N}, v::AbstractArray{T2, M}, dims=ntuple
     return v_ft, conv
 end
 
-"""
-    plan_conv_buffer(u, v [, dims]; kwargs...)
+# """
+#     plan_conv_buffer(u, v [, dims]; kwargs...)
 
-Similar to [`plan_conv`](@ref) but instead uses buffers to prevent memory allocations.
-The three buffers are internal to the function and are not exposed to the user.
-Not AD friendly!
+# Similar to [`plan_conv`](@ref) but instead uses buffers to prevent memory allocations.
+# The three buffers are internal to the function and are not exposed to the user.
+# Not AD friendly!
 
-"""
-function plan_conv_buffer(u::AbstractArray{T1, N}, v::AbstractArray{T2, M}, dims=ntuple(+, N);
-                   kwargs...) where {T1, T2, N, M}
-    eltype_error(T1, T2)
-    plan = get_plan(T1)
-    # do the preplanning step
-    P_u = plan(u, dims; kwargs...)
-    P_v = plan(v, dims)
+# """
+# function plan_conv_buffer(u::AbstractArray{T1, N}, v::AbstractArray{T2, M}, dims=ntuple(+, N);
+#                    kwargs...) where {T1, T2, N, M}
+#     eltype_error(T1, T2)
+#     plan = get_plan(T1)
+#     # do the preplanning step
+#     P_u = plan(u, dims; kwargs...)
+#     P_v = plan(v, dims)
 
-    u_buff = P_u * u
-    v_ft = P_v * v
-    uv_sz = bc_size(u_buff, v_ft)
-    # this saves memory allocations:
-    uv_buff = (uv_sz == size(u_buff)) ? u_buff : u_buff .* v_ft;
+#     u_buff = P_u * u
+#     v_ft = P_v * v
+#     uv_sz = bc_size(u_buff, v_ft)
+#     # this saves memory allocations:
+#     uv_buff = (uv_sz == size(u_buff)) ? u_buff : u_buff .* v_ft;
     
-    # for fourier space we need a new plan
-    P = plan(u .* v, dims; kwargs...)
-    P_inv = inv(P)
-    out_buff = P_inv * uv_buff
+#     # for fourier space we need a new plan
+#     P = plan(u .* v, dims; kwargs...)
+#     P_inv = inv(P)
+#     out_buff = P_inv * uv_buff
 
-    # construct the efficient conv function
-    # P and P_inv can be understood like matrices
-    # but their computation is fast
-    function conv(u, v_ft=v_ft)
-        mul!(u_buff, P_u, u)
-        uv_buff .= u_buff .* v_ft
-        mul!(out_buff, P_inv, uv_buff)
-        return out_buff
-    end
+#     # construct the efficient conv function
+#     # P and P_inv can be understood like matrices
+#     # but their computation is fast
+#     function conv(u, v_ft=v_ft)
+#         mul!(u_buff, P_u, u)
+#         uv_buff .= u_buff .* v_ft
+#         mul!(out_buff, P_inv, uv_buff)
+#         return out_buff
+#     end
 
-    return v_ft, conv
-end
+#     return v_ft, conv
+# end
 
 """
     plan_conv_psf_buffer(u, psf [, dims]; kwargs...) where {T, N}
@@ -192,6 +192,122 @@ end
 function plan_conv_psf_buffer(u::AbstractArray{T, N}, psf::AbstractArray{T, M}, dims=ntuple(+, N);
                        kwargs...) where {T, N, M}
     return plan_conv_buffer(u, ifftshift(psf, dims), dims; kwargs...)
+end
+
+# Define the struct
+struct CallablePlan{IAT<:AbstractArray, CT1<:AbstractArray, CT2<:AbstractArray, CT3<:AbstractArray}
+    P_u
+    # This is only needed due to a bug in CUDA freeing the plan when wrapped it in "inv":
+    P_for_inv
+    P_inv
+    v_ft::CT1
+    u_buff::CT2 # dimensions can be different
+    uv_buff::CT3 # final dimension can be different again
+    out_buff::IAT # final datatype and size can also vary
+end
+
+# Define the call method for the struct
+function (c::CallablePlan{IAT, CT1, CT2, CT3})(u::AbstractArray, v_ft::CT1) where {IAT<:AbstractArray, CT1<:AbstractArray, CT2<:AbstractArray, CT3<:AbstractArray}
+    return p_conv_aux!(c.P_u, c.P_inv, u, v_ft, c.u_buff, c.uv_buff, c.out_buff)
+end
+
+function (c::CallablePlan{IAT, CT1, CT2, CT3})(u::AbstractArray) where {IAT<:AbstractArray, CT1<:AbstractArray, CT2<:AbstractArray, CT3<:AbstractArray}
+    return p_conv_aux!(c.P_u, c.P_inv, u, c.v_ft, c.u_buff, c.uv_buff, c.out_buff)
+end
+
+
+"""
+    plan_conv_buffer(u, v [, dims])
+
+Pre-plan an optimized convolution for arrays shaped like `u` and `v` (based on pre-plan FFT)
+along the given dimensions `dims`.
+`dims = 1:ndims(u)` per default.
+The 0 frequency of `u` must be located at the first entry.
+We return two arguments: 
+The first one is `v_ft` (obtained by `fft(v)` or `rfft(v)`).
+The second return is the convolution function `pconv`.
+`pconv` itself has two arguments. `pconv(u, v_ft=v_ft)` where `u` is the object and `v_ft` the v_ft.
+This function achieves faster convolution than `conv(u, u)`.
+Depending whether `u` is real or complex we do `fft`s or `rfft`s
+
+# Warning
+The resulting output of the `pconv` function is a reference to an internal, allocated array.
+If you use the `pconv` function for different tasks, 
+a new call to `pconv` will change the previous result (since the previous result was only a reference, not a new array). 
+
+
+# Examples
+```jldoctest
+julia> u = [1 2 3 4 5]
+1×5 Matrix{Int64}:
+ 1  2  3  4  5
+julia> v = [1 0 0 0 0]
+1×5 Matrix{Int64}:
+ 1  0  0  0  0
+julia> v_ft, pconv = plan_conv(u, v);
+julia> pconv(u, v_ft)
+1×5 Matrix{Float64}:
+ 1.0  2.0  3.0  4.0  5.0
+julia> pconv(u)
+1×5 Matrix{Float64}:
+ 1.0  2.0  3.0  4.0  5.0
+```
+"""
+function plan_conv_buffer(u::AbstractArray{T, N}, v::AbstractArray{T, M}, dims=ntuple(+, N)) where {T, N, M}
+    plan = get_plan(T)
+    # do the preplanning step
+    P = plan(u, dims)
+    # inpout FT storage
+    u_buff = P * u
+    # P_inv = inv(P)
+    # out = u .* v # similar(u)
+    out_buff = similar(u, Base.Broadcast.broadcast_shape(size(u),size(v)))
+    u = expand_dims(u, Val(max(N,M)))
+    v = expand_dims(v, Val(max(N,M)))
+
+    v_ft = fft_or_rfft(T)(v, dims)
+
+    uv_buff = similar(v_ft, Base.Broadcast.broadcast_shape(size(u_buff),size(v_ft)))
+    
+    P_for_inv = plan(out_buff, dims)
+    P_inv = inv(P_for_inv)
+
+    # construct the efficient conv function
+    # P and P_inv can be understood like matrices
+    # but their computation is fast
+    conv = CallablePlan(P, P_for_inv, P_inv, v_ft, u_buff, uv_buff, out_buff)
+    return v_ft, conv
+end
+
+# axiliary function to use with planned convolutions
+function p_conv_aux!(P, P_inv, u, v_ft, u_buff, uv_buff, out) # , P_for_inv
+    #return P_inv.scale .* (P_inv.p * ((P * u) .* v_ft))  
+    mul!(u_buff, P, u)
+    # may be in place or out-of-place:
+    uv_buff .= u_buff .* v_ft .* P_inv.scale
+    mul!(out, P_inv.p, uv_buff)
+    #out2 = out .* P_inv.scale
+   return out
+end
+
+function ChainRulesCore.rrule(::typeof(p_conv_aux!), P, P_inv, u, v, u_buff, uv_buff, out, P_for_inv)
+    Y = p_conv_aux!(P, P_inv, u, v, u_buff, uv_buff, out, P_for_inv)
+    function conv_pullback(barx)
+        conj_v = let
+            if eltype(v) <: Real
+                v
+            else
+                conj(v)
+            end
+        end
+        if eltype(barx) <: Real
+            barx2 = similar(u, promote_type(eltype(u), eltype(barx)))
+            barx2 .= barx
+        end
+        ∇ = p_conv_aux!(P, P_inv, barx2, conj_v, u_buff, uv_buff, copy(out))
+        return NoTangent(), NoTangent(), NoTangent(), ∇, NoTangent(), NoTangent(), NoTangent(), NoTangent()
+    end 
+    return Y, conv_pullback
 end
 
 

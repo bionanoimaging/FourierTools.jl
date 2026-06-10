@@ -28,7 +28,7 @@ function run_all_tests()
     include("fourier_shear.jl");
     include("fourier_rotate.jl");
     include("resampling_tests.jl"); ### nfft does not work with CUDA -> warning for this method
-    include("convolutions.jl"); # spurious buffer problem in conv_p4 in CUDA?
+    include("convolutions.jl"); 
     include("correlations.jl");
     include("custom_fourier_types.jl"); 
     include("damping.jl");

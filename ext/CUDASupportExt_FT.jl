@@ -27,14 +27,19 @@ const AllShiftedAndViewsCu{N, CD} = Union{AllShiftedTypeCu{N, CD}, AllSubArrayTy
 Adapt.adapt_structure(to, x::FourierTools.FourierSplit{T, M, AA, D}) where {T, M, AA, D} = FourierTools.FourierSplit(adapt(to, parent(x)), Val(D), x.L1, x.L2, x.do_split);
 Adapt.adapt_structure(to, x::FourierTools.FourierJoin{T, M, AA, D}) where {T, M, AA, D} = FourierTools.FourierJoin(adapt(to, parent(x)), Val(D), x.L1, x.L2, x.do_join);
 
+Adapt.parent_type(::Type{FourierTools.FourierSplit{_T, _M, AA, _D}}) where {_T,_M,AA,_D} = AA
+Adapt.parent_type(::Type{FourierTools.FourierJoin{_T, _M, AA, _D}}) where {_T,_M,AA,_D} = AA
+
+Adapt.unwrap_type(W::Type{<:FourierTools.FourierSplit}) = unwrap_type(parent_type(W))
+Adapt.unwrap_type(W::Type{<:FourierTools.FourierJoin}) = unwrap_type(parent_type(W))
+
 function Base.Broadcast.BroadcastStyle(::Type{T})  where {N, CD, T<:AllShiftedTypeCu{N, CD}}
-    CUDA.CuArrayStyle{N,CD}()
+    return Base.Broadcast.BroadcastStyle(unwrap_type(T))
 end
 
 # Define the BroadcastStyle for SubArray of MutableShiftedArray with CuArray
-
 function Base.Broadcast.BroadcastStyle(::Type{T})  where {N, CD, T<:AllSubArrayTypeCu{N, CD}}
-    CUDA.CuArrayStyle{N,CD}()
+    return Base.Broadcast.BroadcastStyle(unwrap_type(T))
 end
 
 function Base.copy(s::AllShiftedAndViews)
