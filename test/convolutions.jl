@@ -119,4 +119,18 @@
         @test ≈(exp(1im * 1.23) .+ conv(opt_cu(ones(ComplexF32, size(x)), use_cuda), conj.(y)), exp(1im * 1.23) .+ Zygote.gradient(x -> sum(real(p(x, y_ft))), x)[1], rtol=1e-4) 
     end
 
+    @testset "Zygote gradients for planned PSF convolutions" begin
+        x = opt_cu(randn(ComplexF32, (8,6)), use_cuda)
+        psf = opt_cu(randn(ComplexF32, (8,6)), use_cuda)
+
+        _, conv_psf_plan = plan_conv_psf(x, psf)
+        g_plan = Zygote.gradient(x -> sum(abs2, conv_psf_plan(x)), x)[1]
+        g_ref = Zygote.gradient(x -> sum(abs2, conv(x, psf)), x)[1]
+        @test g_plan ≈ g_ref rtol=1e-6 atol=1e-8
+
+        _, conv_psf_buffer_plan = plan_conv_psf_buffer(x, psf)
+        g_buffer = Zygote.gradient(x -> sum(abs2, conv_psf_buffer_plan(x)), x)[1]
+        @test g_buffer ≈ g_ref rtol=1e-6 atol=1e-8
+    end
+
 end
