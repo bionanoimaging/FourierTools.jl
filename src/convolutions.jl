@@ -221,7 +221,7 @@ function ChainRulesCore.rrule(::typeof(p_conv_apply), c::CallableConvPlan, u, v_
 end
 
 # Define the struct for buffered planned convolutions
-struct CallableBufferPlan{IAT<:AbstractArray, CT1<:AbstractArray, CT2<:AbstractArray, CT3<:AbstractArray}
+mutable struct CallableBufferPlan{IAT<:AbstractArray, CT1<:AbstractArray, CT2<:AbstractArray, CT3<:AbstractArray}
     P_u
     # This is only needed due to a bug in CUDA freeing the plan when wrapped it in "inv":
     P_for_inv
@@ -230,6 +230,11 @@ struct CallableBufferPlan{IAT<:AbstractArray, CT1<:AbstractArray, CT2<:AbstractA
     u_buff::CT2 # dimensions can be different
     uv_buff::CT3 # final dimension can be different again
     out_buff::IAT # final datatype and size can also vary
+    back_out_buff::Union{Nothing, IAT} # lazily allocated for reverse-mode AD
+end
+
+function CallableBufferPlan(P_u, P_for_inv, P_inv, v_ft, u_buff, uv_buff, out_buff)
+    return CallableBufferPlan(P_u, P_for_inv, P_inv, v_ft, u_buff, uv_buff, out_buff, nothing)
 end
 
 # Define the call method for the struct
@@ -245,12 +250,20 @@ function p_conv_apply_buffer(c::CallableBufferPlan, u, v_ft)
     return p_conv_aux!(c.P_u, c.P_inv, u, v_ft, c.u_buff, c.uv_buff, c.out_buff)
 end
 
+function get_back_out_buff!(c::CallableBufferPlan)
+    if isnothing(c.back_out_buff)
+        c.back_out_buff = similar(c.out_buff)
+    end
+    return c.back_out_buff
+end
+
 function ChainRulesCore.rrule(::typeof(p_conv_apply_buffer), c::CallableBufferPlan, u, v_ft)
     Y = p_conv_apply_buffer(c, u, v_ft)
     function conv_pullback(barx)
         barx2 = _materialize_barx(barx, u)
         conj_v = eltype(v_ft) <: Real ? v_ft : conj(v_ft)
-        ∇ = p_conv_aux!(c.P_u, c.P_inv, barx2, conj_v, c.u_buff, c.uv_buff, copy(c.out_buff))
+        back_out = get_back_out_buff!(c)
+        ∇ = p_conv_aux!(c.P_u, c.P_inv, barx2, conj_v, c.u_buff, c.uv_buff, back_out)
         return NoTangent(), NoTangent(), ∇, NoTangent()
     end
     return Y, conv_pullback
