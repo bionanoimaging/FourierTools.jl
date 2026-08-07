@@ -134,12 +134,8 @@ function plan_conv(u::AbstractArray{T1, N}, v::AbstractArray{T2, M}, dims=ntuple
     # construct the efficient conv function
     # P and P_inv can be understood like matrices
     # but their computation is fast
-    conv = let P = P,
-               P_inv = inv(P),
-               # put a different name here! See https://discourse.julialang.org/t/type-issue-with-captured-variables-let-workaround-failed/85661
-               v_ft = v_ft
-        conv(u, v_ft=v_ft) = p_conv_aux(P, P_inv, u, v_ft)
-    end
+    P_inv = inv(P)
+    conv = CallableConvPlan(P, P_inv, v_ft)
     
     return v_ft, conv
 end
@@ -194,8 +190,38 @@ function plan_conv_psf_buffer(u::AbstractArray{T, N}, psf::AbstractArray{T, M}, 
     return plan_conv_buffer(u, ifftshift(psf, dims), dims; kwargs...)
 end
 
-# Define the struct
-struct CallablePlan{IAT<:AbstractArray, CT1<:AbstractArray, CT2<:AbstractArray, CT3<:AbstractArray}
+# Define the struct for non-buffered planned convolutions
+struct CallableConvPlan{CT<:AbstractArray}
+    P
+    P_inv
+    v_ft::CT
+end
+
+function (c::CallableConvPlan{CT})(u::AbstractArray, v_ft::CT) where {CT<:AbstractArray}
+    return p_conv_apply(c, u, v_ft)
+end
+
+function (c::CallableConvPlan{CT})(u::AbstractArray) where {CT<:AbstractArray}
+    return p_conv_apply(c, u, c.v_ft)
+end
+
+function p_conv_apply(c::CallableConvPlan, u, v_ft)
+    return p_conv_aux(c.P, c.P_inv, u, v_ft)
+end
+
+function ChainRulesCore.rrule(::typeof(p_conv_apply), c::CallableConvPlan, u, v_ft)
+    Y = p_conv_apply(c, u, v_ft)
+    function conv_pullback(barx)
+        barx2 = _materialize_barx(barx, u)
+        conj_v = eltype(v_ft) <: Real ? v_ft : conj(v_ft)
+        ∇ = p_conv_aux(c.P, c.P_inv, barx2, conj_v)
+        return NoTangent(), NoTangent(), ∇, NoTangent()
+    end
+    return Y, conv_pullback
+end
+
+# Define the struct for buffered planned convolutions
+mutable struct CallableBufferPlan{IAT<:AbstractArray, CT1<:AbstractArray, CT2<:AbstractArray, CT3<:AbstractArray}
     P_u
     # This is only needed due to a bug in CUDA freeing the plan when wrapped it in "inv":
     P_for_inv
@@ -204,15 +230,43 @@ struct CallablePlan{IAT<:AbstractArray, CT1<:AbstractArray, CT2<:AbstractArray, 
     u_buff::CT2 # dimensions can be different
     uv_buff::CT3 # final dimension can be different again
     out_buff::IAT # final datatype and size can also vary
+    back_out_buff::Union{Nothing, IAT} # lazily allocated for reverse-mode AD
+end
+
+function CallableBufferPlan(P_u, P_for_inv, P_inv, v_ft, u_buff, uv_buff, out_buff)
+    return CallableBufferPlan(P_u, P_for_inv, P_inv, v_ft, u_buff, uv_buff, out_buff, nothing)
 end
 
 # Define the call method for the struct
-function (c::CallablePlan{IAT, CT1, CT2, CT3})(u::AbstractArray, v_ft::CT1) where {IAT<:AbstractArray, CT1<:AbstractArray, CT2<:AbstractArray, CT3<:AbstractArray}
+function (c::CallableBufferPlan{IAT, CT1, CT2, CT3})(u::AbstractArray, v_ft::CT1) where {IAT<:AbstractArray, CT1<:AbstractArray, CT2<:AbstractArray, CT3<:AbstractArray}
+    return p_conv_apply_buffer(c, u, v_ft)
+end
+
+function (c::CallableBufferPlan{IAT, CT1, CT2, CT3})(u::AbstractArray) where {IAT<:AbstractArray, CT1<:AbstractArray, CT2<:AbstractArray, CT3<:AbstractArray}
+    return p_conv_apply_buffer(c, u, c.v_ft)
+end
+
+function p_conv_apply_buffer(c::CallableBufferPlan, u, v_ft)
     return p_conv_aux!(c.P_u, c.P_inv, u, v_ft, c.u_buff, c.uv_buff, c.out_buff)
 end
 
-function (c::CallablePlan{IAT, CT1, CT2, CT3})(u::AbstractArray) where {IAT<:AbstractArray, CT1<:AbstractArray, CT2<:AbstractArray, CT3<:AbstractArray}
-    return p_conv_aux!(c.P_u, c.P_inv, u, c.v_ft, c.u_buff, c.uv_buff, c.out_buff)
+function get_back_out_buff!(c::CallableBufferPlan)
+    if isnothing(c.back_out_buff)
+        c.back_out_buff = similar(c.out_buff)
+    end
+    return c.back_out_buff
+end
+
+function ChainRulesCore.rrule(::typeof(p_conv_apply_buffer), c::CallableBufferPlan, u, v_ft)
+    Y = p_conv_apply_buffer(c, u, v_ft)
+    function conv_pullback(barx)
+        barx2 = _materialize_barx(barx, u)
+        conj_v = eltype(v_ft) <: Real ? v_ft : conj(v_ft)
+        back_out = get_back_out_buff!(c)
+        ∇ = p_conv_aux!(c.P_u, c.P_inv, barx2, conj_v, c.u_buff, c.uv_buff, back_out)
+        return NoTangent(), NoTangent(), ∇, NoTangent()
+    end
+    return Y, conv_pullback
 end
 
 
@@ -275,7 +329,7 @@ function plan_conv_buffer(u::AbstractArray{T, N}, v::AbstractArray{T, M}, dims=n
     # construct the efficient conv function
     # P and P_inv can be understood like matrices
     # but their computation is fast
-    conv = CallablePlan(P, P_for_inv, P_inv, v_ft, u_buff, uv_buff, out_buff)
+    conv = CallableBufferPlan(P, P_for_inv, P_inv, v_ft, u_buff, uv_buff, out_buff)
     return v_ft, conv
 end
 
@@ -290,23 +344,37 @@ function p_conv_aux!(P, P_inv, u, v_ft, u_buff, uv_buff, out) # , P_for_inv
    return out
 end
 
-function ChainRulesCore.rrule(::typeof(p_conv_aux!), P, P_inv, u, v, u_buff, uv_buff, out, P_for_inv)
-    Y = p_conv_aux!(P, P_inv, u, v, u_buff, uv_buff, out, P_for_inv)
+function _materialize_barx(barx, u)
+    barx_val = barx
+    for _ in 1:3
+        unthunked = ChainRulesCore.unthunk(barx_val)
+        if unthunked === barx_val
+            break
+        end
+        barx_val = unthunked
+    end
+
+    if barx_val isa AbstractArray
+        T = promote_type(eltype(u), eltype(barx_val))
+        out = similar(u, T)
+        copyto!(out, barx_val)
+        return out
+    elseif barx_val isa Number
+        T = promote_type(eltype(u), typeof(barx_val))
+        return fill!(similar(u, T), convert(T, barx_val))
+    else
+        return fill!(similar(u, eltype(u)), zero(eltype(u)))
+    end
+end
+
+function ChainRulesCore.rrule(::typeof(p_conv_aux!), P, P_inv, u, v_ft, u_buff, uv_buff, out)
+    Y = p_conv_aux!(P, P_inv, u, v_ft, u_buff, uv_buff, out)
     function conv_pullback(barx)
-        conj_v = let
-            if eltype(v) <: Real
-                v
-            else
-                conj(v)
-            end
-        end
-        if eltype(barx) <: Real
-            barx2 = similar(u, promote_type(eltype(u), eltype(barx)))
-            barx2 .= barx
-        end
+        barx2 = _materialize_barx(barx, u)
+        conj_v = eltype(v_ft) <: Real ? v_ft : conj(v_ft)
         ∇ = p_conv_aux!(P, P_inv, barx2, conj_v, u_buff, uv_buff, copy(out))
-        return NoTangent(), NoTangent(), NoTangent(), ∇, NoTangent(), NoTangent(), NoTangent(), NoTangent()
-    end 
+        return NoTangent(), NoTangent(), ∇, NoTangent(), NoTangent(), NoTangent(), NoTangent()
+    end
     return Y, conv_pullback
 end
 
@@ -326,6 +394,17 @@ function p_conv_aux(P, P_inv, u, v_ft)
     return (P_inv.p * ((P * u) .* v_ft .* P_inv.scale))
 end
 
+function ChainRulesCore.rrule(::typeof(p_conv_aux), P, P_inv, u, v_ft)
+    Y = p_conv_aux(P, P_inv, u, v_ft)
+    function conv_pullback(barx)
+        barx2 = similar(u, promote_type(eltype(u), eltype(barx)))
+        barx2 .= barx
+        conj_v = eltype(v_ft) <: Real ? v_ft : conj(v_ft)
+        ∇ = p_conv_aux(P, P_inv, barx2, conj_v)
+        return NoTangent(), NoTangent(), ∇, NoTangent()
+    end
+    return Y, conv_pullback
+end
 
 """
     fft_or_rfft(T)
