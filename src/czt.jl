@@ -108,10 +108,9 @@ end
 function get_invalid_ranges(sz, scaled, dsize, dst_center)
     start_range = 1:0
     stop_range = 1:0
-    if (scaled*sz < dsize)
-        ceil(Int64, scaled * sz)
-        valid_start = floor(Int, dst_center - (scaled * sz)/2)
-        valid_end = ceil(Int, dst_center + (scaled * sz)/2)
+    if (abs(scaled)*sz < dsize)
+        valid_start = floor(Int, dst_center - (abs(scaled) * sz)/2)
+        valid_end = ceil(Int, dst_center + (abs(scaled) * sz)/2)
         start_range = let  
             if valid_start > 1
                 if valid_end <= dsize
